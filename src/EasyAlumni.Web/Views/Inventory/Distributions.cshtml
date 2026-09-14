@@ -1,0 +1,85 @@
+@model List<EasyAlumni.Core.Entities.GiftDistribution>
+@{
+    ViewData["Title"] = "Kit Distribution Audit Trail";
+    Layout = "_AdminLayout";
+}
+
+<!-- Page Header -->
+<div class="d-flex justify-content-between align-items-center flex-wrap gap-3 mb-4">
+    <div>
+        <h2 class="h4 fw-bold text-dark mb-1">Kit &amp; T-Shirt Handover Audit Trail</h2>
+        <p class="text-muted small mb-0">Complete historical log of all merchandise dispensed at registration gates</p>
+    </div>
+    <div>
+        <a asp-controller="Inventory" asp-action="Index" class="btn btn-outline-secondary rounded-pill px-3">
+            Inventory Stock
+        </a>
+    </div>
+</div>
+    <div class="card border-0 shadow-sm rounded-4 overflow-hidden">
+        <div class="table-responsive p-3">
+            <table class="table table-hover align-middle mb-0" id="distTable">
+                <thead class="table-light small text-uppercase">
+                    <tr>
+                        <th>Time Handed Over</th>
+                        <th>Ticket No</th>
+                        <th>Attendee Name</th>
+                        <th>Batch</th>
+                        <th>Item Dispensed</th>
+                        <th>Size Given</th>
+                        <th>Dispensing Volunteer</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var d in Model)
+                    {
+                        var reg = d.EventRegistration;
+                        var profile = reg?.AlumniProfile;
+                        <tr>
+                            <td>
+                                <strong>@d.DistributedAt.ToString("hh:mm tt")</strong>
+                                <small class="text-muted d-block">@d.DistributedAt.ToString("MMM dd, yyyy")</small>
+                            </td>
+                            <td>
+                                <span class="badge bg-light text-dark border">@reg?.RegistrationNo</span>
+                            </td>
+                            <td>
+                                <strong>@profile?.NameEnglish</strong>
+                                <small class="text-muted d-block">@profile?.ContactNumber</small>
+                            </td>
+                            <td>
+                                <span class="badge bg-secondary">Batch @profile?.PassingYear</span>
+                            </td>
+                            <td>
+                                <strong class="text-dark">@d.GiftItem?.ItemName</strong>
+                            </td>
+                            <td>
+                                @if (!string.IsNullOrEmpty(d.SizeGiven))
+                                {
+                                    <span class="badge bg-primary fs-6">@d.SizeGiven</span>
+                                }
+                                else
+                                {
+                                    <span class="text-muted">Standard</span>
+                                }
+                            </td>
+                            <td>
+                                <span class="badge bg-light text-dark border"><i class="fas fa-user-check text-success me-1"></i> @(d.VolunteerUser?.FullName ?? "Volunteer")</span>
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+@section Scripts {
+    <script>
+        $(document).ready(function() {
+            $('#distTable').DataTable({
+                "order": [[0, "desc"]],
+                "pageLength": 25
+            });
+        });
+    </script>
+}

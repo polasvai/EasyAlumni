@@ -1,0 +1,308 @@
+@model EasyAlumni.Web.ViewModels.CmsSettingsViewModel
+@{
+    Layout = "_AdminLayout";
+    ViewData["Title"] = "Page CMS Editor";
+    var activeTab = Model.ActiveTab ?? "hero";
+}
+
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <div>
+        <h2 class="fw-bold mb-1">Public Website CMS</h2>
+        <p class="text-muted mb-0">Manage and customize your public landing page, hero banner, event story, venue, and payment numbers</p>
+    </div>
+    <div>
+        <a href="/" target="_blank" class="btn btn-outline-success">
+            View Live Website
+        </a>
+    </div>
+</div>
+
+@if (TempData["SuccessMessage"] != null)
+{
+    <div class="alert alert-success alert-dismissible fade show rounded-3 shadow-sm mb-4" role="alert">
+        <strong>Saved!</strong> @TempData["SuccessMessage"]
+        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+    </div>
+}
+
+<div class="card border-0 shadow-sm rounded-4">
+    <div class="card-header bg-white border-bottom p-3">
+        <ul class="nav nav-pills card-header-pills" id="cmsTabs" role="tablist">
+            <li class="nav-item" role="presentation">
+                <button class="nav-link @(activeTab == "hero" ? "active fw-bold" : "")" id="tab-hero-btn" data-bs-toggle="pill" data-bs-target="#tab-hero" type="button" role="tab">
+                    1. Hero Banner
+                </button>
+            </li>
+            <li class="nav-item" role="presentation">
+                <button class="nav-link @(activeTab == "about" ? "active fw-bold" : "")" id="tab-about-btn" data-bs-toggle="pill" data-bs-target="#tab-about" type="button" role="tab">
+                    2. About Story
+                </button>
+            </li>
+            <li class="nav-item" role="presentation">
+                <button class="nav-link @(activeTab == "venue" ? "active fw-bold" : "")" id="tab-venue-btn" data-bs-toggle="pill" data-bs-target="#tab-venue" type="button" role="tab">
+                    3. Venue &amp; Schedule
+                </button>
+            </li>
+            <li class="nav-item" role="presentation">
+                <button class="nav-link @(activeTab == "payments" ? "active fw-bold" : "")" id="tab-payments-btn" data-bs-toggle="pill" data-bs-target="#tab-payments" type="button" role="tab">
+                    4. Payment Accounts
+                </button>
+            </li>
+            <li class="nav-item" role="presentation">
+                <button class="nav-link @(activeTab == "contact" ? "active fw-bold" : "")" id="tab-contact-btn" data-bs-toggle="pill" data-bs-target="#tab-contact" type="button" role="tab">
+                    5. Contact &amp; Helpdesk
+                </button>
+            </li>
+            <li class="nav-item" role="presentation">
+                <button class="nav-link @(activeTab == "footer" ? "active fw-bold" : "")" id="tab-footer-btn" data-bs-toggle="pill" data-bs-target="#tab-footer" type="button" role="tab">
+                    6. Footer Customization
+                </button>
+            </li>
+        </ul>
+    </div>
+
+    <div class="card-body p-4">
+        <div class="tab-content" id="cmsTabContent">
+            <!-- TAB 1: HERO BANNER -->
+            <div class="tab-pane fade @(activeTab == "hero" ? "show active" : "")" id="tab-hero" role="tabpanel">
+                <form method="post" asp-action="SaveHero" enctype="multipart/form-data">
+                    @Html.AntiForgeryToken()
+                    <h5 class="fw-bold text-success mb-3">Hero Banner &amp; Main Headline</h5>
+                    <p class="text-muted small mb-4">This is the first section attendees see upon opening your reunion website.</p>
+
+                    <div class="row g-3 mb-4">
+                        <div class="col-md-6">
+                            <label class="form-label fw-semibold">Hero Main Title (English)</label>
+                            <input asp-for="LandingHeroTitle" class="form-control" placeholder="e.g. Shahid Nazmul Huq Girls' High School Alumni Reunion 2026" required />
+                            <small class="text-muted">Primary prominent heading</small>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label fw-semibold">Hero Subtitle / Bengali Heading</label>
+                            <input asp-for="LandingHeroSubtitle" class="form-control" placeholder="e.g. শহীদ নাজমুল হক বালিকা উচ্চ বিদ্যালয় প্রাক্তন ছাত্রী পুনর্মিলনী উৎসব" />
+                            <small class="text-muted">Displayed under the main headline</small>
+                        </div>
+                        <div class="col-12">
+                            <label class="form-label fw-semibold">Hero Tagline / Paragraph</label>
+                            <textarea asp-for="LandingHeroTagline" class="form-control" rows="3" placeholder="A grand reunion of cherished memories, heartfelt reunions, and boundless nostalgia..."></textarea>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label fw-semibold">Banner Background Image URL</label>
+                            <input asp-for="LandingHeroBgImage" class="form-control" placeholder="https://... or upload below" />
+                            <small class="text-muted">Direct image link (Unsplash or CDN)</small>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label fw-semibold">Upload New Background Image (Max 5MB)</label>
+                            <input asp-for="HeroBgFile" class="form-control" type="file" accept="image/*" />
+                            <small class="text-muted">Overwrites URL with uploaded file (.jpg, .png, .webp)</small>
+                        </div>
+                    </div>
+
+                    @if (!string.IsNullOrEmpty(Model.LandingHeroBgImage))
+                    {
+                        <div class="mb-4 p-3 bg-light rounded-3 border">
+                            <label class="form-label fw-semibold small text-muted d-block">Current Hero Background Preview:</label>
+                            <div style="height: 180px; border-radius: 12px; overflow: hidden; background: #0f172a;">
+                                <img src="@Model.LandingHeroBgImage" style="width: 100%; height: 100%; object-fit: cover;" alt="Hero Preview" />
+                            </div>
+                        </div>
+                    }
+
+                    <button type="submit" class="btn btn-success px-4 py-2">
+                        Save Hero Banner
+                    </button>
+                </form>
+            </div>
+
+            <!-- TAB 2: ABOUT STORY -->
+            <div class="tab-pane fade @(activeTab == "about" ? "show active" : "")" id="tab-about" role="tabpanel">
+                <form method="post" asp-action="SaveAbout" enctype="multipart/form-data">
+                    @Html.AntiForgeryToken()
+                    <h5 class="fw-bold text-success mb-3">About the Reunion &amp; Golden Memories</h5>
+                    <p class="text-muted small mb-4">Historical summary, nostalgia narrative, and institution heritage.</p>
+
+                    <div class="row g-3 mb-4">
+                        <div class="col-md-6">
+                            <label class="form-label fw-semibold">About Section Title</label>
+                            <input asp-for="AboutTitle" class="form-control" placeholder="e.g. About the Grand Reunion" required />
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label fw-semibold">About Subtitle</label>
+                            <input asp-for="AboutSubtitle" class="form-control" placeholder="e.g. A historic day where old classmates reunite" />
+                        </div>
+                        <div class="col-12">
+                            <label class="form-label fw-semibold">Full Story / Narrative (Bengali or English)</label>
+                            <textarea asp-for="AboutStory" class="form-control" rows="6" placeholder="Write the commemorative narrative and celebration message..."></textarea>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label fw-semibold">About Featured Image URL</label>
+                            <input asp-for="AboutImageUrl" class="form-control" placeholder="https://... or upload below" />
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label fw-semibold">Upload New Image (Max 5MB)</label>
+                            <input asp-for="AboutImageFile" class="form-control" type="file" accept="image/*" />
+                        </div>
+                    </div>
+
+                    @if (!string.IsNullOrEmpty(Model.AboutImageUrl))
+                    {
+                        <div class="mb-4 p-3 bg-light rounded-3 border">
+                            <label class="form-label fw-semibold small text-muted d-block">Current About Image Preview:</label>
+                            <div style="height: 180px; max-width: 320px; border-radius: 12px; overflow: hidden; background: #0f172a;">
+                                <img src="@Model.AboutImageUrl" style="width: 100%; height: 100%; object-fit: cover;" alt="About Image Preview" />
+                            </div>
+                        </div>
+                    }
+
+                    <button type="submit" class="btn btn-success px-4 py-2">
+                        Save About Section
+                    </button>
+                </form>
+            </div>
+
+            <!-- TAB 3: VENUE & SCHEDULE -->
+            <div class="tab-pane fade @(activeTab == "venue" ? "show active" : "")" id="tab-venue" role="tabpanel">
+                <form method="post" asp-action="SaveVenue">
+                    @Html.AntiForgeryToken()
+                    <h5 class="fw-bold text-success mb-3">Event Venue &amp; Key Dates</h5>
+                    <p class="text-muted small mb-4">Update event venue location and countdown timer date.</p>
+
+                    <div class="row g-3 mb-4">
+                        <div class="col-md-6">
+                            <label class="form-label fw-semibold">Venue Name</label>
+                            <input asp-for="EventVenue" class="form-control" placeholder="e.g. বিদ্যালয় প্রাঙ্গণ ও মিলনায়তন" required />
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label fw-semibold">Venue Street Address</label>
+                            <input asp-for="VenueAddress" class="form-control" placeholder="e.g. Hetem Khan, Boalia, Rajshahi" required />
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label fw-semibold">Event Date &amp; Time (Countdown Target)</label>
+                            <input asp-for="ReunionDate" type="datetime-local" class="form-control" value="@(Model.ReunionDate?.ToString("yyyy-MM-ddTHH:mm") ?? "")" required />
+                            <small class="text-muted">Countdown timer calculates time remaining until this timestamp.</small>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label fw-semibold">Registration Deadline</label>
+                            <input asp-for="RegistrationDeadline" type="datetime-local" class="form-control" value="@(Model.RegistrationDeadline?.ToString("yyyy-MM-ddTHH:mm") ?? "")" />
+                            <small class="text-muted">Last date for alumni to register online.</small>
+                        </div>
+                        <div class="col-12">
+                            <label class="form-label fw-semibold">Google Map Embed URL (iframe embed link)</label>
+                            <input asp-for="GoogleMapEmbedUrl" class="form-control" placeholder="https://maps.google.com/maps?q=...&output=embed" />
+                            <small class="text-muted">Enter a location query or embed URL. This interactive map will be displayed in the Contact &amp; Venue section on the home page.</small>
+                        </div>
+                    </div>
+
+                    <button type="submit" class="btn btn-success px-4 py-2">
+                        Save Venue &amp; Schedule
+                    </button>
+                </form>
+            </div>
+
+            <!-- TAB 4: PAYMENT ACCOUNTS -->
+            <div class="tab-pane fade @(activeTab == "payments" ? "show active" : "")" id="tab-payments" role="tabpanel">
+                <form method="post" asp-action="SavePayments">
+                    @Html.AntiForgeryToken()
+                    <h5 class="fw-bold text-success mb-3">Mobile Banking Numbers &amp; Bank Details</h5>
+                    <p class="text-muted small mb-4">These payment accounts are shown to alumni during online registration and on payment guides.</p>
+
+                    <div class="row g-3 mb-4">
+                        <div class="col-md-4">
+                            <label class="form-label fw-semibold">bKash Account Number</label>
+                            <input asp-for="ManualBkashNumber" class="form-control" placeholder="e.g. 01700000000 (Personal/Merchant)" required />
+                        </div>
+                        <div class="col-md-4">
+                            <label class="form-label fw-semibold">Nagad Account Number</label>
+                            <input asp-for="ManualNagadNumber" class="form-control" placeholder="e.g. 01800000000 (Personal/Merchant)" required />
+                        </div>
+                        <div class="col-md-4">
+                            <label class="form-label fw-semibold">Rocket Account Number</label>
+                            <input asp-for="ManualRocketNumber" class="form-control" placeholder="e.g. 01900000000-8" />
+                        </div>
+                        <div class="col-12">
+                            <label class="form-label fw-semibold">Official Bank Account Information (Optional)</label>
+                            <textarea asp-for="PaymentBankDetails" class="form-control" rows="3" placeholder="Bank Name, Branch Name, Account Name, Account Number, Routing Number"></textarea>
+                            <small class="text-muted">Optional: Displayed for corporate donors, batch sponsors, or overseas wire transfers.</small>
+                        </div>
+                    </div>
+
+                    <button type="submit" class="btn btn-success px-4 py-2">
+                        Save Payment Accounts
+                    </button>
+                </form>
+            </div>
+
+            <!-- TAB 5: CONTACT & HELPDESK -->
+            <div class="tab-pane fade @(activeTab == "contact" ? "show active" : "")" id="tab-contact" role="tabpanel">
+                <form method="post" asp-action="SaveContact">
+                    @Html.AntiForgeryToken()
+                    <h5 class="fw-bold text-success mb-3">Support Hotline &amp; Official Inquiries</h5>
+                    <p class="text-muted small mb-4">Official phone numbers and email displayed on the landing page contact footer.</p>
+
+                    <div class="row g-3 mb-4">
+                        <div class="col-md-6">
+                            <label class="form-label fw-semibold">Helpdesk Hotline Numbers</label>
+                            <input asp-for="ContactHotline" class="form-control" placeholder="e.g. +880 1711-000000, 025888 54512" required />
+                            <small class="text-muted">Separate multiple numbers with commas</small>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label fw-semibold">Official Inquiry Email</label>
+                            <input asp-for="ContactEmail" type="email" class="form-control" placeholder="e.g. alumni@snhghs.edu.bd" required />
+                        </div>
+                    </div>
+
+                    <button type="submit" class="btn btn-success px-4 py-2">
+                        Save Contact Info
+                    </button>
+                </form>
+            </div>
+
+            <!-- TAB 6: FOOTER CUSTOMIZATION -->
+            <div class="tab-pane fade @(activeTab == "footer" ? "show active" : "")" id="tab-footer" role="tabpanel">
+                <form method="post" asp-action="SaveFooter">
+                    @Html.AntiForgeryToken()
+                    <h5 class="fw-bold text-success mb-3">Footer Narrative, Social Media &amp; Copyright</h5>
+                    <p class="text-muted small mb-4">Customize the global footer displayed across all public pages of the alumni portal.</p>
+
+                    <div class="row g-3 mb-4">
+                        <div class="col-12">
+                            <label class="form-label fw-semibold">Footer About / Mission Summary</label>
+                            <textarea asp-for="FooterAboutText" class="form-control" rows="3" placeholder="The ultimate event and alumni community management platform..."></textarea>
+                            <small class="text-muted">Displayed under the logo in the first column of the footer.</small>
+                        </div>
+                        <div class="col-md-4">
+                            <label class="form-label fw-semibold">Facebook Page / Group URL</label>
+                            <input asp-for="FooterFacebookUrl" class="form-control" placeholder="https://facebook.com/..." />
+                        </div>
+                        <div class="col-md-4">
+                            <label class="form-label fw-semibold">YouTube Channel / Video Link</label>
+                            <input asp-for="FooterYoutubeUrl" class="form-control" placeholder="https://youtube.com/..." />
+                        </div>
+                        <div class="col-md-4">
+                            <label class="form-label fw-semibold">WhatsApp Group / Contact Link</label>
+                            <input asp-for="FooterWhatsappUrl" class="form-control" placeholder="https://wa.me/..." />
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label fw-semibold">Copyright Statement</label>
+                            <input asp-for="FooterCopyright" class="form-control" placeholder="e.g. © 2026 EasyAlumni Association. All rights reserved." />
+                            <small class="text-muted">Displayed on bottom left bar</small>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label fw-semibold">Footer Tagline / Slogan</label>
+                            <input asp-for="FooterTagline" class="form-control" placeholder="e.g. Designed for School, College &amp; University Grand Reunions" />
+                            <small class="text-muted">Displayed on bottom right bar</small>
+                        </div>
+                        <div class="col-md-12">
+                            <label class="form-label fw-semibold">Made With / Badge Text</label>
+                            <input asp-for="FooterMadeWith" class="form-control" placeholder="e.g. Made with ❤️" />
+                            <small class="text-muted">Displayed under the mission narrative in column 1 (supports ❤️ emoji or text)</small>
+                        </div>
+                    </div>
+
+                    <button type="submit" class="btn btn-success px-4 py-2">
+                        Save Footer Settings
+                    </button>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>

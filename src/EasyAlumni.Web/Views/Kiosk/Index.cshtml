@@ -1,0 +1,384 @@
+@{
+    ViewData["Title"] = "Volunteer Check-in & Distribution Kiosk";
+    Layout = "_AdminLayout";
+}
+
+@section Styles {
+    <style>
+
+        .camera-container {
+            border: 2px dashed #006a4e;
+            border-radius: 20px;
+            overflow: hidden;
+            background: #000;
+            min-height: 280px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            position: relative;
+        }
+
+        #qr-reader {
+            width: 100% !important;
+            border: none !important;
+        }
+
+        .attendee-card {
+            border-radius: 20px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.08);
+            border: 2px solid #e2e8f0;
+            background: #fff;
+            overflow: hidden;
+            transition: all 0.3s ease;
+        }
+
+        .tshirt-badge-huge {
+            font-size: 3rem;
+            font-weight: 900;
+            line-height: 1;
+            color: #006a4e;
+            display: inline-block;
+            background: #e8f5e9;
+            padding: 10px 30px;
+            border-radius: 16px;
+            border: 2px solid #006a4e;
+        }
+
+        .duplicate-alert-banner {
+            background: linear-gradient(135deg, #dc2626, #b91c1c);
+            color: white;
+            border-radius: 16px;
+            padding: 20px;
+            animation: pulse-red 1.5s infinite;
+        }
+
+        @@keyframes pulse-red {
+            0% { box-shadow: 0 0 0 0 rgba(220, 38, 38, 0.7); }
+            70% { box-shadow: 0 0 0 15px rgba(220, 38, 38, 0); }
+            100% { box-shadow: 0 0 0 0 rgba(220, 38, 38, 0); }
+        }
+    </style>
+}
+
+<!-- Page Header -->
+<div class="d-flex justify-content-between align-items-center flex-wrap gap-3 mb-4">
+    <div>
+        <div class="d-flex align-items-center gap-2 mb-1">
+            <h2 class="h4 fw-bold text-dark mb-0">Volunteer Check-in &amp; Kit Distribution Kiosk</h2>
+            <span class="badge bg-warning text-dark px-2 py-1 rounded-pill fw-bold small">Gate Desk Mode</span>
+        </div>
+        <p class="text-muted small mb-0">High-speed QR camera scanning, attendee verification, and 1-click merchandise distribution</p>
+    </div>
+    <div>
+        <a asp-controller="Admin" asp-action="Index" class="btn btn-outline-secondary rounded-pill px-3">
+            Dashboard
+        </a>
+    </div>
+</div>
+    <div class="row g-4">
+        <!-- Left Column: Scanner & Search -->
+        <div class="col-lg-5">
+            <!-- Manual Search Box -->
+            <div class="card border-0 shadow-sm rounded-4 p-4 mb-4">
+                <h5 class="fw-bold text-dark mb-3"><i class="fas fa-search text-success me-2"></i> Fast Attendee Search</h5>
+                <div class="input-group input-group-lg mb-2">
+                    <input type="text" id="searchInput" class="form-control" placeholder="Mobile, Ticket (RE-...) or Code" autofocus />
+                    <button type="button" class="btn btn-success" onclick="executeSearch()">
+                        <i class="fas fa-search"></i>
+                    </button>
+                </div>
+                <small class="text-muted"><i class="fas fa-lightbulb text-warning me-1"></i> Press Enter to search instantly.</small>
+            </div>
+
+            <!-- In-Browser Camera Scanner -->
+            <div class="card border-0 shadow-sm rounded-4 p-4">
+                <div class="d-flex justify-content-between align-items-center mb-3">
+                    <h5 class="fw-bold text-dark mb-0"><i class="fas fa-camera text-primary me-2"></i> QR Code Camera</h5>
+                    <button type="button" class="btn btn-sm btn-outline-primary rounded-pill px-3" id="btnToggleCam" onclick="toggleCamera()">
+                        <i class="fas fa-power-off me-1"></i> Start Camera
+                    </button>
+                </div>
+                
+                <div class="camera-container" id="cameraViewport">
+                    <div id="qr-reader"></div>
+                    <div id="camPlaceholder" class="text-center text-muted p-4">
+                        <i class="fas fa-video-slash fa-3x mb-2 text-secondary"></i>
+                        <p class="mb-0 small">Camera is inactive. Click <strong>Start Camera</strong> to begin scanning attendee digital passes.</p>
+                    </div>
+                </div>
+                <small class="text-muted mt-2 d-block text-center">Compatible with mobile phone camera, tablet, or laptop webcam.</small>
+            </div>
+        </div>
+
+        <!-- Right Column: Attendee Profile Card & Handover -->
+        <div class="col-lg-7">
+            <div class="attendee-card p-4 p-md-5" id="profileCard" style="display: none;">
+                <!-- Anti-Duplicate Alert (Hidden by default) -->
+                <div class="duplicate-alert-banner mb-4" id="duplicateWarning" style="display: none;">
+                    <div class="d-flex align-items-center">
+                        <div class="me-3"><i class="fas fa-exclamation-triangle fa-3x"></i></div>
+                        <div>
+                            <h4 class="fw-bold mb-1">ALREADY DISTRIBUTED!</h4>
+                            <p class="mb-0 small" id="duplicateDetails">Kit has already been collected for this ticket.</p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Attendee Header -->
+                <div class="d-flex align-items-center gap-4 border-bottom pb-4 mb-4 flex-wrap">
+                    <img id="attPhoto" src="" alt="Attendee Photo" style="width: 100px; height: 100px; border-radius: 50%; object-fit: cover; border: 3px solid #006a4e;" />
+                    <div class="flex-grow-1">
+                        <span class="badge bg-light text-dark border mb-1" id="attTicketNo">RE-2026-00001</span>
+                        <h3 class="fw-bold text-dark mb-0" id="attNameEnglish">ALUMNUS NAME</h3>
+                        <div class="text-muted" id="attNameBangla">বাংলা নাম</div>
+                        <div class="mt-1">
+                            <span class="badge bg-secondary rounded-pill" id="attBatch">Batch 2010</span>
+                            <span class="badge bg-danger rounded-pill" id="attBlood">A+</span>
+                            <span class="badge bg-success rounded-pill" id="attStatus">Approved</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Kit Handover Highlight -->
+                <div class="text-center p-4 bg-light rounded-4 mb-4 border">
+                    <span class="small text-muted text-uppercase fw-bold d-block mb-2">Polo T-Shirt Size to Dispense</span>
+                    <div class="tshirt-badge-huge mb-3" id="attTShirtSize">L</div>
+                    <div class="row g-2 text-center">
+                        <div class="col-4">
+                            <div class="p-2 bg-white rounded border small">
+                                <i class="fas fa-gift text-warning me-1"></i> Gift Hamper: <strong>1 Unit</strong>
+                            </div>
+                        </div>
+                        <div class="col-4">
+                            <div class="p-2 bg-white rounded border small">
+                                <i class="fas fa-backpack text-primary me-1"></i> Backpack: <strong>1 Unit</strong>
+                            </div>
+                        </div>
+                        <div class="col-4">
+                            <div class="p-2 bg-white rounded border small">
+                                <i class="fas fa-utensils text-success me-1"></i> Total Meals: <strong id="attTotalHeads">1 Head</strong>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Handover Button -->
+                <div class="text-center" id="handoverActionBox">
+                    <button type="button" class="btn btn-success btn-lg rounded-pill px-5 py-3 fw-bold shadow w-100" id="btnConfirmHandover" onclick="confirmHandover()">
+                        <i class="fas fa-box-check me-2"></i> CONFIRM HANDOVER / DISTRIBUTE KIT
+                    </button>
+                </div>
+
+                <div class="mt-3 text-center" id="collectedBadgeBox" style="display: none;">
+                    <div class="alert alert-success rounded-pill py-2 mb-0 fw-bold">
+                        <i class="fas fa-check-double me-2"></i> Items Already Handed Over at <span id="distributedTime"></span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Empty State Placeholder -->
+            <div class="card border-0 shadow-sm rounded-4 p-5 text-center text-muted" id="emptyStatePlaceholder">
+                <i class="fas fa-id-card fa-4x mb-3 text-secondary"></i>
+                <h4 class="fw-bold text-dark">No Attendee Selected</h4>
+                <p class="mb-0">Scan an attendee's Digital Pass QR code or type their mobile number / ticket code to review their details and dispense their T-shirt kit.</p>
+            </div>
+        </div>
+    </div>
+
+@section Scripts {
+    <!-- html5-qrcode CDN -->
+    <script src="https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.min.js"></script>
+
+    <script>
+        let currentAttendee = null;
+        let html5QrCode = null;
+        let isCameraRunning = false;
+
+        document.getElementById('searchInput').addEventListener('keypress', function (e) {
+            if (e.key === 'Enter') {
+                executeSearch();
+            }
+        });
+
+        function executeSearch() {
+            const val = document.getElementById('searchInput').value.trim();
+            if (!val) return;
+            lookup(val);
+        }
+
+        function lookup(query) {
+            Swal.fire({
+                title: 'Searching...',
+                allowOutsideClick: false,
+                didOpen: () => { Swal.showLoading(); }
+            });
+
+            fetch(`/Kiosk/LookupAttendee?query=${encodeURIComponent(query)}`)
+                .then(res => res.json())
+                .then(data => {
+                    Swal.close();
+                    if (data.success) {
+                        renderAttendee(data);
+                    } else {
+                        Swal.fire('Not Found', data.message, 'warning');
+                    }
+                })
+                .catch(err => {
+                    Swal.close();
+                    Swal.fire('Error', 'Failed to communicate with server.', 'error');
+                });
+        }
+
+        function renderAttendee(data) {
+            currentAttendee = data;
+            document.getElementById('emptyStatePlaceholder').style.display = 'none';
+            document.getElementById('profileCard').style.display = 'block';
+
+            document.getElementById('attPhoto').src = data.photoUrl;
+            document.getElementById('attTicketNo').innerText = data.ticketNo;
+            document.getElementById('attNameEnglish').innerText = data.nameEnglish;
+            document.getElementById('attNameBangla').innerText = `${data.nameBangla} (${data.nickname})`;
+            document.getElementById('attBatch').innerText = `Batch ${data.batchYear}`;
+            document.getElementById('attBlood').innerText = data.bloodGroup || 'Blood: N/A';
+            document.getElementById('attStatus').innerText = data.status;
+
+            document.getElementById('attTShirtSize').innerText = data.tShirtSize;
+            document.getElementById('attTotalHeads').innerText = `${data.totalHeads} Heads`;
+
+            const warningBox = document.getElementById('duplicateWarning');
+            const handoverBox = document.getElementById('handoverActionBox');
+            const collectedBox = document.getElementById('collectedBadgeBox');
+
+            if (data.isKitDistributed) {
+                warningBox.style.display = 'block';
+                document.getElementById('duplicateDetails').innerHTML = 
+                    `Kit was handed over at <strong>${data.kitDistributedAt}</strong> by <strong>${data.kitDistributedBy}</strong>.`;
+                handoverBox.style.display = 'none';
+                collectedBox.style.display = 'block';
+                document.getElementById('distributedTime').innerText = data.kitDistributedAt;
+
+                // Play warning buzzer
+                playAudioBuzzer();
+            } else if (!data.isApproved) {
+                warningBox.style.display = 'block';
+                document.getElementById('duplicateDetails').innerHTML = 
+                    `<strong>ATTENTION:</strong> Payment status is <strong>${data.status}</strong>. Please send attendee to Accounts Counter for approval.`;
+                handoverBox.style.display = 'none';
+                collectedBox.style.display = 'none';
+            } else {
+                warningBox.style.display = 'none';
+                handoverBox.style.display = 'block';
+                collectedBox.style.display = 'none';
+            }
+        }
+
+        function confirmHandover() {
+            if (!currentAttendee) return;
+
+            Swal.fire({
+                title: `Hand over size ${currentAttendee.tShirtSize}?`,
+                text: `Confirm dispensing T-Shirt (${currentAttendee.tShirtSize}), Hamper and Backpack to ${currentAttendee.nameEnglish}.`,
+                icon: 'question',
+                showCancelButton: true,
+                confirmButtonColor: '#006a4e',
+                confirmButtonText: 'Yes, Handed Over!'
+            }).then(result => {
+                if (result.isConfirmed) {
+                    const token = $('input[name="__RequestVerificationToken"]').val();
+
+                    fetch('/Kiosk/ConfirmDistribution', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'RequestVerificationToken': token
+                        },
+                        body: JSON.stringify({
+                            registrationId: currentAttendee.registrationId,
+                            notes: "Gate reception handover"
+                        })
+                    })
+                    .then(res => res.json())
+                    .then(res => {
+                        if (res.success) {
+                            Swal.fire({
+                                icon: 'success',
+                                title: 'Success!',
+                                text: res.message,
+                                timer: 2000,
+                                showConfirmButton: false
+                            });
+                            document.getElementById('handoverActionBox').style.display = 'none';
+                            document.getElementById('collectedBadgeBox').style.display = 'block';
+                            document.getElementById('distributedTime').innerText = res.distributedAt;
+                        } else {
+                            Swal.fire('Warning', res.message, 'error');
+                        }
+                    });
+                }
+            });
+        }
+
+        function toggleCamera() {
+            if (isCameraRunning) {
+                stopCamera();
+            } else {
+                startCamera();
+            }
+        }
+
+        function startCamera() {
+            document.getElementById('camPlaceholder').style.display = 'none';
+            html5QrCode = new Html5Qrcode("qr-reader");
+
+            html5QrCode.start(
+                { facingMode: "environment" },
+                {
+                    fps: 10,
+                    qrbox: { width: 250, height: 250 }
+                },
+                (decodedText, decodedResult) => {
+                    // Success callback
+                    console.log("Scanned QR:", decodedText);
+                    lookup(decodedText);
+                },
+                (errorMessage) => {
+                    // Parse error, ignore
+                }
+            ).then(() => {
+                isCameraRunning = true;
+                document.getElementById('btnToggleCam').innerHTML = '<i class="fas fa-stop me-1"></i> Stop Camera';
+                document.getElementById('btnToggleCam').className = 'btn btn-sm btn-danger rounded-pill px-3';
+            }).catch(err => {
+                Swal.fire('Camera Error', 'Could not start camera. Please verify permissions.', 'error');
+                document.getElementById('camPlaceholder').style.display = 'block';
+            });
+        }
+
+        function stopCamera() {
+            if (html5QrCode) {
+                html5QrCode.stop().then(() => {
+                    html5QrCode.clear();
+                    isCameraRunning = false;
+                    document.getElementById('camPlaceholder').style.display = 'block';
+                    document.getElementById('btnToggleCam').innerHTML = '<i class="fas fa-power-off me-1"></i> Start Camera';
+                    document.getElementById('btnToggleCam').className = 'btn btn-sm btn-outline-primary rounded-pill px-3';
+                });
+            }
+        }
+
+        function playAudioBuzzer() {
+            try {
+                const ctx = new (window.AudioContext || window.webkitAudioContext)();
+                const osc = ctx.createOscillator();
+                osc.type = "sawtooth";
+                osc.frequency.setValueAtTime(440, ctx.currentTime);
+                osc.frequency.setValueAtTime(220, ctx.currentTime + 0.15);
+                osc.connect(ctx.destination);
+                osc.start();
+                osc.stop(ctx.currentTime + 0.35);
+            } catch (e) {
+                // audio not supported
+            }
+        }
+    </script>
+}

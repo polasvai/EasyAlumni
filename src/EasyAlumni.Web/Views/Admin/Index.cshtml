@@ -1,0 +1,216 @@
+@model List<EasyAlumni.Core.Entities.EventRegistration>
+@{
+    ViewData["Title"] = "Admin Dashboard";
+    Layout = "_AdminLayout";
+}
+
+<!-- Page Header -->
+<div class="d-flex justify-content-between align-items-center flex-wrap gap-3 mb-4">
+    <div>
+        <h2 class="h4 fw-bold text-dark mb-1">Administrative Command Center</h2>
+        <p class="text-muted small mb-0">Live event metrics, financial collection, headcount, and attendee overview</p>
+    </div>
+    <div class="d-flex gap-2">
+        <a asp-controller="Admin" asp-action="PaymentQueue" class="btn btn-warning rounded-pill px-4 fw-bold shadow-sm">
+            Payment Queue (@ViewBag.PendingReg)
+        </a>
+        <a asp-controller="Kiosk" asp-action="Index" class="btn btn-outline-secondary rounded-pill px-3">
+            Volunteer Kiosk
+        </a>
+    </div>
+</div>
+    @if (TempData["Success"] != null)
+    {
+        <div class="alert alert-success alert-dismissible fade show rounded-3" role="alert">
+            <i class="fas fa-check-circle me-2"></i> @TempData["Success"]
+            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        </div>
+    }
+
+    <!-- Metric Cards -->
+    <div class="row g-3 mb-4">
+        <div class="col-lg-3 col-sm-6">
+            <div class="card border-0 shadow-sm rounded-4 p-3 border-start border-4 border-primary h-100">
+                <div class="d-flex justify-content-between align-items-center">
+                    <div>
+                        <span class="text-muted small text-uppercase fw-semibold">Total Registrations</span>
+                        <h2 class="fw-bold text-dark mb-0">@ViewBag.TotalReg</h2>
+                        <small class="text-success"><i class="fas fa-user-check me-1"></i> @ViewBag.ApprovedReg Approved</small>
+                    </div>
+                    <div class="bg-primary bg-opacity-10 text-primary p-3 rounded-circle">
+                        <i class="fas fa-users fa-2x"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-lg-3 col-sm-6">
+            <div class="card border-0 shadow-sm rounded-4 p-3 border-start border-4 border-success h-100">
+                <div class="d-flex justify-content-between align-items-center">
+                    <div>
+                        <span class="text-muted small text-uppercase fw-semibold">Total Revenue Collected</span>
+                        <h2 class="fw-bold text-success mb-0">৳ @(((decimal)ViewBag.TotalCollected).ToString("N0"))</h2>
+                        <small class="text-muted">Reconciled in cashbook</small>
+                    </div>
+                    <div class="bg-success bg-opacity-10 text-success p-3 rounded-circle">
+                        <i class="fas fa-money-bill-wave fa-2x"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-lg-3 col-sm-6">
+            <div class="card border-0 shadow-sm rounded-4 p-3 border-start border-4 border-warning h-100">
+                <div class="d-flex justify-content-between align-items-center">
+                    <div>
+                        <span class="text-muted small text-uppercase fw-semibold">Pending Payment Queue</span>
+                        <h2 class="fw-bold text-warning mb-0">@ViewBag.PendingReg</h2>
+                        <small class="text-danger">৳ @(((decimal)ViewBag.TotalPendingAmount).ToString("N0")) awaiting audit</small>
+                    </div>
+                    <div class="bg-warning bg-opacity-10 text-warning p-3 rounded-circle">
+                        <i class="fas fa-clock fa-2x"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-lg-3 col-sm-6">
+            <div class="card border-0 shadow-sm rounded-4 p-3 border-start border-4 border-danger h-100">
+                <div class="d-flex justify-content-between align-items-center">
+                    <div>
+                        <span class="text-muted small text-uppercase fw-semibold">Catering Headcount</span>
+                        <h2 class="fw-bold text-danger mb-0">@ViewBag.TotalHeads Heads</h2>
+                        <small class="text-muted">Spouse: @ViewBag.Spouses | Child: @ViewBag.Children | Guest: @ViewBag.Guests</small>
+                    </div>
+                    <div class="bg-danger bg-opacity-10 text-danger p-3 rounded-circle">
+                        <i class="fas fa-utensils fa-2x"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Charts Row -->
+    <div class="row g-4 mb-4">
+        <div class="col-lg-7">
+            <div class="card border-0 shadow-sm rounded-4 p-4 h-100">
+                <h5 class="fw-bold text-dark mb-3"><i class="fas fa-chart-bar text-primary me-2"></i> Registrations by Passing Batch</h5>
+                <div style="position: relative; height: 280px;">
+                    <canvas id="batchChart"></canvas>
+                </div>
+            </div>
+        </div>
+        <div class="col-lg-5">
+            <div class="card border-0 shadow-sm rounded-4 p-4 h-100">
+                <h5 class="fw-bold text-dark mb-3"><i class="fas fa-tshirt text-success me-2"></i> T-Shirt Size Distribution Demand</h5>
+                <div style="position: relative; height: 280px;">
+                    <canvas id="tshirtChart"></canvas>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Recent Registrations Table -->
+    <div class="card border-0 shadow-sm rounded-4 overflow-hidden">
+        <div class="card-header bg-white p-3 border-bottom d-flex justify-content-between align-items-center">
+            <h5 class="fw-bold mb-0"><i class="fas fa-history text-secondary me-2"></i> Recent Registrations</h5>
+            <a asp-controller="Admin" asp-action="Registrations" class="btn btn-sm btn-outline-primary rounded-pill px-3">
+                View All Registrations
+            </a>
+        </div>
+        <div class="table-responsive">
+            <table class="table table-hover align-middle mb-0">
+                <thead class="table-light small text-uppercase">
+                    <tr>
+                        <th>Ticket No</th>
+                        <th>Alumnus Name</th>
+                        <th>Batch</th>
+                        <th>Mobile</th>
+                        <th>T-Shirt</th>
+                        <th>Fee</th>
+                        <th>Status</th>
+                        <th>Pass</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var reg in Model)
+                    {
+                        <tr>
+                            <td><span class="badge bg-light text-dark border">@reg.RegistrationNo</span></td>
+                            <td>
+                                <strong>@reg.AlumniProfile?.NameEnglish</strong>
+                                <small class="text-muted d-block">@reg.AlumniProfile?.NameBangla</small>
+                            </td>
+                            <td><span class="badge bg-secondary">Batch @reg.AlumniProfile?.PassingYear</span></td>
+                            <td>@reg.AlumniProfile?.ContactNumber</td>
+                            <td><span class="badge bg-info text-dark">@reg.TShirtSize</span></td>
+                            <td>৳ @reg.TotalAmount.ToString("N0")</td>
+                            <td>
+                                @if (reg.Status == EasyAlumni.Core.Enums.RegistrationStatus.Approved)
+                                {
+                                    <span class="badge bg-success">Approved</span>
+                                }
+                                else if (reg.Status == EasyAlumni.Core.Enums.RegistrationStatus.Pending)
+                                {
+                                    <span class="badge bg-warning text-dark">Pending</span>
+                                }
+                                else
+                                {
+                                    <span class="badge bg-danger">@reg.Status</span>
+                                }
+                            </td>
+                            <td>
+                                <a asp-controller="Pass" asp-action="ViewPass" asp-route-id="@reg.RegistrationNo" target="_blank" class="btn btn-sm btn-outline-dark rounded-pill px-2">
+                                    <i class="fas fa-qrcode"></i>
+                                </a>
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+@section Scripts {
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script>
+        // Batch Chart
+        const batchLabels = @Html.Raw(System.Text.Json.JsonSerializer.Serialize(ViewBag.BatchLabels));
+        const batchCounts = @Html.Raw(System.Text.Json.JsonSerializer.Serialize(ViewBag.BatchCounts));
+
+        new Chart(document.getElementById('batchChart'), {
+            type: 'bar',
+            data: {
+                labels: batchLabels.length ? batchLabels : ['No Data'],
+                datasets: [{
+                    label: 'Alumni Count',
+                    data: batchCounts.length ? batchCounts : [0],
+                    backgroundColor: '#006a4e',
+                    borderRadius: 6
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: { legend: { display: false } },
+                scales: { y: { beginAtZero: true } }
+            }
+        });
+
+        // T-Shirt Size Demand Chart
+        const tshirtLabels = @Html.Raw(System.Text.Json.JsonSerializer.Serialize(ViewBag.TShirtLabels));
+        const tshirtCounts = @Html.Raw(System.Text.Json.JsonSerializer.Serialize(ViewBag.TShirtCounts));
+
+        new Chart(document.getElementById('tshirtChart'), {
+            type: 'doughnut',
+            data: {
+                labels: tshirtLabels.length ? tshirtLabels : ['S', 'M', 'L', 'XL', 'XXL'],
+                datasets: [{
+                    data: tshirtCounts.length ? tshirtCounts : [0, 0, 0, 0, 0],
+                    backgroundColor: ['#3b82f6', '#10b981', '#f59e0b', '#ef4444', '#8b5cf6', '#06b6d4']
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false
+            }
+        });
+    </script>
+}

@@ -1,0 +1,581 @@
+@using Microsoft.AspNetCore.Identity
+@using EasyAlumni.Core.Entities
+@inject SignInManager<ApplicationUser> SignInManager
+@inject UserManager<ApplicationUser> UserManager
+@{
+    var currentUser = await UserManager.GetUserAsync(User);
+    var currentRole = User.IsInRole("SuperAdmin") ? "SuperAdmin" : 
+                      User.IsInRole("Admin") ? "Admin" : 
+                      User.IsInRole("Accounts") ? "Accounts" : 
+                      User.IsInRole("Volunteer") ? "Volunteer" : "Staff";
+    var currentController = ViewContext.RouteData.Values["controller"]?.ToString() ?? "";
+    var currentAction = ViewContext.RouteData.Values["action"]?.ToString() ?? "";
+
+    string IsActive(string controller, string? action = null)
+    {
+        if (action == null)
+        {
+            return string.Equals(currentController, controller, StringComparison.OrdinalIgnoreCase) ? "active" : "";
+        }
+        return string.Equals(currentController, controller, StringComparison.OrdinalIgnoreCase) &&
+               string.Equals(currentAction, action, StringComparison.OrdinalIgnoreCase) ? "active" : "";
+    }
+}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>@ViewData["Title"] - EasyAlumni Admin Portal</title>
+    
+    <!-- Bootstrap 5.3 -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet" />
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com">
+    <link href="https://fonts.googleapis.com/css2?family=Hind+Siliguri:wght@400;500;600;700&family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <!-- SweetAlert2 -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/sweetalert2@11/dist/sweetalert2.min.css">
+    <!-- DataTables Bootstrap 5 -->
+    <link rel="stylesheet" href="https://cdn.datatables.net/1.13.7/css/dataTables.bootstrap5.min.css">
+    <!-- FontAwesome for body badges/icons (none in menu links) -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css" />
+
+    <style>
+        :root {
+            --sidebar-width: 260px;
+            --primary: #006a4e;
+            --primary-dark: #004d38;
+            --primary-light: #e8f5e9;
+            --accent: #f59e0b;
+            --sidebar-bg: #0f172a;
+            --sidebar-header: #090d16;
+            --sidebar-hover: rgba(255, 255, 255, 0.06);
+            --sidebar-text: #94a3b8;
+            --sidebar-text-active: #ffffff;
+            --sidebar-border: rgba(255, 255, 255, 0.08);
+            --content-bg: #f8fafc;
+        }
+
+        body {
+            font-family: 'Poppins', 'Hind Siliguri', sans-serif;
+            background-color: var(--content-bg);
+            color: #334155;
+            margin: 0;
+            padding: 0;
+            min-height: 100vh;
+        }
+
+        /* Left Sidebar Layout */
+        .admin-sidebar {
+            position: fixed;
+            top: 0;
+            left: 0;
+            bottom: 0;
+            width: var(--sidebar-width);
+            background-color: var(--sidebar-bg);
+            border-right: 1px solid var(--sidebar-border);
+            display: flex;
+            flex-direction: column;
+            z-index: 1045;
+            transition: transform 0.3s ease;
+            overflow: hidden;
+        }
+
+        .admin-sidebar-header {
+            padding: 20px;
+            background-color: var(--sidebar-header);
+            border-bottom: 1px solid var(--sidebar-border);
+        }
+
+        .admin-sidebar-brand {
+            font-size: 1.25rem;
+            font-weight: 700;
+            color: #ffffff;
+            text-decoration: none;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+
+        .admin-sidebar-brand .brand-badge {
+            font-size: 0.65rem;
+            letter-spacing: 0.8px;
+            text-transform: uppercase;
+            background: #006a4e;
+            color: #fff;
+            padding: 3px 8px;
+            border-radius: 4px;
+            font-weight: 600;
+        }
+
+        .admin-sidebar-sub {
+            font-size: 0.75rem;
+            color: #64748b;
+            margin-top: 4px;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        .admin-user-card {
+            padding: 14px 20px;
+            background: rgba(255, 255, 255, 0.03);
+            border-bottom: 1px solid var(--sidebar-border);
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .admin-user-avatar {
+            width: 38px;
+            height: 38px;
+            border-radius: 8px;
+            background: #006a4e;
+            color: #fff;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 700;
+            font-size: 0.9rem;
+        }
+
+        .admin-user-info {
+            overflow: hidden;
+        }
+
+        .admin-user-name {
+            font-size: 0.85rem;
+            font-weight: 600;
+            color: #e2e8f0;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            line-height: 1.2;
+        }
+
+        .admin-user-role {
+            font-size: 0.7rem;
+            color: var(--accent);
+            font-weight: 500;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        /* Nav menu - Text Only, No Icons */
+        .admin-nav-container {
+            flex: 1;
+            overflow-y: auto;
+            padding: 16px 12px;
+        }
+
+        .admin-nav-section-title {
+            font-size: 0.68rem;
+            font-weight: 700;
+            color: #475569;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            padding: 12px 14px 4px;
+            margin: 0;
+        }
+
+        .admin-nav-link {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 10px 14px;
+            margin-bottom: 3px;
+            border-radius: 8px;
+            color: var(--sidebar-text);
+            text-decoration: none;
+            font-size: 0.875rem;
+            font-weight: 500;
+            transition: all 0.2s ease;
+        }
+
+        .admin-nav-link:hover {
+            background-color: var(--sidebar-hover);
+            color: var(--sidebar-text-active);
+        }
+
+        .admin-nav-link.active {
+            background: #006a4e;
+            color: #ffffff;
+            font-weight: 600;
+            box-shadow: 0 2px 8px rgba(0, 106, 78, 0.4);
+        }
+
+        .admin-sidebar-footer {
+            padding: 14px 16px;
+            background: var(--sidebar-header);
+            border-top: 1px solid var(--sidebar-border);
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+
+        .btn-sidebar-secondary {
+            display: block;
+            width: 100%;
+            text-align: center;
+            font-size: 0.8rem;
+            padding: 8px 12px;
+            border-radius: 6px;
+            color: #94a3b8;
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            text-decoration: none;
+            font-weight: 500;
+            transition: all 0.2s;
+        }
+
+        .btn-sidebar-secondary:hover {
+            color: #fff;
+            background: rgba(255, 255, 255, 0.1);
+        }
+
+        .btn-sidebar-logout {
+            display: block;
+            width: 100%;
+            text-align: center;
+            font-size: 0.8rem;
+            padding: 8px 12px;
+            border-radius: 6px;
+            color: #f87171;
+            background: rgba(239, 68, 68, 0.1);
+            border: 1px solid rgba(239, 68, 68, 0.2);
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .btn-sidebar-logout:hover {
+            background: rgba(239, 68, 68, 0.2);
+            color: #fca5a5;
+        }
+
+        /* Content Area */
+        .admin-content-wrapper {
+            margin-left: var(--sidebar-width);
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            background-color: var(--content-bg);
+            transition: margin-left 0.3s ease;
+        }
+
+        /* Topbar */
+        .admin-topbar {
+            height: 64px;
+            background-color: #ffffff;
+            border-bottom: 1px solid #e2e8f0;
+            padding: 0 24px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            position: sticky;
+            top: 0;
+            z-index: 1030;
+            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
+        }
+
+        .admin-topbar-left {
+            display: flex;
+            align-items: center;
+            gap: 16px;
+        }
+
+        .admin-sidebar-toggle {
+            display: none;
+            background: none;
+            border: 1px solid #cbd5e1;
+            border-radius: 6px;
+            padding: 6px 10px;
+            color: #475569;
+            cursor: pointer;
+            font-size: 0.85rem;
+            font-weight: 600;
+        }
+
+        .admin-page-title {
+            font-size: 1.15rem;
+            font-weight: 700;
+            color: #0f172a;
+            margin: 0;
+        }
+
+        .admin-topbar-right {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .btn-topbar-link {
+            font-size: 0.85rem;
+            font-weight: 600;
+            padding: 7px 16px;
+            border-radius: 6px;
+            text-decoration: none;
+            transition: all 0.2s;
+        }
+
+        .btn-topbar-portal {
+            background: #f1f5f9;
+            color: #334155;
+            border: 1px solid #e2e8f0;
+        }
+
+        .btn-topbar-portal:hover {
+            background: #e2e8f0;
+            color: #0f172a;
+        }
+
+        .btn-topbar-kiosk {
+            background: #006a4e;
+            color: #ffffff;
+            border: 1px solid #004d38;
+        }
+
+        .btn-topbar-kiosk:hover {
+            background: #004d38;
+            color: #ffffff;
+        }
+
+        .admin-main-content {
+            flex: 1;
+            padding: 24px;
+        }
+
+
+
+        .admin-main-content .container {
+            max-width: 100% !important;
+            padding-left: 0 !important;
+            padding-right: 0 !important;
+        }
+
+        /* Mobile Backdrop */
+        .admin-backdrop {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(15, 23, 42, 0.6);
+            backdrop-filter: blur(4px);
+            z-index: 1040;
+        }
+
+        @@media (max-width: 991.98px) {
+            .admin-sidebar {
+                transform: translateX(-100%);
+            }
+
+            .admin-sidebar.show {
+                transform: translateX(0);
+            }
+
+            .admin-content-wrapper {
+                margin-left: 0;
+            }
+
+            .admin-sidebar-toggle {
+                display: inline-block;
+            }
+
+            .admin-backdrop.show {
+                display: block;
+            }
+        }
+    </style>
+    @await RenderSectionAsync("Styles", required: false)
+</head>
+<body>
+    <!-- Mobile Backdrop -->
+    <div class="admin-backdrop" id="adminBackdrop" onclick="toggleSidebar()"></div>
+
+    <!-- Left Sidebar -->
+    <aside class="admin-sidebar" id="adminSidebar">
+        <!-- Sidebar Brand Header -->
+        <div class="admin-sidebar-header">
+            <a asp-controller="Admin" asp-action="Index" class="admin-sidebar-brand">
+                <span>EasyAlumni</span>
+                <span class="brand-badge">Admin</span>
+            </a>
+            <div class="admin-sidebar-sub">SNHGHS Reunion Management</div>
+        </div>
+
+        <!-- Current User Card -->
+        <div class="admin-user-card">
+            <div class="admin-user-avatar">
+                @(currentUser?.FullName?.Substring(0, 1).ToUpper() ?? "A")
+            </div>
+            <div class="admin-user-info">
+                <div class="admin-user-name">@(currentUser?.FullName ?? currentUser?.UserName ?? "Administrator")</div>
+                <div class="admin-user-role">@currentRole</div>
+            </div>
+        </div>
+
+        <!-- Navigation Menu (Clean Text-Only Links, No Menu Icons) -->
+        <nav class="admin-nav-container">
+            <div class="admin-nav-section-title">Overview</div>
+            <a asp-controller="Admin" asp-action="Index" class="admin-nav-link @IsActive("Admin", "Index")">
+                <span>Dashboard</span>
+            </a>
+
+            <div class="admin-nav-section-title">Registrations &amp; Fees</div>
+            <a asp-controller="Admin" asp-action="PaymentQueue" class="admin-nav-link @IsActive("Admin", "PaymentQueue")">
+                <span>Payment Approvals</span>
+            </a>
+            <a asp-controller="Admin" asp-action="Registrations" class="admin-nav-link @IsActive("Admin", "Registrations")">
+                <span>All Registrations</span>
+            </a>
+            <a asp-controller="Packages" asp-action="Index" class="admin-nav-link @IsActive("Packages")">
+                <span>Registration Packages</span>
+            </a>
+
+            <div class="admin-nav-section-title">Gate &amp; Logistics</div>
+            <a asp-controller="Kiosk" asp-action="Index" class="admin-nav-link @IsActive("Kiosk", "Index")">
+                <span>Gate QR Check-in</span>
+            </a>
+            <a asp-controller="Inventory" asp-action="Index" class="admin-nav-link @IsActive("Inventory", "Index")">
+                <span>Apparel &amp; T-Shirt Stock</span>
+            </a>
+            <a asp-controller="Inventory" asp-action="Distributions" class="admin-nav-link @IsActive("Inventory", "Distributions")">
+                <span>Kit Distribution Logs</span>
+            </a>
+
+            <div class="admin-nav-section-title">Finance &amp; Accounts</div>
+            <a asp-controller="Accounting" asp-action="Index" class="admin-nav-link @IsActive("Accounting", "Index")">
+                <span>Cash Book &amp; Vouchers</span>
+            </a>
+            <a asp-controller="Reports" asp-action="FinancialStatement" class="admin-nav-link @IsActive("Reports", "FinancialStatement")">
+                <span>Financial Statement</span>
+            </a>
+
+            <div class="admin-nav-section-title">Operational Reports</div>
+            <a asp-controller="Reports" asp-action="Index" class="admin-nav-link @IsActive("Reports", "Index")">
+                <span>Reports Center</span>
+            </a>
+            <a asp-controller="Reports" asp-action="CollectionReport" class="admin-nav-link @IsActive("Reports", "CollectionReport")">
+                <span>Fee Collection Report</span>
+            </a>
+            <a asp-controller="Reports" asp-action="CateringReport" class="admin-nav-link @IsActive("Reports", "CateringReport")">
+                <span>Catering Headcount</span>
+            </a>
+            <a asp-controller="Reports" asp-action="TShirtReport" class="admin-nav-link @IsActive("Reports", "TShirtReport")">
+                <span>T-Shirt Size Matrix</span>
+            </a>
+
+            <div class="admin-nav-section-title">Website &amp; CMS</div>
+            <a asp-controller="Cms" asp-action="Index" class="admin-nav-link @IsActive("Cms")">
+                <span>Page CMS Editor</span>
+            </a>
+            <a asp-controller="Gallery" asp-action="Index" class="admin-nav-link @IsActive("Gallery")">
+                <span>Photo Gallery</span>
+            </a>
+
+            <div class="admin-nav-section-title">Administration</div>
+            <a asp-controller="Users" asp-action="Index" class="admin-nav-link @IsActive("Users")">
+                <span>User &amp; Access Management</span>
+            </a>
+            <a asp-controller="Committee" asp-action="Index" class="admin-nav-link @IsActive("Committee", "Index")">
+                <span>Committee Management</span>
+            </a>
+            <a asp-controller="VolunteerManagement" asp-action="Index" class="admin-nav-link @IsActive("VolunteerManagement", "Index")">
+                <span>Volunteer Roster</span>
+            </a>
+            <a asp-controller="Settings" asp-action="Index" class="admin-nav-link @IsActive("Settings", "Index")">
+                <span>System &amp; SMS Gateway</span>
+            </a>
+        </nav>
+
+        <!-- Sidebar Footer -->
+        <div class="admin-sidebar-footer">
+            <a href="/" target="_blank" class="btn-sidebar-secondary">
+                View Public Site
+            </a>
+            <form asp-controller="Account" asp-action="Logout" method="post" class="m-0">
+                <button type="submit" class="btn-sidebar-logout">
+                    Sign Out
+                </button>
+            </form>
+        </div>
+    </aside>
+
+    <!-- Main Content Area -->
+    <div class="admin-content-wrapper">
+        <!-- Topbar -->
+        <header class="admin-topbar">
+            <div class="admin-topbar-left">
+                <button type="button" class="admin-sidebar-toggle" onclick="toggleSidebar()">
+                    Menu
+                </button>
+                <h1 class="admin-page-title">@ViewData["Title"]</h1>
+            </div>
+            <div class="admin-topbar-right">
+                <a asp-controller="Kiosk" asp-action="Index" class="btn-topbar-link btn-topbar-kiosk">
+                    Gate Kiosk
+                </a>
+                <a href="/" target="_blank" class="btn-topbar-link btn-topbar-portal">
+                    Public Website
+                </a>
+                <form asp-controller="Account" asp-action="Logout" method="post" class="d-inline m-0">
+                    <button type="submit" class="btn-topbar-link btn btn-outline-danger py-1 px-3">
+                        Logout
+                    </button>
+                </form>
+            </div>
+        </header>
+
+        <!-- Main Content Body -->
+        <main class="admin-main-content">
+            @if (TempData["Success"] != null)
+            {
+                <div class="alert alert-success alert-dismissible fade show rounded-3 shadow-sm mb-4" role="alert">
+                    @TempData["Success"]
+                    <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                </div>
+            }
+            @if (TempData["Error"] != null)
+            {
+                <div class="alert alert-danger alert-dismissible fade show rounded-3 shadow-sm mb-4" role="alert">
+                    @TempData["Error"]
+                    <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                </div>
+            }
+            @if (TempData["Warning"] != null)
+            {
+                <div class="alert alert-warning alert-dismissible fade show rounded-3 shadow-sm mb-4" role="alert">
+                    @TempData["Warning"]
+                    <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                </div>
+            }
+
+            @RenderBody()
+        </main>
+    </div>
+
+    <!-- Bootstrap 5.3 Bundle -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+    <!-- jQuery -->
+    <script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
+    <!-- SweetAlert2 -->
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+    <!-- DataTables -->
+    <script src="https://cdn.datatables.net/1.13.7/js/jquery.dataTables.min.js"></script>
+    <script src="https://cdn.datatables.net/1.13.7/js/dataTables.bootstrap5.min.js"></script>
+
+    <script>
+        function toggleSidebar() {
+            const sidebar = document.getElementById('adminSidebar');
+            const backdrop = document.getElementById('adminBackdrop');
+            sidebar.classList.toggle('show');
+            backdrop.classList.toggle('show');
+        }
+    </script>
+
+    @await RenderSectionAsync("Scripts", required: false)
+</body>
+</html>

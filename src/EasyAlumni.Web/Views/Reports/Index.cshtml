@@ -1,0 +1,301 @@
+@model EasyAlumni.Web.ViewModels.ReportsSummaryViewModel
+@{
+    ViewData["Title"] = "Reports & Analytics Center";
+    Layout = "_AdminLayout";
+}
+
+<!-- Page Header -->
+<div class="d-flex justify-content-between align-items-center flex-wrap gap-3 mb-4">
+    <div>
+        <h2 class="h4 fw-bold text-dark mb-1">Executive Reports &amp; Analytics Center</h2>
+        <p class="text-muted small mb-0">Live consolidated overview of registrations, financial collections, catering headcounts, and logistics</p>
+    </div>
+    <div class="d-flex gap-2">
+        <button type="button" class="btn btn-outline-secondary rounded-pill px-3" onclick="window.print()">
+            Print Summary
+        </button>
+        <a asp-controller="Reports" asp-action="CollectionReport" class="btn btn-success rounded-pill px-4 fw-semibold shadow-sm">
+            Detailed Collections
+        </a>
+    </div>
+</div>
+
+<!-- Report Navigation Tabs / Shortcuts -->
+<div class="card border-0 shadow-sm rounded-4 mb-4 p-2 bg-white">
+    <div class="nav nav-pills nav-fill gap-2">
+        <a class="nav-link active rounded-pill fw-semibold py-2" asp-controller="Reports" asp-action="Index">
+            Summary Overview
+        </a>
+        <a class="nav-link text-dark rounded-pill fw-semibold py-2" asp-controller="Reports" asp-action="CollectionReport">
+            Fee Collection Audit
+        </a>
+        <a class="nav-link text-dark rounded-pill fw-semibold py-2" asp-controller="Reports" asp-action="CateringReport">
+            Catering Headcount
+        </a>
+        <a class="nav-link text-dark rounded-pill fw-semibold py-2" asp-controller="Reports" asp-action="TShirtReport">
+            T-Shirt Inventory
+        </a>
+        <a class="nav-link text-dark rounded-pill fw-semibold py-2" asp-controller="Reports" asp-action="FinancialStatement">
+            Financial Statement
+        </a>
+    </div>
+</div>
+
+<!-- Key Performance Metrics -->
+<div class="row g-3 mb-4">
+    <div class="col-lg-3 col-sm-6">
+        <div class="card border-0 shadow-sm rounded-4 p-4 border-start border-4 border-success bg-white h-100">
+            <span class="text-muted small text-uppercase fw-bold">Total Collection</span>
+            <h3 class="fw-bold text-success mb-1 mt-1">৳ @Model.TotalCollectedRevenue.ToString("N0")</h3>
+            <small class="text-muted">@Model.ApprovedPaymentsCount approved tickets</small>
+            @if (Model.PendingAmount > 0)
+            {
+                <div class="small text-warning fw-semibold mt-2">
+                    ৳ @Model.PendingAmount.ToString("N0") pending audit (@Model.PendingPaymentsCount)
+                </div>
+            }
+        </div>
+    </div>
+    <div class="col-lg-3 col-sm-6">
+        <div class="card border-0 shadow-sm rounded-4 p-4 border-start border-4 border-primary bg-white h-100">
+            <span class="text-muted small text-uppercase fw-bold">Catering Headcount</span>
+            <h3 class="fw-bold text-primary mb-1 mt-1">@Model.GrandTotalCateringHeads Heads</h3>
+            <small class="text-muted">@Model.TotalAlumni Alumni + @(Model.GrandTotalCateringHeads - Model.TotalAlumni) Guests</small>
+            <div class="small text-success fw-semibold mt-2">Confirmed headcount for caterer</div>
+        </div>
+    </div>
+    <div class="col-lg-3 col-sm-6">
+        <div class="card border-0 shadow-sm rounded-4 p-4 border-start border-4 border-danger bg-white h-100">
+            <span class="text-muted small text-uppercase fw-bold">Total Expenses</span>
+            <h3 class="fw-bold text-danger mb-1 mt-1">৳ @Model.TotalExpenses.ToString("N0")</h3>
+            <small class="text-muted">Vouchers &amp; bills posted</small>
+            <div class="small text-muted mt-2">Reconciled in cashbook</div>
+        </div>
+    </div>
+    <div class="col-lg-3 col-sm-6">
+        <div class="card border-0 shadow-sm rounded-4 p-4 border-start border-4 border-info bg-white h-100">
+            <span class="text-muted small text-uppercase fw-bold">Net Event Surplus</span>
+            <h3 class="fw-bold @(Model.NetSurplus >= 0 ? "text-info" : "text-danger") mb-1 mt-1">
+                ৳ @Model.NetSurplus.ToString("N0")
+            </h3>
+            <small class="text-muted">Inflow minus direct vouchers</small>
+            <div class="small text-success fw-semibold mt-2">Closing balance</div>
+        </div>
+    </div>
+</div>
+
+<!-- Middle Section: Catering Summary & T-Shirt Summary -->
+<div class="row g-4 mb-4">
+    <!-- Catering Headcount Breakdown -->
+    <div class="col-lg-6">
+        <div class="card border-0 shadow-sm rounded-4 h-100 overflow-hidden">
+            <div class="card-header bg-white p-3 border-bottom d-flex justify-content-between align-items-center">
+                <h5 class="fw-bold text-dark mb-0">Catering Headcount Summary</h5>
+                <a asp-controller="Reports" asp-action="CateringReport" class="small text-success fw-semibold text-decoration-none">
+                    View Full Report &rarr;
+                </a>
+            </div>
+            <div class="table-responsive p-0">
+                <table class="table table-hover align-middle mb-0">
+                    <thead class="table-light small text-uppercase">
+                        <tr>
+                            <th class="ps-3">Attendee Category</th>
+                            <th class="text-center">Count</th>
+                            <th class="text-end pe-3">% Share</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td class="ps-3">
+                                <strong>Registered Alumni</strong>
+                                <small class="text-muted d-block">Former students of SNHGHS</small>
+                            </td>
+                            <td class="text-center fw-bold fs-6">@Model.TotalAlumni</td>
+                            <td class="text-end pe-3 text-muted">
+                                @(Model.GrandTotalCateringHeads > 0 ? ((Model.TotalAlumni * 100.0) / Model.GrandTotalCateringHeads).ToString("F1") : "0")%
+                            </td>
+                        </tr>
+                        <tr>
+                            <td class="ps-3">
+                                <strong>Accompanying Spouses</strong>
+                                <small class="text-muted d-block">Husbands / Spouses attending</small>
+                            </td>
+                            <td class="text-center fw-bold fs-6">@Model.TotalSpouses</td>
+                            <td class="text-end pe-3 text-muted">
+                                @(Model.GrandTotalCateringHeads > 0 ? ((Model.TotalSpouses * 100.0) / Model.GrandTotalCateringHeads).ToString("F1") : "0")%
+                            </td>
+                        </tr>
+                        <tr>
+                            <td class="ps-3">
+                                <strong>Children (Age 5+)</strong>
+                                <small class="text-muted d-block">Children requiring lunch seating</small>
+                            </td>
+                            <td class="text-center fw-bold fs-6">@Model.TotalChildren</td>
+                            <td class="text-end pe-3 text-muted">
+                                @(Model.GrandTotalCateringHeads > 0 ? ((Model.TotalChildren * 100.0) / Model.GrandTotalCateringHeads).ToString("F1") : "0")%
+                            </td>
+                        </tr>
+                        <tr>
+                            <td class="ps-3">
+                                <strong>Personal Drivers / Guests</strong>
+                                <small class="text-muted d-block">Authorized accompanying guests</small>
+                            </td>
+                            <td class="text-center fw-bold fs-6">@Model.TotalGuests</td>
+                            <td class="text-end pe-3 text-muted">
+                                @(Model.GrandTotalCateringHeads > 0 ? ((Model.TotalGuests * 100.0) / Model.GrandTotalCateringHeads).ToString("F1") : "0")%
+                            </td>
+                        </tr>
+                        <tr class="table-success fw-bold">
+                            <td class="ps-3">Grand Total Headcount</td>
+                            <td class="text-center fs-5 text-success">@Model.GrandTotalCateringHeads</td>
+                            <td class="text-end pe-3">100.0%</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <!-- T-Shirt Size Matrix Summary -->
+    <div class="col-lg-6">
+        <div class="card border-0 shadow-sm rounded-4 h-100 overflow-hidden">
+            <div class="card-header bg-white p-3 border-bottom d-flex justify-content-between align-items-center">
+                <h5 class="fw-bold text-dark mb-0">T-Shirt Demand by Size</h5>
+                <a asp-controller="Reports" asp-action="TShirtReport" class="small text-primary fw-semibold text-decoration-none">
+                    View Matrix &rarr;
+                </a>
+            </div>
+            <div class="table-responsive p-0">
+                <table class="table table-hover align-middle mb-0">
+                    <thead class="table-light small text-uppercase">
+                        <tr>
+                            <th class="ps-3">Size Code</th>
+                            <th class="text-center">Required Count</th>
+                            <th>Distribution Visual</th>
+                            <th class="text-end pe-3">% Total</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @{
+                            var totalTShirts = Model.TShirtSizeCounts.Values.Sum();
+                        }
+                        @foreach (var sz in Model.TShirtSizeCounts)
+                        {
+                            var pct = totalTShirts > 0 ? (sz.Value * 100.0) / totalTShirts : 0;
+                            <tr>
+                                <td class="ps-3">
+                                    <span class="badge bg-dark px-3 py-1 fs-6">@sz.Key</span>
+                                </td>
+                                <td class="text-center fw-bold fs-6">@sz.Value</td>
+                                <td>
+                                    <div class="progress" style="height: 10px;">
+                                        <div class="progress-bar bg-primary" role="progressbar" style="width: @pct%"></div>
+                                    </div>
+                                </td>
+                                <td class="text-end pe-3 text-muted">@pct.ToString("F1")%</td>
+                            </tr>
+                        }
+                        <tr class="table-light fw-bold">
+                            <td class="ps-3">Total Required</td>
+                            <td class="text-center fs-5 text-primary">@totalTShirts</td>
+                            <td colspan="2" class="text-end pe-3 text-muted small">For textile order procurement</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Bottom Section: Top Batches & Payment Channels -->
+<div class="row g-4">
+    <!-- Top Participating Batches -->
+    <div class="col-lg-6">
+        <div class="card border-0 shadow-sm rounded-4 h-100 overflow-hidden">
+            <div class="card-header bg-white p-3 border-bottom d-flex justify-content-between align-items-center">
+                <h5 class="fw-bold text-dark mb-0">Top Participating Batches</h5>
+                <a asp-controller="Admin" asp-action="Registrations" class="small text-secondary fw-semibold text-decoration-none">
+                    All Registrations &rarr;
+                </a>
+            </div>
+            <div class="table-responsive p-0">
+                <table class="table table-hover align-middle mb-0">
+                    <thead class="table-light small text-uppercase">
+                        <tr>
+                            <th class="ps-3">Batch (Passing Year)</th>
+                            <th class="text-center">Alumni</th>
+                            <th class="text-center">Total Heads</th>
+                            <th class="text-end pe-3">Total Collection</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @if (Model.TopBatches == null || !Model.TopBatches.Any())
+                        {
+                            <tr>
+                                <td colspan="4" class="text-center py-4 text-muted small">No batch participation records yet.</td>
+                            </tr>
+                        }
+                        else
+                        {
+                            @foreach (var b in Model.TopBatches)
+                            {
+                                <tr>
+                                    <td class="ps-3">
+                                        <span class="badge bg-secondary px-2 py-1">Batch @(b.BatchYear > 0 ? b.BatchYear.ToString() : "N/A")</span>
+                                    </td>
+                                    <td class="text-center fw-bold">@b.RegisteredCount</td>
+                                    <td class="text-center">@b.TotalHeads</td>
+                                    <td class="text-end pe-3 fw-bold text-success">৳ @b.TotalCollected.ToString("N0")</td>
+                                </tr>
+                            }
+                        }
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <!-- Collection Channels (bKash, Nagad, etc.) -->
+    <div class="col-lg-6">
+        <div class="card border-0 shadow-sm rounded-4 h-100 overflow-hidden">
+            <div class="card-header bg-white p-3 border-bottom d-flex justify-content-between align-items-center">
+                <h5 class="fw-bold text-dark mb-0">Collection by Payment Channel</h5>
+                <a asp-controller="Admin" asp-action="PaymentQueue" class="small text-success fw-semibold text-decoration-none">
+                    Payment Queue &rarr;
+                </a>
+            </div>
+            <div class="table-responsive p-0">
+                <table class="table table-hover align-middle mb-0">
+                    <thead class="table-light small text-uppercase">
+                        <tr>
+                            <th class="ps-3">Payment Gateway / Channel</th>
+                            <th class="text-center">Transactions</th>
+                            <th class="text-end pe-3">Collected Amount</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @if (Model.PaymentChannels == null || !Model.PaymentChannels.Any())
+                        {
+                            <tr>
+                                <td colspan="3" class="text-center py-4 text-muted small">No payment transactions recorded yet.</td>
+                            </tr>
+                        }
+                        else
+                        {
+                            @foreach (var ch in Model.PaymentChannels)
+                            {
+                                <tr>
+                                    <td class="ps-3">
+                                        <span class="badge bg-info text-dark px-2 py-1">@ch.ChannelName</span>
+                                    </td>
+                                    <td class="text-center fw-bold">@ch.TransactionCount</td>
+                                    <td class="text-end pe-3 fw-bold text-success">৳ @ch.TotalAmount.ToString("N0")</td>
+                                </tr>
+                            }
+                        }
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>

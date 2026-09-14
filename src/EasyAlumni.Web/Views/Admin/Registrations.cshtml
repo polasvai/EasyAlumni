@@ -1,0 +1,158 @@
+@model List<EasyAlumni.Core.Entities.EventRegistration>
+@{
+    ViewData["Title"] = "All Registrations";
+    Layout = "_AdminLayout";
+    var batches = (List<int>)ViewBag.Batches;
+    var selectedBatch = (int?)ViewBag.SelectedBatch;
+    var selectedStatus = (EasyAlumni.Core.Enums.RegistrationStatus?)ViewBag.SelectedStatus;
+}
+
+<!-- Page Header -->
+<div class="d-flex justify-content-between align-items-center flex-wrap gap-3 mb-4">
+    <div>
+        <h2 class="h4 fw-bold text-dark mb-1">Registered Alumni Directory</h2>
+        <p class="text-muted small mb-0">Complete list of registered attendees, guest headcounts, and pass records</p>
+    </div>
+    <div>
+        <a asp-controller="Admin" asp-action="Index" class="btn btn-outline-secondary rounded-pill px-3">
+            Dashboard
+        </a>
+    </div>
+</div>
+    <!-- Filter Card -->
+    <div class="card border-0 shadow-sm rounded-4 p-3 mb-4">
+        <form method="get" asp-controller="Admin" asp-action="Registrations" class="row g-3 align-items-center">
+            <div class="col-md-4">
+                <label class="form-label small text-muted mb-1">Filter by Batch</label>
+                <select name="batch" class="form-select" onchange="this.form.submit()">
+                    <option value="">-- All Batches --</option>
+                    @foreach (var b in batches)
+                    {
+                        <option value="@b" selected="@(selectedBatch == b)">Batch @b</option>
+                    }
+                </select>
+            </div>
+            <div class="col-md-4">
+                <label class="form-label small text-muted mb-1">Filter by Status</label>
+                <select name="status" class="form-select" onchange="this.form.submit()">
+                    <option value="">-- All Statuses --</option>
+                    <option value="1" selected="@(selectedStatus == EasyAlumni.Core.Enums.RegistrationStatus.Approved)">Approved &amp; Paid</option>
+                    <option value="0" selected="@(selectedStatus == EasyAlumni.Core.Enums.RegistrationStatus.Pending)">Pending Payment</option>
+                    <option value="2" selected="@(selectedStatus == EasyAlumni.Core.Enums.RegistrationStatus.Rejected)">Rejected</option>
+                </select>
+            </div>
+            <div class="col-md-4 text-md-end mt-md-4">
+                <a asp-controller="Admin" asp-action="Registrations" class="btn btn-outline-secondary rounded-pill px-3 me-2">
+                    Reset Filters
+                </a>
+            </div>
+        </form>
+    </div>
+
+    <!-- Directory Table -->
+    <div class="card border-0 shadow-sm rounded-4 overflow-hidden">
+        <div class="table-responsive p-3">
+            <table class="table table-hover align-middle mb-0" id="regTable">
+                <thead class="table-light small text-uppercase">
+                    <tr>
+                        <th>Ticket No</th>
+                        <th>Alumnus</th>
+                        <th>Batch</th>
+                        <th>Contact</th>
+                        <th>T-Shirt</th>
+                        <th>Guests</th>
+                        <th>Amount</th>
+                        <th>Status</th>
+                        <th>Kit Handover</th>
+                        <th class="text-end">Pass</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var reg in Model)
+                    {
+                        var profile = reg.AlumniProfile;
+                        <tr>
+                            <td>
+                                <span class="badge bg-light text-dark border">@reg.RegistrationNo</span>
+                                <small class="text-muted d-block">ID: @profile?.UserCode</small>
+                            </td>
+                            <td>
+                                <div class="d-flex align-items-center gap-2">
+                                    <img src="@(string.IsNullOrEmpty(profile?.RecentPhotoPath) ? "https://ui-avatars.com/api/?name=" + Uri.EscapeDataString(profile?.NameEnglish ?? "A") : profile.RecentPhotoPath)"
+                                         alt="" style="width: 40px; height: 40px; border-radius: 50%; object-fit: cover;" />
+                                    <div>
+                                        <strong class="text-dark">@profile?.NameEnglish</strong>
+                                        <small class="text-muted d-block">@profile?.NameBangla (@profile?.NickName)</small>
+                                    </div>
+                                </div>
+                            </td>
+                            <td>
+                                <span class="badge bg-secondary">Batch @profile?.PassingYear</span>
+                                @if (!string.IsNullOrEmpty(profile?.BloodGroup))
+                                {
+                                    <span class="badge bg-danger">@profile.BloodGroup</span>
+                                }
+                            </td>
+                            <td>
+                                <strong>@profile?.ContactNumber</strong>
+                                <small class="text-muted d-block">@profile?.Email</small>
+                            </td>
+                            <td>
+                                <span class="badge bg-info text-dark fs-6">@reg.TShirtSize</span>
+                            </td>
+                            <td>
+                                <small class="text-muted">
+                                    Spouse: @reg.SpouseCount | Child: @reg.ChildCount | Guest: @reg.GuestCount
+                                </small>
+                            </td>
+                            <td>
+                                <strong>৳ @reg.TotalAmount.ToString("N0")</strong>
+                            </td>
+                            <td>
+                                @if (reg.Status == EasyAlumni.Core.Enums.RegistrationStatus.Approved)
+                                {
+                                    <span class="badge bg-success">Approved</span>
+                                }
+                                else if (reg.Status == EasyAlumni.Core.Enums.RegistrationStatus.Pending)
+                                {
+                                    <span class="badge bg-warning text-dark">Pending</span>
+                                }
+                                else
+                                {
+                                    <span class="badge bg-danger">@reg.Status</span>
+                                }
+                            </td>
+                            <td>
+                                @if (reg.IsKitDistributed)
+                                {
+                                    <span class="badge bg-success rounded-pill"><i class="fas fa-check me-1"></i> Handed Over</span>
+                                    <small class="text-muted d-block">@reg.KitDistributedAt?.ToString("hh:mm tt")</small>
+                                }
+                                else
+                                {
+                                    <span class="badge bg-light text-muted border rounded-pill">Pending Collection</span>
+                                }
+                            </td>
+                            <td class="text-end">
+                                <a asp-controller="Pass" asp-action="ViewPass" asp-route-id="@reg.RegistrationNo" target="_blank"
+                                   class="btn btn-sm btn-outline-primary rounded-pill px-2" title="Print Pass">
+                                    <i class="fas fa-id-badge"></i>
+                                </a>
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+@section Scripts {
+    <script>
+        $(document).ready(function() {
+            $('#regTable').DataTable({
+                "order": [[0, "desc"]],
+                "pageLength": 25
+            });
+        });
+    </script>
+}

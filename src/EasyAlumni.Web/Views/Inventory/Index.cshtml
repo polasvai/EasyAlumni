@@ -1,0 +1,344 @@
+@model List<EasyAlumni.Core.Entities.GiftItem>
+@{
+    ViewData["Title"] = "Merchandise & Gift Inventory";
+    Layout = "_AdminLayout";
+    var apparelItem = Model.FirstOrDefault(i => i.IsSizeSpecific);
+}
+
+<!-- Page Header -->
+<div class="d-flex justify-content-between align-items-center flex-wrap gap-3 mb-4">
+    <div>
+        <h2 class="h4 fw-bold text-dark mb-1">Merchandise &amp; Gift Inventory</h2>
+        <p class="text-muted small mb-0">Track procured T-shirts, gift hampers, backpacks, and real-time distribution status</p>
+    </div>
+    <div class="d-flex gap-2">
+        <button type="button" class="btn btn-success rounded-pill px-4 fw-semibold shadow-sm" data-bs-toggle="modal" data-bs-target="#addItemModal">
+            + Add Gift Item
+        </button>
+        <a asp-controller="Inventory" asp-action="Distributions" class="btn btn-outline-secondary rounded-pill px-3">
+            Handover Audit Log
+        </a>
+    </div>
+</div>
+    @if (TempData["Success"] != null)
+    {
+        <div class="alert alert-success alert-dismissible fade show rounded-3" role="alert">
+            <i class="fas fa-check-circle me-2"></i> @TempData["Success"]
+            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        </div>
+    }
+    @if (TempData["Error"] != null)
+    {
+        <div class="alert alert-danger alert-dismissible fade show rounded-3" role="alert">
+            <i class="fas fa-exclamation-triangle me-2"></i> @TempData["Error"]
+            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        </div>
+    }
+
+    <!-- Stat Cards -->
+    <div class="row g-3 mb-4">
+        <div class="col-md-4">
+            <div class="card border-0 shadow-sm rounded-4 p-3 border-start border-4 border-primary">
+                <span class="text-muted small text-uppercase fw-semibold">Total Procured Units</span>
+                <h2 class="fw-bold text-dark mb-0">@ViewBag.TotalProcured Units</h2>
+                <small class="text-muted">Total inventory ordered from vendors</small>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="card border-0 shadow-sm rounded-4 p-3 border-start border-4 border-success">
+                <span class="text-muted small text-uppercase fw-semibold">Handed Over at Gate</span>
+                <h2 class="fw-bold text-success mb-0">@ViewBag.TotalDistributed Units</h2>
+                <small class="text-muted">Scanned and verified by volunteers</small>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="card border-0 shadow-sm rounded-4 p-3 border-start border-4 border-warning">
+                <span class="text-muted small text-uppercase fw-semibold">Remaining in Warehouse</span>
+                <h2 class="fw-bold text-warning mb-0">@ViewBag.Remaining Units</h2>
+                <small class="text-muted">Available for distribution</small>
+            </div>
+        </div>
+    </div>
+
+    <!-- T-Shirt Size Breakdown Matrix -->
+    @if (apparelItem != null && apparelItem.SizeStocks.Any())
+    {
+        <div class="card border-0 shadow-sm rounded-4 mb-4 overflow-hidden">
+            <div class="card-header bg-white p-3 border-bottom d-flex justify-content-between align-items-center">
+                <h5 class="fw-bold text-dark mb-0"><i class="fas fa-tshirt text-success me-2"></i> @apparelItem.ItemName - Size Breakdown Matrix</h5>
+                <span class="badge bg-success rounded-pill px-3 py-2">Total: @apparelItem.TotalStockQuantity Pcs</span>
+            </div>
+            <div class="table-responsive p-3">
+                <table class="table table-bordered align-middle text-center mb-0">
+                    <thead class="table-light">
+                        <tr>
+                            <th>Size</th>
+                            <th>Procured Stock</th>
+                            <th>Demanded (Registered)</th>
+                            <th>Handed Over</th>
+                            <th>Available Balance</th>
+                            <th>Update Stock</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach (var size in apparelItem.SizeStocks.OrderBy(s => s.SizeName))
+                        {
+                            var balance = size.TotalStock - size.DistributedStock;
+                            <tr>
+                                <td><strong class="fs-5 text-primary">@size.SizeName</strong></td>
+                                <td><strong>@size.TotalStock</strong></td>
+                                <td><span class="badge bg-secondary">@size.AllocatedStock</span></td>
+                                <td><span class="badge bg-success">@size.DistributedStock</span></td>
+                                <td>
+                                    @if (balance <= 10)
+                                    {
+                                        <span class="badge bg-danger fs-6">@balance (Low)</span>
+                                    }
+                                    else
+                                    {
+                                        <span class="badge bg-success fs-6">@balance</span>
+                                    }
+                                </td>
+                                <td>
+                                    <form asp-controller="Inventory" asp-action="UpdateSizeStock" method="post" class="d-inline-flex gap-1 justify-content-center">
+                                        @Html.AntiForgeryToken()
+                                        <input type="hidden" name="sizeStockId" value="@size.Id" />
+                                        <input type="number" name="totalStock" value="@size.TotalStock" class="form-control form-control-sm" style="width: 80px;" min="0" required />
+                                        <button type="submit" class="btn btn-sm btn-outline-primary rounded-pill px-2">Save</button>
+                                    </form>
+                                </td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    }
+
+    <!-- All Gift Items Table -->
+    <div class="card border-0 shadow-sm rounded-4 overflow-hidden">
+        <div class="card-header bg-white p-3 border-bottom">
+            <h5 class="fw-bold text-dark mb-0"><i class="fas fa-list text-primary me-2"></i> All Merchandise &amp; Gift Items</h5>
+        </div>
+        <div class="table-responsive p-3">
+            <table class="table table-hover align-middle mb-0">
+                <thead class="table-light small text-uppercase">
+                    <tr>
+                        <th>Item Name</th>
+                        <th>Type</th>
+                        <th>Total Stock</th>
+                        <th>Allocated</th>
+                        <th>Distributed</th>
+                        <th>Remaining</th>
+                        <th class="text-end">Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var item in Model)
+                    {
+                        var rem = item.TotalStockQuantity - item.DistributedQuantity;
+                        <tr>
+                            <td>
+                                <strong>@item.ItemName</strong>
+                                <small class="text-muted d-block">@item.Description</small>
+                            </td>
+                            <td>
+                                @if (item.IsSizeSpecific)
+                                {
+                                    <span class="badge bg-info text-dark">Size Specific</span>
+                                }
+                                else
+                                {
+                                    <span class="badge bg-secondary">Standard Unit</span>
+                                }
+                            </td>
+                            <td><strong>@item.TotalStockQuantity</strong></td>
+                            <td><span class="badge bg-light text-dark border">@item.AllocatedQuantity</span></td>
+                            <td><span class="badge bg-success">@item.DistributedQuantity</span></td>
+                            <td>
+                                <strong class="@(rem <= 20 ? "text-danger" : "text-success") fs-6">@rem</strong>
+                            </td>
+                            <td class="text-end text-nowrap">
+                                <button type="button" class="btn btn-sm btn-outline-success rounded-pill px-2 me-1"
+                                        onclick="openAddStockModal('@item.Id', '@Html.Raw(item.ItemName.Replace("'", "\\'"))')" title="Add Stock">
+                                    <i class="fas fa-plus me-1"></i> Stock
+                                </button>
+                                <button type="button" class="btn btn-sm btn-outline-primary rounded-pill px-2 me-1"
+                                        onclick="openEditModal('@item.Id', '@Html.Raw(item.ItemName.Replace("'", "\\'"))', '@Html.Raw((item.Description ?? "").Replace("'", "\\'"))', @item.TotalStockQuantity, @item.DistributedQuantity, @(item.IsSizeSpecific ? "true" : "false"))" title="Edit Item">
+                                    <i class="fas fa-edit me-1"></i> Edit
+                                </button>
+                                <button type="button" class="btn btn-sm btn-outline-danger rounded-pill px-2"
+                                        onclick="confirmDeleteItem('@item.Id', '@Html.Raw(item.ItemName.Replace("'", "\\'"))')" title="Delete Item">
+                                    <i class="fas fa-trash-alt me-1"></i> Delete
+                                </button>
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+<!-- Add Item Modal -->
+<div class="modal fade" id="addItemModal" tabindex="-1">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content rounded-4 border-0 shadow">
+            <form asp-controller="Inventory" asp-action="AddItem" method="post">
+                @Html.AntiForgeryToken()
+                <div class="modal-header border-bottom">
+                    <h5 class="modal-title fw-bold"><i class="fas fa-box me-1 text-success"></i> Add New Gift Item</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body p-4">
+                    <div class="mb-3">
+                        <label class="form-label fw-semibold">Item Name</label>
+                        <input type="text" name="itemName" class="form-control" placeholder="e.g. Alumni Souvenir Crest" required />
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label fw-semibold">Description</label>
+                        <textarea name="description" class="form-control" rows="2" placeholder="Brief description of the item"></textarea>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label fw-semibold">Initial Stock Quantity</label>
+                        <input type="number" name="initialStock" class="form-control" value="500" min="1" required />
+                    </div>
+                    <div class="form-check mb-3">
+                        <input class="form-check-input" type="checkbox" name="isSizeSpecific" id="isSizeCheck" value="true">
+                        <label class="form-check-label" for="isSizeCheck">
+                            Has Apparel Sizes (e.g. S, M, L, XL, XXL)
+                        </label>
+                    </div>
+                </div>
+                <div class="modal-footer border-top">
+                    <button type="button" class="btn btn-secondary rounded-pill px-3" data-bs-dismiss="modal">Cancel</button>
+                    <button type="submit" class="btn btn-success rounded-pill px-4">Create Item</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- Add Stock Modal -->
+<div class="modal fade" id="addStockModal" tabindex="-1">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content rounded-4 border-0 shadow">
+            <form asp-controller="Inventory" asp-action="AddStock" method="post">
+                @Html.AntiForgeryToken()
+                <input type="hidden" name="itemId" id="stockItemId" />
+                <div class="modal-header border-bottom">
+                    <h5 class="modal-title fw-bold"><i class="fas fa-cart-plus me-1 text-primary"></i> Procure Additional Stock</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body p-4">
+                    <p class="small text-muted">Adding procured stock for <strong id="stockItemName"></strong>:</p>
+                    <div class="mb-3">
+                        <label class="form-label fw-semibold">Additional Quantity</label>
+                        <input type="number" name="quantity" class="form-control form-control-lg" value="100" min="1" required />
+                    </div>
+                </div>
+                <div class="modal-footer border-top">
+                    <button type="button" class="btn btn-secondary rounded-pill px-3" data-bs-dismiss="modal">Cancel</button>
+                    <button type="submit" class="btn btn-primary rounded-pill px-4">Add Units</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- Edit Item Modal -->
+<div class="modal fade" id="editItemModal" tabindex="-1">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content rounded-4 border-0 shadow">
+            <form asp-controller="Inventory" asp-action="EditItem" method="post">
+                @Html.AntiForgeryToken()
+                <input type="hidden" name="id" id="editItemId" />
+                <div class="modal-header border-bottom">
+                    <h5 class="modal-title fw-bold"><i class="fas fa-edit me-1 text-primary"></i> Edit Gift Item</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body p-4">
+                    <div class="mb-3">
+                        <label class="form-label fw-semibold">Item Name <span class="text-danger">*</span></label>
+                        <input type="text" name="itemName" id="editItemName" class="form-control" required />
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label fw-semibold">Description</label>
+                        <textarea name="description" id="editItemDescription" class="form-control" rows="2" placeholder="Brief description of the item"></textarea>
+                    </div>
+                    <div class="mb-3" id="editStockContainer">
+                        <label class="form-label fw-semibold">Total Stock Quantity</label>
+                        <input type="number" name="totalStockQuantity" id="editItemTotalStock" class="form-control" min="0" />
+                        <small class="text-muted d-block mt-1" id="editStockNote">Cannot be lower than already distributed units.</small>
+                    </div>
+                    <div class="alert alert-info py-2 px-3 small rounded-3 d-none" id="editSizeSpecificNotice">
+                        <i class="fas fa-info-circle me-1"></i> This item has apparel sizes (S, M, L, etc.). Quantities per size are managed directly in the <strong>Size Breakdown Matrix</strong> above.
+                    </div>
+                </div>
+                <div class="modal-footer border-top">
+                    <button type="button" class="btn btn-secondary rounded-pill px-3" data-bs-dismiss="modal">Cancel</button>
+                    <button type="submit" class="btn btn-primary rounded-pill px-4">Save Changes</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- Hidden Delete Form -->
+<form id="deleteItemForm" asp-controller="Inventory" asp-action="DeleteItem" method="post" style="display:none;">
+    @Html.AntiForgeryToken()
+    <input type="hidden" name="id" id="deleteItemId" />
+</form>
+
+@section Scripts {
+    <script>
+        function openAddStockModal(id, name) {
+            document.getElementById('stockItemId').value = id;
+            document.getElementById('stockItemName').innerText = name;
+            new bootstrap.Modal(document.getElementById('addStockModal')).show();
+        }
+
+        function openEditModal(id, name, description, totalStock, distributed, isSizeSpecific) {
+            document.getElementById('editItemId').value = id;
+            document.getElementById('editItemName').value = name;
+            document.getElementById('editItemDescription').value = description;
+
+            var stockContainer = document.getElementById('editStockContainer');
+            var stockNotice = document.getElementById('editSizeSpecificNotice');
+            var totalStockInput = document.getElementById('editItemTotalStock');
+
+            if (isSizeSpecific) {
+                stockContainer.classList.add('d-none');
+                stockNotice.classList.remove('d-none');
+                totalStockInput.disabled = true;
+            } else {
+                stockContainer.classList.remove('d-none');
+                stockNotice.classList.add('d-none');
+                totalStockInput.disabled = false;
+                totalStockInput.value = totalStock;
+                totalStockInput.min = distributed;
+                document.getElementById('editStockNote').innerText = 'Distributed so far: ' + distributed + ' units. Total stock must be >= ' + distributed + '.';
+            }
+
+            new bootstrap.Modal(document.getElementById('editItemModal')).show();
+        }
+
+        function confirmDeleteItem(id, name) {
+            Swal.fire({
+                title: 'Delete Gift Item?',
+                text: 'Are you sure you want to delete "' + name + '"? It will be removed from active inventory and gate kiosk distribution.',
+                icon: 'warning',
+                showCancelButton: true,
+                confirmButtonColor: '#dc3545',
+                cancelButtonColor: '#6c757d',
+                confirmButtonText: '<i class="fas fa-trash-alt me-1"></i> Yes, delete',
+                cancelButtonText: 'Cancel',
+                reverseButtons: true
+            }).then((result) => {
+                if (result.isConfirmed) {
+                    document.getElementById('deleteItemId').value = id;
+                    document.getElementById('deleteItemForm').submit();
+                }
+            });
+        }
+    </script>
+}

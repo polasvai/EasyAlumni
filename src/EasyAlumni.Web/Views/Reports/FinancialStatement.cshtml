@@ -1,0 +1,107 @@
+@{
+    ViewData["Title"] = "Financial Statement";
+    Layout = "_AdminLayout";
+    var incomes = (IEnumerable<dynamic>)ViewBag.Incomes;
+    var expenses = (IEnumerable<dynamic>)ViewBag.Expenses;
+    var totalIncome = (decimal)ViewBag.TotalIncome;
+    var totalExpense = (decimal)ViewBag.TotalExpense;
+    var netBalance = (decimal)ViewBag.NetBalance;
+}
+
+<!-- Page Header -->
+<div class="d-flex justify-content-between align-items-center flex-wrap gap-3 mb-4">
+    <div>
+        <h2 class="h4 fw-bold text-dark mb-1">Event Financial Statement</h2>
+        <p class="text-muted small mb-0">Statement of Revenue Receipts and Operational Disbursements</p>
+    </div>
+    <div>
+        <button type="button" class="btn btn-warning rounded-pill px-3" onclick="window.print()">
+            Print / PDF
+        </button>
+    </div>
+</div>
+    <div class="card border-0 shadow-sm rounded-4 p-4 p-md-5">
+        <div class="text-center mb-4 pb-3 border-bottom">
+            <h3 class="fw-bold text-dark mb-1">EasyAlumni Reunion Organizing Committee</h3>
+            <h5 class="text-success">Consolidated Statement of Receipts &amp; Payments</h5>
+            <small class="text-muted">Generated on: @DateTime.UtcNow.ToString("dd MMMM yyyy, hh:mm tt")</small>
+        </div>
+
+        <div class="row g-4 mb-4">
+            <!-- Incomes Column -->
+            <div class="col-md-6">
+                <div class="card border h-100 rounded-3 overflow-hidden">
+                    <div class="card-header bg-success text-white fw-bold">
+                        <i class="fas fa-arrow-circle-down me-1"></i> Receipts / Revenues (Inflow)
+                    </div>
+                    <div class="card-body p-0">
+                        <table class="table table-striped mb-0">
+                            <thead>
+                                <tr>
+                                    <th>Income Source</th>
+                                    <th class="text-end">Amount (BDT)</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                @foreach (var inc in incomes)
+                                {
+                                    <tr>
+                                        <td>@inc.Head</td>
+                                        <td class="text-end fw-semibold">৳ @(((decimal)inc.Total).ToString("N2"))</td>
+                                    </tr>
+                                }
+                            </tbody>
+                            <tfoot class="table-light fw-bold">
+                                <tr>
+                                    <td>TOTAL RECEIPTS:</td>
+                                    <td class="text-end text-success fs-6">৳ @totalIncome.ToString("N2")</td>
+                                </tr>
+                            </tfoot>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Expenses Column -->
+            <div class="col-md-6">
+                <div class="card border h-100 rounded-3 overflow-hidden">
+                    <div class="card-header bg-danger text-white fw-bold">
+                        <i class="fas fa-arrow-circle-up me-1"></i> Disbursements / Expenditures (Outflow)
+                    </div>
+                    <div class="card-body p-0">
+                        <table class="table table-striped mb-0">
+                            <thead>
+                                <tr>
+                                    <th>Expense Head</th>
+                                    <th class="text-end">Amount (BDT)</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                @foreach (var exp in expenses)
+                                {
+                                    <tr>
+                                        <td>@exp.Head</td>
+                                        <td class="text-end fw-semibold text-danger">৳ @(((decimal)exp.Total).ToString("N2"))</td>
+                                    </tr>
+                                }
+                            </tbody>
+                            <tfoot class="table-light fw-bold">
+                                <tr>
+                                    <td>TOTAL PAYMENTS:</td>
+                                    <td class="text-end text-danger fs-6">৳ @totalExpense.ToString("N2")</td>
+                                </tr>
+                            </tfoot>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Net Summary Box -->
+        <div class="p-4 rounded-3 border text-center @(netBalance >= 0 ? "bg-success bg-opacity-10 border-success" : "bg-danger bg-opacity-10 border-danger")">
+            <span class="text-muted small text-uppercase fw-bold d-block mb-1">Net Closing Cash Surplus / (Deficit)</span>
+            <h2 class="fw-bold @(netBalance >= 0 ? "text-success" : "text-danger") mb-0">
+                ৳ @netBalance.ToString("N2")
+            </h2>
+        </div>
+    </div>

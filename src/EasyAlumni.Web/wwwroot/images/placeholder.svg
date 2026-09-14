@@ -1,0 +1,17 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 800 500" width="800" height="500">
+  <defs>
+    <linearGradient id="grad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#0f172a" />
+      <stop offset="100%" stop-color="#004d38" />
+    </linearGradient>
+  </defs>
+  <rect width="100%" height="100%" fill="url(#grad)" />
+  <circle cx="400" cy="210" r="70" fill="rgba(255, 255, 255, 0.08)" stroke="#f59e0b" stroke-width="3" />
+  <!-- Graduation Cap Icon -->
+  <path d="M400 170 L460 200 L400 230 L340 200 Z" fill="#f59e0b" />
+  <path d="M360 215 L360 240 Q400 260 440 240 L440 215" fill="none" stroke="#f59e0b" stroke-width="3" stroke-linecap="round" />
+  <path d="M455 203 L455 245" stroke="#f59e0b" stroke-width="3" stroke-linecap="round" />
+  <!-- Text -->
+  <text x="400" y="325" fill="#ffffff" font-family="'Segoe UI', Roboto, sans-serif" font-size="24" font-weight="700" text-anchor="middle" letter-spacing="1">EasyAlumni Photo Archive</text>
+  <text x="400" y="360" fill="#94a3b8" font-family="'Segoe UI', Roboto, sans-serif" font-size="16" text-anchor="middle">Campus Memories &amp; Moments</text>
+</svg>

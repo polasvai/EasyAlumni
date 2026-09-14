@@ -1,0 +1,202 @@
+@model List<EasyAlumni.Core.Entities.Volunteer>
+@{
+    ViewData["Title"] = "Volunteer Management";
+    Layout = "_AdminLayout";
+}
+
+<!-- Page Header -->
+<div class="d-flex justify-content-between align-items-center flex-wrap gap-3 mb-4">
+    <div>
+        <h2 class="h4 fw-bold text-dark mb-1">Volunteer Roster &amp; Booth Allocation</h2>
+        <p class="text-muted small mb-0">Recruit volunteers, assign registration counters, and configure duty shifts</p>
+    </div>
+    <div class="d-flex gap-2">
+        <button type="button" class="btn btn-success rounded-pill px-4 fw-semibold shadow-sm" data-bs-toggle="modal" data-bs-target="#addVolModal">
+            + Add Volunteer
+        </button>
+        <a asp-controller="Admin" asp-action="Index" class="btn btn-outline-secondary rounded-pill px-3">
+            Dashboard
+        </a>
+    </div>
+</div>
+    @if (TempData["Success"] != null)
+    {
+        <div class="alert alert-success alert-dismissible fade show rounded-3" role="alert">
+            <i class="fas fa-check-circle me-2"></i> @TempData["Success"]
+            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        </div>
+    }
+
+    <div class="card border-0 shadow-sm rounded-4 overflow-hidden">
+        <div class="table-responsive p-3">
+            <table class="table table-hover align-middle mb-0" id="volTable">
+                <thead class="table-light small text-uppercase">
+                    <tr>
+                        <th>Volunteer Name</th>
+                        <th>Mobile</th>
+                        <th>Batch</th>
+                        <th>Assigned Booth</th>
+                        <th>Duty Shift</th>
+                        <th>Portal Access</th>
+                        <th class="text-end">Update Booth</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var v in Model)
+                    {
+                        <tr>
+                            <td>
+                                <strong>@v.FullName</strong>
+                            </td>
+                            <td>@v.Mobile</td>
+                            <td>@(v.BatchYear.HasValue ? $"Batch {v.BatchYear}" : "-")</td>
+                            <td>
+                                <span class="badge bg-primary fs-6">@v.AssignedBooth</span>
+                            </td>
+                            <td>
+                                <span class="badge bg-light text-dark border">@(v.DutyShift ?? "Full Day")</span>
+                            </td>
+                            <td>
+                                @if (v.ApplicationUser != null)
+                                {
+                                    <span class="badge bg-success"><i class="fas fa-check me-1"></i> Login Enabled</span>
+                                }
+                                else
+                                {
+                                    <span class="text-muted small">No Account</span>
+                                }
+                            </td>
+                            <td class="text-end">
+                                <button type="button" class="btn btn-sm btn-outline-secondary rounded-pill px-2"
+                                        onclick="openEditBoothModal('@v.Id', '@v.FullName', '@v.AssignedBooth', '@v.DutyShift')">
+                                    <i class="fas fa-edit"></i>
+                                </button>
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+<!-- Add Volunteer Modal -->
+<div class="modal fade" id="addVolModal" tabindex="-1">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content rounded-4 border-0 shadow">
+            <form asp-controller="VolunteerManagement" asp-action="AddVolunteer" method="post">
+                @Html.AntiForgeryToken()
+                <div class="modal-header border-bottom">
+                    <h5 class="modal-title fw-bold">Register Volunteer</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body p-4">
+                    <div class="mb-3">
+                        <label class="form-label fw-semibold">Volunteer Full Name <span class="text-danger">*</span></label>
+                        <input type="text" name="fullName" class="form-control" placeholder="e.g. Shakil Ahmed" required />
+                    </div>
+                    <div class="row g-2 mb-3">
+                        <div class="col-md-6">
+                            <label class="form-label fw-semibold">Mobile Number <span class="text-danger">*</span></label>
+                            <input type="tel" name="mobile" class="form-control" placeholder="01XXXXXXXXX" required />
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label fw-semibold">Passing Batch</label>
+                            <input type="number" name="batchYear" class="form-control" placeholder="e.g. 2018" />
+                        </div>
+                    </div>
+                    <div class="row g-2 mb-3">
+                        <div class="col-md-6">
+                            <label class="form-label fw-semibold">Assigned Booth</label>
+                            <select name="assignedBooth" class="form-select">
+                                <option value="Main Gate Reception">Main Gate Reception</option>
+                                <option value="T-Shirt &amp; Kit Counter 1">T-Shirt &amp; Kit Counter 1</option>
+                                <option value="T-Shirt &amp; Kit Counter 2">T-Shirt &amp; Kit Counter 2</option>
+                                <option value="Food &amp; Lunch Token Desk">Food &amp; Lunch Token Desk</option>
+                                <option value="VIP &amp; Guest Escort">VIP &amp; Guest Escort</option>
+                                <option value="Stage &amp; Cultural Team">Stage &amp; Cultural Team</option>
+                            </select>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label fw-semibold">Duty Shift</label>
+                            <select name="dutyShift" class="form-select">
+                                <option value="Full Day (08:00 AM - 08:00 PM)">Full Day</option>
+                                <option value="Morning Shift (08:00 AM - 02:00 PM)">Morning Shift</option>
+                                <option value="Evening Shift (02:00 PM - 08:00 PM)">Evening Shift</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <div class="p-3 bg-light rounded-3 border">
+                        <h6 class="fw-bold text-dark mb-2"><i class="fas fa-key text-warning me-1"></i> Create Kiosk Login Account (Optional)</h6>
+                        <div class="mb-2">
+                            <label class="form-label small text-muted mb-0">Login Email</label>
+                            <input type="email" name="email" class="form-control form-control-sm" placeholder="volunteer@example.com" />
+                        </div>
+                        <div>
+                            <label class="form-label small text-muted mb-0">Password</label>
+                            <input type="password" name="password" class="form-control form-control-sm" placeholder="••••••••" />
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer border-top">
+                    <button type="button" class="btn btn-secondary rounded-pill px-3" data-bs-dismiss="modal">Cancel</button>
+                    <button type="submit" class="btn btn-success rounded-pill px-4">Register Volunteer</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- Edit Booth Modal -->
+<div class="modal fade" id="editBoothModal" tabindex="-1">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content rounded-4 border-0 shadow">
+            <form asp-controller="VolunteerManagement" asp-action="UpdateBooth" method="post">
+                @Html.AntiForgeryToken()
+                <input type="hidden" name="volunteerId" id="editVolId" />
+                <div class="modal-header border-bottom">
+                    <h5 class="modal-title fw-bold">Update Booth Assignment</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body p-4">
+                    <p class="small text-muted">Updating assignment for <strong id="editVolName"></strong>:</p>
+                    <div class="mb-3">
+                        <label class="form-label fw-semibold">Assigned Booth</label>
+                        <select name="assignedBooth" id="editBoothSelect" class="form-select">
+                            <option value="Main Gate Reception">Main Gate Reception</option>
+                            <option value="T-Shirt &amp; Kit Counter 1">T-Shirt &amp; Kit Counter 1</option>
+                            <option value="T-Shirt &amp; Kit Counter 2">T-Shirt &amp; Kit Counter 2</option>
+                            <option value="Food &amp; Lunch Token Desk">Food &amp; Lunch Token Desk</option>
+                            <option value="VIP &amp; Guest Escort">VIP &amp; Guest Escort</option>
+                            <option value="Stage &amp; Cultural Team">Stage &amp; Cultural Team</option>
+                        </select>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label fw-semibold">Duty Shift</label>
+                        <input type="text" name="dutyShift" id="editShiftInput" class="form-control" />
+                    </div>
+                </div>
+                <div class="modal-footer border-top">
+                    <button type="button" class="btn btn-secondary rounded-pill px-3" data-bs-dismiss="modal">Cancel</button>
+                    <button type="submit" class="btn btn-primary rounded-pill px-4">Save</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        $(document).ready(function() {
+            $('#volTable').DataTable();
+        });
+
+        function openEditBoothModal(id, name, booth, shift) {
+            document.getElementById('editVolId').value = id;
+            document.getElementById('editVolName').innerText = name;
+            document.getElementById('editBoothSelect').value = booth;
+            document.getElementById('editShiftInput').value = shift;
+            new bootstrap.Modal(document.getElementById('editBoothModal')).show();
+        }
+    </script>
+}

@@ -1,0 +1,54 @@
+@model List<EasyAlumni.Core.Entities.Committee>
+@{
+    ViewData["Title"] = "Organizing Committees";
+}
+
+<div class="bg-dark text-white py-5" style="background: linear-gradient(135deg, #0f172a 0%, #004d38 100%) !important; padding-top: 120px !important;">
+    <div class="container text-center">
+        <h1 class="display-4 fw-bold">Organizing Committees</h1>
+        <p class="lead opacity-90">Meet the leadership and sub-committees organizing the Grand Alumni Reunion.</p>
+    </div>
+</div>
+
+<div class="container py-5">
+    @foreach (var committee in Model)
+    {
+        <div class="card border-0 shadow-sm rounded-4 mb-5 p-4">
+            <div class="border-bottom pb-3 mb-4">
+                <h3 class="fw-bold text-success mb-1">@committee.CommitteeName</h3>
+                @if (!string.IsNullOrEmpty(committee.CommitteeNameBangla))
+                {
+                    <h5 class="text-muted">@committee.CommitteeNameBangla</h5>
+                }
+                @if (!string.IsNullOrEmpty(committee.Description))
+                {
+                    <p class="text-secondary small mb-0">@committee.Description</p>
+                }
+            </div>
+
+            <div class="row g-4">
+                @foreach (var member in committee.Members)
+                {
+                    <div class="col-lg-3 col-md-4 col-sm-6 text-center">
+                        <div class="p-3 border rounded-3 h-100 bg-light">
+                            <div class="mx-auto mb-3" style="width: 100px; height: 100px; border-radius: 50%; overflow: hidden; border: 3px solid #006a4e; background: #fff;">
+                                <img src="@(string.IsNullOrEmpty(member.PhotoPath) ? "https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=200&q=80" : member.PhotoPath)"
+                                     alt="@member.FullName" class="w-100 h-100 object-fit-cover" />
+                            </div>
+                            <h6 class="fw-bold mb-1">@member.FullName</h6>
+                            <p class="text-success small fw-semibold mb-1">@member.Designation</p>
+                            @if (member.BatchYear.HasValue)
+                            {
+                                <span class="badge bg-secondary rounded-pill px-3 py-1 mb-2">Batch @member.BatchYear</span>
+                            }
+                            @if (!string.IsNullOrEmpty(member.Mobile))
+                            {
+                                <p class="small text-muted mb-0"><i class="fas fa-phone-alt me-1 text-warning"></i> @member.Mobile</p>
+                            }
+                        </div>
+                    </div>
+                }
+            </div>
+        </div>
+    }
+</div>

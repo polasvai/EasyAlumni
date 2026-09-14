@@ -1,0 +1,136 @@
+@model EasyAlumni.Core.Entities.EventRegistration
+@{
+    ViewData["Title"] = "Registration Confirmation";
+    var profile = Model.AlumniProfile;
+    var ev = Model.ReunionEvent;
+    var payment = Model.Payments.OrderByDescending(p => p.SubmittedAt).FirstOrDefault();
+}
+
+<div class="bg-dark text-white py-5" style="background: linear-gradient(135deg, #0f172a 0%, #004d38 100%) !important; padding-top: 120px !important;">
+    <div class="container text-center">
+        <div class="d-inline-block bg-success text-white p-3 rounded-circle mb-3 shadow">
+            <i class="fas fa-check-circle fa-3x"></i>
+        </div>
+        <h1 class="fw-bold">Registration Submitted!</h1>
+        <p class="lead opacity-90">Thank you, <strong>@profile?.NameEnglish</strong>. Your reunion registration has been received.</p>
+    </div>
+</div>
+
+<div class="container py-5">
+    <div class="row justify-content-center">
+        <div class="col-lg-8">
+            <div class="card border-0 shadow-lg rounded-4 overflow-hidden">
+                <div class="card-header p-4 bg-light border-bottom d-flex justify-content-between align-items-center flex-wrap gap-2">
+                    <div>
+                        <span class="text-muted small text-uppercase">Ticket Registration Code</span>
+                        <h3 class="fw-bold text-success mb-0">@Model.RegistrationNo</h3>
+                    </div>
+                    <div>
+                        @if (Model.Status == EasyAlumni.Core.Enums.RegistrationStatus.Approved)
+                        {
+                            <span class="badge bg-success px-4 py-2 rounded-pill fs-6"><i class="fas fa-check-circle me-1"></i> Approved &amp; Paid</span>
+                        }
+                        else
+                        {
+                            <span class="badge bg-warning text-dark px-4 py-2 rounded-pill fs-6"><i class="fas fa-clock me-1"></i> Awaiting Payment Approval</span>
+                        }
+                    </div>
+                </div>
+
+                <div class="card-body p-4 p-md-5">
+                    <div class="row g-4 mb-4">
+                        <div class="col-sm-6">
+                            <span class="text-muted small d-block">Alumnus Name</span>
+                            <h5 class="fw-bold text-dark">@profile?.NameEnglish</h5>
+                            <span class="text-secondary">@profile?.NameBangla (@profile?.NickName)</span>
+                        </div>
+                        <div class="col-sm-3">
+                            <span class="text-muted small d-block">Passing Batch</span>
+                            <h5 class="fw-bold text-dark">Batch @profile?.PassingYear</h5>
+                        </div>
+                        <div class="col-sm-3">
+                            <span class="text-muted small d-block">T-Shirt Size</span>
+                            <h5 class="fw-bold text-primary">@Model.TShirtSize</h5>
+                        </div>
+
+                        <div class="col-sm-6">
+                            <span class="text-muted small d-block">Contact Number</span>
+                            <strong>@profile?.ContactNumber</strong>
+                        </div>
+                        <div class="col-sm-6">
+                            <span class="text-muted small d-block">Registered Event</span>
+                            <strong>@ev?.EventTitle</strong>
+                        </div>
+
+                        <div class="col-12 border-top pt-3">
+                            <div class="row g-2">
+                                <div class="col-4">
+                                    <span class="small text-muted d-block">Spouse Attendance:</span>
+                                    <strong>@(Model.SpouseCount > 0 ? "Yes (1)" : "None")</strong>
+                                </div>
+                                <div class="col-4">
+                                    <span class="small text-muted d-block">Children:</span>
+                                    <strong>@Model.ChildCount Head(s)</strong>
+                                </div>
+                                <div class="col-4">
+                                    <span class="small text-muted d-block">Driver/Guest:</span>
+                                    <strong>@Model.GuestCount Head(s)</strong>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="col-12 border-top pt-3">
+                            <h6 class="fw-bold text-dark mb-3"><i class="fas fa-money-bill-wave text-success me-2"></i> Payment Details</h6>
+                            <div class="p-3 bg-light rounded-3">
+                                <div class="row">
+                                    <div class="col-sm-4 mb-2 mb-sm-0">
+                                        <small class="text-muted d-block">Payment Method</small>
+                                        <strong>@payment?.PaymentMode</strong>
+                                    </div>
+                                    <div class="col-sm-4 mb-2 mb-sm-0">
+                                        <small class="text-muted d-block">TrxID</small>
+                                        <strong class="text-uppercase text-danger">@payment?.TransactionId</strong>
+                                    </div>
+                                    <div class="col-sm-4">
+                                        <small class="text-muted d-block">Total Paid Amount</small>
+                                        <strong class="text-success fs-5">৳ @Model.TotalAmount.ToString("N0")</strong>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    @if (Model.Status == EasyAlumni.Core.Enums.RegistrationStatus.Approved)
+                    {
+                        <div class="text-center p-4 bg-success bg-opacity-10 rounded-4 border border-success mb-4">
+                            <h4 class="fw-bold text-success mb-2"><i class="fas fa-qrcode me-2"></i> Your Digital Pass is Ready!</h4>
+                            <p class="text-muted mb-3">You can download or print your official Digital Entry Pass with your embedded security QR code now.</p>
+                            <a asp-controller="Pass" asp-action="ViewPass" asp-route-id="@Model.RegistrationNo" target="_blank" class="btn btn-success btn-lg rounded-pill px-5 fw-bold shadow">
+                                <i class="fas fa-id-badge me-2"></i> View &amp; Print Digital Pass
+                            </a>
+                        </div>
+                    }
+                    else
+                    {
+                        <div class="p-4 bg-warning bg-opacity-10 rounded-4 border border-warning text-center mb-4">
+                            <h5 class="fw-bold text-dark mb-2"><i class="fas fa-hourglass-half text-warning me-2"></i> Payment Verification in Progress</h5>
+                            <p class="text-muted small mb-0">
+                                Our accounts committee is currently reconciling your transaction with the mobile banking ledger.
+                                As soon as your payment is approved, you will receive an SMS and your Digital Entry Pass will become available here.
+                            </p>
+                        </div>
+                    }
+
+                    <div class="d-flex justify-content-between align-items-center flex-wrap gap-2">
+                        <a asp-controller="Home" asp-action="Index" class="btn btn-outline-secondary rounded-pill">
+                            <i class="fas fa-home me-1"></i> Back to Homepage
+                        </a>
+                        <button type="button" class="btn btn-outline-primary rounded-pill" onclick="window.print()">
+                            <i class="fas fa-print me-1"></i> Print Receipt
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>

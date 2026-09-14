@@ -1,0 +1,603 @@
+@model EasyAlumni.Web.ViewModels.AlumniRegistrationViewModel
+@{
+    ViewData["Title"] = "Alumni Reunion Registration";
+    var ev = Model.ReunionEvent;
+    var baseFee = ev?.BaseAlumniFee ?? 1500;
+    var spouseFee = ev?.SpouseFee ?? 800;
+    var childFee = ev?.ChildFee ?? 400;
+    var guestFee = ev?.GuestFee ?? 500;
+    var selectedPkg = Model.AvailablePackages?.FirstOrDefault(p => p.Id == Model.RegistrationPackageId) 
+                      ?? Model.AvailablePackages?.FirstOrDefault(p => p.IsFeatured) 
+                      ?? Model.AvailablePackages?.FirstOrDefault();
+    var initialPackageId = selectedPkg?.Id ?? 0;
+    var initialPackageFee = selectedPkg?.Fee ?? baseFee;
+    var initialPackageName = selectedPkg?.PackageName ?? "Base Ticket";
+}
+
+@section Styles {
+    <style>
+        .form-header {
+            background: linear-gradient(135deg, #0f172a 0%, #004d38 100%);
+            padding: 110px 0 50px;
+            color: white;
+            text-align: center;
+        }
+
+        .form-card {
+            background: #fff;
+            border-radius: 20px;
+            box-shadow: 0 15px 40px rgba(0, 0, 0, 0.08);
+            padding: 40px;
+            margin-top: -40px;
+            position: relative;
+            z-index: 10;
+        }
+
+        .form-section-title {
+            font-size: 1.25rem;
+            color: #006a4e;
+            font-weight: 700;
+            margin: 35px 0 20px;
+            padding-bottom: 8px;
+            border-bottom: 2px solid #f59e0b;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .form-section-title:first-child {
+            margin-top: 0;
+        }
+
+        .image-drop-box {
+            border: 2px dashed #cbd5e1;
+            border-radius: 16px;
+            padding: 25px;
+            text-align: center;
+            background: #f8fafc;
+            transition: all 0.2s ease;
+            cursor: pointer;
+        }
+
+        .image-drop-box:hover {
+            border-color: #006a4e;
+            background: #f0fdf4;
+        }
+
+        .image-preview-circle {
+            width: 120px;
+            height: 120px;
+            border-radius: 50%;
+            object-fit: cover;
+            margin: 0 auto 12px;
+            border: 3px solid #006a4e;
+            display: block;
+            background: #e2e8f0;
+        }
+
+        .fee-summary-box {
+            background: linear-gradient(135deg, #0f172a, #004d38);
+            color: #fff;
+            border-radius: 16px;
+            padding: 25px;
+            margin-top: 20px;
+        }
+
+        .payment-box {
+            background: #fefce8;
+            border: 2px solid #fef08a;
+            border-radius: 16px;
+            padding: 20px;
+        }
+
+        .copy-btn {
+            cursor: pointer;
+            transition: transform 0.1s;
+        }
+        .copy-btn:active {
+            transform: scale(0.95);
+        }
+
+        .package-select-card {
+            border: 2px solid #e2e8f0;
+            border-radius: 16px;
+            padding: 20px;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            position: relative;
+            background: #fff;
+            height: 100%;
+        }
+        .package-select-card:hover {
+            border-color: #006a4e;
+            transform: translateY(-3px);
+            box-shadow: 0 10px 25px rgba(0, 106, 78, 0.1);
+        }
+        .package-select-card.selected {
+            border-color: #006a4e;
+            background: #f0fdf4;
+            box-shadow: 0 0 0 3px rgba(0, 106, 78, 0.2);
+        }
+        .package-badge-tag {
+            position: absolute;
+            top: -10px;
+            right: 15px;
+            background: #f59e0b;
+            color: #fff;
+            font-size: 0.72rem;
+            font-weight: 700;
+            padding: 2px 10px;
+            border-radius: 50px;
+        }
+    </style>
+}
+
+<div class="form-header">
+    <div class="container">
+        <h1 class="fw-bold mb-2">Alumni Reunion Registration</h1>
+        <p class="lead opacity-90 mb-0">@(ev?.EventTitle ?? "Grand Alumni Reunion") - Join thousands of alumni celebrating togetherness</p>
+    </div>
+</div>
+
+<div class="container pb-5">
+    <div class="form-card">
+        @if (!ViewData.ModelState.IsValid)
+        {
+            <div class="alert alert-danger rounded-3 shadow-sm mb-4">
+                <h5 class="fw-bold mb-2"><i class="fas fa-exclamation-triangle me-2"></i> Please correct the following errors:</h5>
+                <div asp-validation-summary="All" class="text-danger mb-0"></div>
+            </div>
+        }
+
+        <form method="post" enctype="multipart/form-data" asp-controller="Enrollment" asp-action="Register" id="regForm">
+            @Html.AntiForgeryToken()
+            <input type="hidden" asp-for="ReunionEventId" />
+
+            <!-- 1. Photos Section -->
+            <div class="form-section-title">
+                <i class="fas fa-camera text-warning"></i>
+                <span>1. Photograph Uploads</span>
+            </div>
+            <div class="row g-4 mb-4">
+                <div class="col-md-6">
+                    <div class="image-drop-box" onclick="document.getElementById('oldPhotoInput').click()">
+                        <img id="oldPhotoPreview" src="https://ui-avatars.com/api/?name=Old+Photo&background=e2e8f0&color=64748b" class="image-preview-circle" alt="Old Photo Preview" />
+                        <span class="fw-semibold text-primary d-block"><i class="fas fa-upload me-1"></i> Upload Old School / College Picture</span>
+                        <small class="text-muted">Recommended: 1:1 square ratio</small>
+                        <input id="oldPhotoInput" type="file" asp-for="OldPhotoFile" accept="image/*" style="display:none;" onchange="previewImage(this, 'oldPhotoPreview')" />
+                    </div>
+                    <span asp-validation-for="OldPhotoFile" class="text-danger small"></span>
+                </div>
+                <div class="col-md-6">
+                    <div class="image-drop-box" onclick="document.getElementById('recentPhotoInput').click()">
+                        <img id="recentPhotoPreview" src="https://ui-avatars.com/api/?name=Recent+Photo&background=e2e8f0&color=64748b" class="image-preview-circle" alt="Recent Photo Preview" />
+                        <span class="fw-semibold text-success d-block"><i class="fas fa-upload me-1"></i> Upload Recent Passport / Portrait Picture</span>
+                        <small class="text-muted">Will be printed on your Digital Pass</small>
+                        <input id="recentPhotoInput" type="file" asp-for="RecentPhotoFile" accept="image/*" style="display:none;" onchange="previewImage(this, 'recentPhotoPreview')" />
+                    </div>
+                    <span asp-validation-for="RecentPhotoFile" class="text-danger small"></span>
+                </div>
+            </div>
+
+            <!-- 2. Personal Information -->
+            <div class="form-section-title">
+                <i class="fas fa-user text-warning"></i>
+                <span>2. Personal Bio-Data</span>
+            </div>
+            <div class="row g-3 mb-4">
+                <div class="col-md-6">
+                    <label class="form-label fw-semibold">Name (Bangla) <span class="text-danger">*</span></label>
+                    <input asp-for="NameBangla" class="form-control form-control-lg" placeholder="বাংলায় আপনার পূর্ণ নাম লিখুন" required />
+                    <span asp-validation-for="NameBangla" class="text-danger small"></span>
+                </div>
+                <div class="col-md-6">
+                    <label class="form-label fw-semibold">Name (English) <span class="text-danger">*</span></label>
+                    <input asp-for="NameEnglish" class="form-control form-control-lg text-uppercase" placeholder="FULL NAME IN CAPITAL LETTERS" required />
+                    <span asp-validation-for="NameEnglish" class="text-danger small"></span>
+                </div>
+                <div class="col-md-4">
+                    <label class="form-label fw-semibold">Nick Name <span class="text-danger">*</span></label>
+                    <input asp-for="NickName" class="form-control" placeholder="e.g. Tanvir" required />
+                    <span asp-validation-for="NickName" class="text-danger small"></span>
+                </div>
+                <div class="col-md-4">
+                    <label class="form-label fw-semibold">Passing Year (SSC / HSC) <span class="text-danger">*</span></label>
+                    <select asp-for="PassingYear" class="form-select" required>
+                        <option value="">-- Select Passing Year --</option>
+                        @for (int yr = 2026; yr >= 1970; yr--)
+                        {
+                            <option value="@yr">@yr</option>
+                        }
+                    </select>
+                    <span asp-validation-for="PassingYear" class="text-danger small"></span>
+                </div>
+                <div class="col-md-4">
+                    <label class="form-label fw-semibold">Blood Group</label>
+                    <select asp-for="BloodGroup" class="form-select">
+                        <option value="">Select Blood Group</option>
+                        <option value="A+">A+</option>
+                        <option value="A-">A-</option>
+                        <option value="B+">B+</option>
+                        <option value="B-">B-</option>
+                        <option value="AB+">AB+</option>
+                        <option value="AB-">AB-</option>
+                        <option value="O+">O+</option>
+                        <option value="O-">O-</option>
+                    </select>
+                </div>
+                <div class="col-md-6">
+                    <label class="form-label fw-semibold">Contact Mobile Number <span class="text-danger">*</span></label>
+                    <input asp-for="ContactNumber" class="form-control" placeholder="01XXXXXXXXX" type="tel" pattern="01[3-9][0-9]{8}" required />
+                    <small class="text-muted">SMS updates and pass confirmation will be sent here</small>
+                    <span asp-validation-for="ContactNumber" class="text-danger small d-block"></span>
+                </div>
+                <div class="col-md-6">
+                    <label class="form-label fw-semibold">Email Address <span class="text-danger">*</span></label>
+                    <input asp-for="Email" class="form-control" placeholder="alumni@example.com" type="email" required />
+                    <span asp-validation-for="Email" class="text-danger small"></span>
+                </div>
+                <div class="col-md-6">
+                    <label class="form-label fw-semibold">Alternative Number</label>
+                    <input asp-for="AlternativeNumber" class="form-control" placeholder="01XXXXXXXXX" type="tel" />
+                </div>
+                <div class="col-md-6">
+                    <label class="form-label fw-semibold">Upload Testimonial / School ID (PDF/Image, Max 200KB)</label>
+                    <input asp-for="TestimonialFile" class="form-control" type="file" accept=".pdf,.jpg,.jpeg,.png" onchange="validateFileSize(this, 204800, 'testimonialError')" />
+                    <span id="testimonialError" class="text-danger small"></span>
+                </div>
+            </div>
+
+            <!-- 3. Higher Education & Professional Info -->
+            <div class="form-section-title">
+                <i class="fas fa-briefcase text-warning"></i>
+                <span>3. Education &amp; Career</span>
+            </div>
+            <div class="row g-3 mb-4">
+                <div class="col-md-6">
+                    <label class="form-label fw-semibold">Last Educational Institute</label>
+                    <input asp-for="LastInstitute" class="form-control" placeholder="e.g. BUET / Rajshahi University / Dhaka University" />
+                </div>
+                <div class="col-md-3">
+                    <label class="form-label fw-semibold">Degree Obtained</label>
+                    <input asp-for="LastDegree" class="form-control" placeholder="e.g. BSc / MBBS / MBA" />
+                </div>
+                <div class="col-md-3">
+                    <label class="form-label fw-semibold">Subject / Major</label>
+                    <input asp-for="LastDegreeSubject" class="form-control" placeholder="e.g. Computer Science" />
+                </div>
+                <div class="col-md-4">
+                    <label class="form-label fw-semibold">Current Company / Organization</label>
+                    <input asp-for="CompanyName" class="form-control" placeholder="Company / Institution Name" />
+                </div>
+                <div class="col-md-4">
+                    <label class="form-label fw-semibold">Designation</label>
+                    <input asp-for="Designation" class="form-control" placeholder="e.g. Senior Software Engineer" />
+                </div>
+                <div class="col-md-4">
+                    <label class="form-label fw-semibold">Office Address / Location</label>
+                    <input asp-for="CurrentWorkingAddress" class="form-control" placeholder="e.g. Gulshan, Dhaka" />
+                </div>
+                <div class="col-md-6">
+                    <label class="form-label fw-semibold">Present Address</label>
+                    <textarea asp-for="PresentAddress" class="form-control" rows="2" placeholder="House, Road, Area, District"></textarea>
+                </div>
+                <div class="col-md-6">
+                    <label class="form-label fw-semibold">Permanent Address</label>
+                    <textarea asp-for="PermanentAddress" class="form-control" rows="2" placeholder="Village, Post, Thana, District"></textarea>
+                </div>
+            </div>
+
+            <!-- 4. Registration Package Selection -->
+            <div class="form-section-title">
+                <i class="fas fa-cubes text-warning"></i>
+                <span>4. Select Your Registration Package <span class="text-danger">*</span></span>
+            </div>
+
+            <input type="hidden" asp-for="RegistrationPackageId" id="selectedPackageIdInput" />
+
+            @if (Model.AvailablePackages != null && Model.AvailablePackages.Any())
+            {
+                <div class="row g-3 mb-4" id="packageSelectionContainer">
+                    @foreach (var pkg in Model.AvailablePackages)
+                    {
+                        var isSelected = Model.RegistrationPackageId == pkg.Id || (!Model.RegistrationPackageId.HasValue && pkg.IsFeatured);
+                        <div class="col-lg-3 col-md-6">
+                            <div class="package-select-card @(isSelected ? "selected" : "")"
+                                 onclick="selectPackage(@pkg.Id, @pkg.Fee, '@pkg.PackageName.Replace("'", "\\'")')"
+                                 id="pkg-card-@pkg.Id">
+                                @if (!string.IsNullOrEmpty(pkg.BadgeText))
+                                {
+                                    <span class="package-badge-tag">@pkg.BadgeText</span>
+                                }
+                                <div class="d-flex justify-content-between align-items-center mb-1">
+                                    <h5 class="fw-bold text-dark mb-0">@pkg.PackageName</h5>
+                                    <div class="form-check m-0">
+                                        <input class="form-check-input pkg-radio" type="radio" name="pkgRadioOption" id="radio-@pkg.Id" @(isSelected ? "checked" : "") />
+                                    </div>
+                                </div>
+                                @if (!string.IsNullOrEmpty(pkg.PackageNameBangla))
+                                {
+                                    <div class="text-muted small mb-2">@pkg.PackageNameBangla</div>
+                                }
+                                <h3 class="fw-bold text-success mb-2">৳ @pkg.Fee.ToString("N0")</h3>
+                                @if (!string.IsNullOrEmpty(pkg.Description))
+                                {
+                                    <p class="small text-muted mb-3" style="min-height: 38px;">@pkg.Description</p>
+                                }
+                                <ul class="list-unstyled small border-top pt-2 text-muted mb-0">
+                                    @if (pkg.IncludesTShirt)
+                                    {
+                                        <li class="mb-1"><i class="fas fa-check text-success me-1"></i> Polo T-Shirt</li>
+                                    }
+                                    @if (pkg.IncludesKitBag)
+                                    {
+                                        <li class="mb-1"><i class="fas fa-check text-success me-1"></i> Backpack &amp; Hamper</li>
+                                    }
+                                    @if (pkg.IncludesFood)
+                                    {
+                                        <li class="mb-1"><i class="fas fa-check text-success me-1"></i> Gourmet Meals</li>
+                                    }
+                                    @if (pkg.IncludesRaffle)
+                                    {
+                                        <li class="mb-1"><i class="fas fa-check text-success me-1"></i> Raffle Draw</li>
+                                    }
+                                    @if (pkg.IncludedGuests > 0)
+                                    {
+                                        <li class="mb-1 text-primary fw-semibold"><i class="fas fa-user-friends me-1"></i> +@pkg.IncludedGuests Free Guest(s)</li>
+                                    }
+                                </ul>
+                            </div>
+                        </div>
+                    }
+                </div>
+            }
+
+            <!-- 5. Merchandise & Guests -->
+            <div class="form-section-title">
+                <i class="fas fa-tshirt text-warning"></i>
+                <span>5. Merchandise, Kit &amp; Accompanying Guests</span>
+            </div>
+            <div class="row g-4 mb-4 align-items-center">
+                <div class="col-md-6">
+                    <label class="form-label fw-semibold">Select Your Polo T-Shirt Size <span class="text-danger">*</span></label>
+                    <select asp-for="TShirtSize" class="form-select form-select-lg" required>
+                        <option value="S">S (Small - Chest 36")</option>
+                        <option value="M">M (Medium - Chest 38")</option>
+                        <option value="L" selected>L (Large - Chest 40")</option>
+                        <option value="XL">XL (Extra Large - Chest 42")</option>
+                        <option value="XXL">XXL (Double XL - Chest 44")</option>
+                        <option value="XXXL">XXXL (Triple XL - Chest 46")</option>
+                    </select>
+                    <small class="text-muted"><i class="fas fa-info-circle me-1"></i> Included with your Alumni Registration Package.</small>
+                </div>
+                <div class="col-md-6">
+                    <div class="p-3 bg-light rounded-3 border">
+                        <h6 class="fw-bold mb-2 text-dark"><i class="fas fa-box-open text-success me-2"></i> Your Kit Entitlement Includes:</h6>
+                        <ul class="list-unstyled small mb-0">
+                            <li><i class="fas fa-check text-success me-2"></i> 1x Premium Polo T-Shirt (Your Selected Size)</li>
+                            <li><i class="fas fa-check text-success me-2"></i> 1x Commemorative Gift Hamper (Mug, Diary, Pen)</li>
+                            <li><i class="fas fa-check text-success me-2"></i> 1x Alumni Backpack &amp; Laminated Pass with Lanyard</li>
+                        </ul>
+                    </div>
+                </div>
+
+                <div class="col-md-4">
+                    <label class="form-label fw-semibold">Accompanying Spouse (+৳ @spouseFee.ToString("N0"))</label>
+                    <select asp-for="SpouseCount" class="form-select" id="spouseSelect" onchange="recalculateFee()">
+                        <option value="0">No Spouse (0)</option>
+                        <option value="1">With Spouse (1)</option>
+                    </select>
+                </div>
+                <div class="col-md-4">
+                    <label class="form-label fw-semibold">Children above 5 yrs (+৳ @childFee.ToString("N0") each)</label>
+                    <select asp-for="ChildCount" class="form-select" id="childSelect" onchange="recalculateFee()">
+                        <option value="0">0 Child</option>
+                        <option value="1">1 Child</option>
+                        <option value="2">2 Children</option>
+                        <option value="3">3 Children</option>
+                        <option value="4">4 Children</option>
+                    </select>
+                </div>
+                <div class="col-md-4">
+                    <label class="form-label fw-semibold">Driver / Guest (+৳ @guestFee.ToString("N0") each)</label>
+                    <select asp-for="GuestCount" class="form-select" id="guestSelect" onchange="recalculateFee()">
+                        <option value="0">0 Driver/Guest</option>
+                        <option value="1">1 Driver/Guest</option>
+                        <option value="2">2 Drivers/Guests</option>
+                    </select>
+                </div>
+            </div>
+
+            <!-- Dynamic Fee Calculation Summary -->
+            <div class="fee-summary-box">
+                <div class="row align-items-center">
+                    <div class="col-md-7">
+                        <h4 class="fw-bold mb-1"><i class="fas fa-receipt text-warning me-2"></i> Registration Fee Breakdown</h4>
+                        <div class="small opacity-80" id="breakdownText">
+                            Base Ticket (৳ @baseFee.ToString("N0"))
+                        </div>
+                    </div>
+                    <div class="col-md-5 text-md-end mt-3 mt-md-0">
+                        <span class="small opacity-75 d-block text-uppercase">Total Payable Amount</span>
+                        <h2 class="display-6 fw-bold text-warning mb-0">৳ <span id="totalAmountDisplay">@baseFee.ToString("N0")</span></h2>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 6. Payment Submission -->
+            <div class="form-section-title mt-5">
+                <i class="fas fa-credit-card text-warning"></i>
+                <span>6. Payment Submission (Send-Money)</span>
+            </div>
+
+            <div class="payment-box mb-4">
+                <h5 class="fw-bold text-dark mb-3"><i class="fas fa-mobile-alt text-danger me-2"></i> Committee Mobile Banking Numbers:</h5>
+                <p class="small text-muted mb-3">Please send the exact total amount displayed above to any of the numbers below via "Send Money" or "Cash Out", then enter your Sender Number and Transaction ID.</p>
+                <div class="row g-3">
+                    <div class="col-md-4">
+                        <div class="p-3 bg-white rounded-3 border d-flex justify-content-between align-items-center">
+                            <div>
+                                <span class="badge bg-danger mb-1">bKash</span>
+                                <div class="fw-bold text-dark" id="bkashNum">@(Model.PaymentSettings.GetValueOrDefault("ManualBkashNumber", "01700000000"))</div>
+                            </div>
+                            <button type="button" class="btn btn-sm btn-outline-secondary copy-btn" onclick="copyText('bkashNum')">
+                                <i class="fas fa-copy"></i>
+                            </button>
+                        </div>
+                    </div>
+                    <div class="col-md-4">
+                        <div class="p-3 bg-white rounded-3 border d-flex justify-content-between align-items-center">
+                            <div>
+                                <span class="badge bg-warning text-dark mb-1">Nagad</span>
+                                <div class="fw-bold text-dark" id="nagadNum">@(Model.PaymentSettings.GetValueOrDefault("ManualNagadNumber", "01800000000"))</div>
+                            </div>
+                            <button type="button" class="btn btn-sm btn-outline-secondary copy-btn" onclick="copyText('nagadNum')">
+                                <i class="fas fa-copy"></i>
+                            </button>
+                        </div>
+                    </div>
+                    <div class="col-md-4">
+                        <div class="p-3 bg-white rounded-3 border d-flex justify-content-between align-items-center">
+                            <div>
+                                <span class="badge bg-primary mb-1">Rocket</span>
+                                <div class="fw-bold text-dark" id="rocketNum">@(Model.PaymentSettings.GetValueOrDefault("ManualRocketNumber", "01900000000-8"))</div>
+                            </div>
+                            <button type="button" class="btn btn-sm btn-outline-secondary copy-btn" onclick="copyText('rocketNum')">
+                                <i class="fas fa-copy"></i>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="row g-3 mb-4">
+                <div class="col-md-4">
+                    <label class="form-label fw-semibold">Payment Method Used <span class="text-danger">*</span></label>
+                    <select asp-for="PaymentMode" class="form-select" required>
+                        <option value="bKashManual">bKash (Send Money)</option>
+                        <option value="NagadManual">Nagad (Send Money)</option>
+                        <option value="RocketManual">Rocket</option>
+                        <option value="BankTransfer">Bank Transfer</option>
+                        <option value="Cash">Cash Handover to Committee</option>
+                    </select>
+                </div>
+                <div class="col-md-4">
+                    <label class="form-label fw-semibold">Sender Mobile Number <span class="text-danger">*</span></label>
+                    <input asp-for="SenderNumber" class="form-control" placeholder="01XXXXXXXXX" type="tel" required />
+                    <span asp-validation-for="SenderNumber" class="text-danger small"></span>
+                </div>
+                <div class="col-md-4">
+                    <label class="form-label fw-semibold">Transaction ID (TrxID) <span class="text-danger">*</span></label>
+                    <input asp-for="TransactionId" class="form-control text-uppercase" placeholder="e.g. 9J82KL091" required />
+                    <span asp-validation-for="TransactionId" class="text-danger small"></span>
+                </div>
+                <div class="col-12">
+                    <label class="form-label fw-semibold">Payment Screenshot / Slip Attachment (Optional, Max 5MB)</label>
+                    <input asp-for="SlipAttachmentFile" class="form-control" type="file" accept="image/*,.pdf" />
+                    <small class="text-muted">Uploading payment slip ensures instant 1-click verification by accounts team.</small>
+                </div>
+            </div>
+
+            <!-- Submit Button -->
+            <div class="text-center mt-5 pt-3 border-top">
+                <button type="submit" class="btn btn-success btn-lg px-5 py-3 rounded-pill fw-bold shadow-lg" id="btnSubmit">
+                    <i class="fas fa-paper-plane me-2"></i> Submit Reunion Registration
+                </button>
+                <p class="text-muted small mt-2">
+                    <i class="fas fa-lock text-success me-1"></i> Your information is secure. You will receive an SMS confirmation immediately upon submission.
+                </p>
+            </div>
+        </form>
+    </div>
+</div>
+
+@section Scripts {
+    <partial name="_ValidationScriptsPartial" />
+    <script>
+        let currentPackageId = @initialPackageId;
+        let currentPackageFee = @initialPackageFee;
+        let currentPackageName = "@Html.Raw(initialPackageName.Replace("\"", "\\\""))";
+        const spouseFee = @spouseFee;
+        const childFee = @childFee;
+        const guestFee = @guestFee;
+
+        function selectPackage(pkgId, fee, name) {
+            currentPackageId = pkgId;
+            currentPackageFee = fee;
+            currentPackageName = name;
+            
+            const input = document.getElementById('selectedPackageIdInput');
+            if (input) input.value = pkgId;
+
+            document.querySelectorAll('.package-select-card').forEach(el => el.classList.remove('selected'));
+            const activeCard = document.getElementById('pkg-card-' + pkgId);
+            if (activeCard) activeCard.classList.add('selected');
+
+            document.querySelectorAll('.pkg-radio').forEach(el => el.checked = false);
+            const activeRadio = document.getElementById('radio-' + pkgId);
+            if (activeRadio) activeRadio.checked = true;
+
+            recalculateFee();
+        }
+
+        function recalculateFee() {
+            const spouse = parseInt(document.getElementById('spouseSelect')?.value) || 0;
+            const child = parseInt(document.getElementById('childSelect')?.value) || 0;
+            const guest = parseInt(document.getElementById('guestSelect')?.value) || 0;
+
+            const total = currentPackageFee + (spouse * spouseFee) + (child * childFee) + (guest * guestFee);
+            const displayEl = document.getElementById('totalAmountDisplay');
+            if (displayEl) displayEl.innerText = total.toLocaleString();
+
+            let breakdown = `${currentPackageName} (৳ ${currentPackageFee.toLocaleString()})`;
+            if (spouse > 0) breakdown += ` + Spouse (৳ ${(spouse * spouseFee).toLocaleString()})`;
+            if (child > 0) breakdown += ` + ${child} Child(ren) (৳ ${(child * childFee).toLocaleString()})`;
+            if (guest > 0) breakdown += ` + ${guest} Driver/Guest(s) (৳ ${(guest * guestFee).toLocaleString()})`;
+
+            const breakdownEl = document.getElementById('breakdownText');
+            if (breakdownEl) breakdownEl.innerText = breakdown;
+        }
+
+        document.addEventListener('DOMContentLoaded', () => {
+            const input = document.getElementById('selectedPackageIdInput');
+            if (input && !input.value && currentPackageId > 0) {
+                input.value = currentPackageId;
+            }
+            recalculateFee();
+        });
+
+        function previewImage(input, previewId) {
+            if (input.files && input.files[0]) {
+                const reader = new FileReader();
+                reader.onload = function (e) {
+                    document.getElementById(previewId).src = e.target.result;
+                };
+                reader.readAsDataURL(input.files[0]);
+            }
+        }
+
+        function validateFileSize(input, maxBytes, errorSpanId) {
+            document.getElementById(errorSpanId).innerText = "";
+            if (input.files && input.files[0]) {
+                if (input.files[0].size > maxBytes) {
+                    document.getElementById(errorSpanId).innerText = `File size exceeds ${(maxBytes / 1024).toFixed(0)} KB limit. Please choose a smaller file.`;
+                    input.value = "";
+                }
+            }
+        }
+
+        function copyText(elementId) {
+            const text = document.getElementById(elementId).innerText.split(' ')[0];
+            navigator.clipboard.writeText(text).then(() => {
+                Swal.fire({
+                    toast: true,
+                    position: 'top-end',
+                    icon: 'success',
+                    title: 'Number copied: ' + text,
+                    showConfirmButton: false,
+                    timer: 1500
+                });
+            });
+        }
+    </script>
+}

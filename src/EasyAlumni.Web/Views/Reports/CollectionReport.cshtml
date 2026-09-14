@@ -1,0 +1,104 @@
+@model List<EasyAlumni.Core.Entities.RegistrationPayment>
+@{
+    ViewData["Title"] = "Collection Report";
+    Layout = "_AdminLayout";
+    var batches = (List<int>)ViewBag.Batches;
+}
+
+<!-- Page Header -->
+<div class="d-flex justify-content-between align-items-center flex-wrap gap-3 mb-4">
+    <div>
+        <h2 class="h4 fw-bold text-dark mb-1">Registration Collection Report</h2>
+        <p class="text-muted small mb-0">Total Collections: <strong>৳ @(((decimal)ViewBag.TotalAmount).ToString("N0"))</strong></p>
+    </div>
+    <div class="d-flex gap-2">
+        <a asp-controller="Reports" asp-action="ExportCollectionCsv" class="btn btn-outline-secondary rounded-pill px-3">
+            Export to CSV
+        </a>
+        <button type="button" class="btn btn-warning rounded-pill px-3" onclick="window.print()">
+            Print Report
+        </button>
+    </div>
+</div>
+    <!-- Filter Bar -->
+    <div class="card border-0 shadow-sm rounded-4 p-3 mb-4 no-print">
+        <form method="get" asp-controller="Reports" asp-action="CollectionReport" class="row g-2 align-items-end">
+            <div class="col-md-3">
+                <label class="form-label small text-muted mb-1">From Date</label>
+                <input type="date" name="fromDate" value="@ViewBag.FromDate" class="form-control form-control-sm" />
+            </div>
+            <div class="col-md-3">
+                <label class="form-label small text-muted mb-1">To Date</label>
+                <input type="date" name="toDate" value="@ViewBag.ToDate" class="form-control form-control-sm" />
+            </div>
+            <div class="col-md-3">
+                <label class="form-label small text-muted mb-1">Batch</label>
+                <select name="batch" class="form-select form-select-sm">
+                    <option value="">-- All Batches --</option>
+                    @foreach (var b in batches)
+                    {
+                        <option value="@b" selected="@(ViewBag.SelectedBatch == b)">Batch @b</option>
+                    }
+                </select>
+            </div>
+            <div class="col-md-3">
+                <button type="submit" class="btn btn-sm btn-success rounded-pill w-100">Filter Report</button>
+            </div>
+        </form>
+    </div>
+
+    <!-- Table -->
+    <div class="card border-0 shadow-sm rounded-4 overflow-hidden">
+        <div class="table-responsive p-3">
+            <table class="table table-hover align-middle mb-0" id="collTable">
+                <thead class="table-light small text-uppercase">
+                    <tr>
+                        <th>Date</th>
+                        <th>Ticket No</th>
+                        <th>Alumnus Name</th>
+                        <th>Batch</th>
+                        <th>Mobile</th>
+                        <th>Method</th>
+                        <th>TrxID</th>
+                        <th>Sender Phone</th>
+                        <th class="text-end">Amount</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var p in Model)
+                    {
+                        var reg = p.EventRegistration;
+                        var prof = reg?.AlumniProfile;
+                        <tr>
+                            <td>@p.SubmittedAt.ToString("MMM dd, yyyy")</td>
+                            <td><span class="badge bg-light text-dark border">@reg?.RegistrationNo</span></td>
+                            <td><strong>@prof?.NameEnglish</strong></td>
+                            <td><span class="badge bg-secondary">Batch @prof?.PassingYear</span></td>
+                            <td>@prof?.ContactNumber</td>
+                            <td><span class="badge bg-info text-dark">@p.PaymentMode</span></td>
+                            <td><code class="text-danger">@p.TransactionId</code></td>
+                            <td>@p.SenderNumber</td>
+                            <td class="text-end fw-bold text-success">৳ @p.Amount.ToString("N0")</td>
+                        </tr>
+                    }
+                </tbody>
+                <tfoot class="table-light fw-bold">
+                    <tr>
+                        <td colspan="8" class="text-end">Total Collection:</td>
+                        <td class="text-end text-success fs-5">৳ @(((decimal)ViewBag.TotalAmount).ToString("N0"))</td>
+                    </tr>
+                </tfoot>
+            </table>
+        </div>
+    </div>
+
+@section Scripts {
+    <script>
+        $(document).ready(function() {
+            $('#collTable').DataTable({
+                "order": [[0, "desc"]],
+                "pageLength": 50
+            });
+        });
+    </script>
+}

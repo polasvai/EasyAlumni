@@ -1,0 +1,33 @@
+## Visual Studio / .NET Core
+[Bb]in/
+[Oo]bj/
+[Ll]og/
+[Ll]ogs/
+.vs/
+*.user
+*.suo
+*.userosscache
+*.sln.docstates
+.idea/
+*.swp
+*.lock
+
+## Node / NPM
+node_modules/
+
+## Deployments & Sensitive Files
+publish/
+db_credentials.txt
+openssl.cnf
+*.cnf
+Plan.md
+Demo for Idea.txt
+docs/
+appsettings.json
+appsettings.*.json
+!appsettings.Example.json
+
+## OS generated
+.DS_Store
+Thumbs.db
+

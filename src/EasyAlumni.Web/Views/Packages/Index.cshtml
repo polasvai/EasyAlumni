@@ -1,0 +1,392 @@
+@model List<EasyAlumni.Core.Entities.RegistrationPackage>
+@{
+    ViewData["Title"] = "Registration Packages";
+    Layout = "_AdminLayout";
+    var activeEvent = ViewBag.ActiveEvent as EasyAlumni.Core.Entities.ReunionEvent;
+}
+
+<!-- Page Header -->
+<div class="d-flex justify-content-between align-items-center flex-wrap gap-3 mb-4">
+    <div>
+        <h2 class="h4 fw-bold text-dark mb-1">Registration Packages &amp; Pricing Tiers</h2>
+        <p class="text-muted small mb-0">Configure registration pricing tiers, guest inclusions, kit perks, and promotional badges for @(activeEvent?.EventTitle ?? "Reunion")</p>
+    </div>
+    <div class="d-flex gap-2">
+        <button type="button" class="btn btn-success rounded-pill px-4 fw-semibold shadow-sm" data-bs-toggle="modal" data-bs-target="#addPackageModal">
+            + New Package
+        </button>
+        <a asp-controller="Admin" asp-action="Index" class="btn btn-outline-secondary rounded-pill px-3">
+            Dashboard
+        </a>
+    </div>
+</div>
+
+@if (TempData["Success"] != null)
+{
+    <div class="alert alert-success alert-dismissible fade show rounded-3" role="alert">
+        @TempData["Success"]
+        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+    </div>
+}
+@if (TempData["Warning"] != null)
+{
+    <div class="alert alert-warning alert-dismissible fade show rounded-3" role="alert">
+        @TempData["Warning"]
+        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+    </div>
+}
+@if (TempData["Error"] != null)
+{
+    <div class="alert alert-danger alert-dismissible fade show rounded-3" role="alert">
+        @TempData["Error"]
+        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+    </div>
+}
+
+<!-- Metric KPI Cards -->
+<div class="row g-3 mb-4">
+    <div class="col-md-3 col-sm-6">
+        <div class="card border-0 shadow-sm rounded-4 p-3 border-start border-4 border-primary">
+            <span class="text-muted small text-uppercase fw-semibold">Total Packages</span>
+            <h3 class="fw-bold text-dark mb-0">@Model.Count</h3>
+            <small class="text-muted">Configured pricing tiers</small>
+        </div>
+    </div>
+    <div class="col-md-3 col-sm-6">
+        <div class="card border-0 shadow-sm rounded-4 p-3 border-start border-4 border-success">
+            <span class="text-muted small text-uppercase fw-semibold">Active Packages</span>
+            <h3 class="fw-bold text-success mb-0">@Model.Count(p => p.IsActive)</h3>
+            <small class="text-muted">Available for registration</small>
+        </div>
+    </div>
+    <div class="col-md-3 col-sm-6">
+        <div class="card border-0 shadow-sm rounded-4 p-3 border-start border-4 border-warning">
+            <span class="text-muted small text-uppercase fw-semibold">Total Enrolled</span>
+            <h3 class="fw-bold text-dark mb-0">@Model.Sum(p => p.Registrations?.Count ?? 0)</h3>
+            <small class="text-muted">Registrations tied to packages</small>
+        </div>
+    </div>
+    <div class="col-md-3 col-sm-6">
+        <div class="card border-0 shadow-sm rounded-4 p-3 border-start border-4 border-info">
+            <span class="text-muted small text-uppercase fw-semibold">Package Revenue</span>
+            <h3 class="fw-bold text-primary mb-0">৳ @Model.Sum(p => (p.Registrations?.Count ?? 0) * p.Fee).ToString("N0")</h3>
+            <small class="text-muted">Estimated package collections</small>
+        </div>
+    </div>
+</div>
+
+<!-- Packages List Card -->
+<div class="card border-0 shadow-sm rounded-4 overflow-hidden mb-4">
+    <div class="card-header bg-white p-3 border-bottom d-flex justify-content-between align-items-center">
+        <h5 class="fw-bold text-dark mb-0">All Configured Registration Packages</h5>
+        <span class="badge bg-light text-dark border">@Model.Count Tiers</span>
+    </div>
+    <div class="table-responsive p-0">
+        <table class="table table-hover align-middle mb-0">
+            <thead class="table-light small text-uppercase">
+                <tr>
+                    <th class="ps-4" style="width: 80px;">Order</th>
+                    <th>Package Details</th>
+                    <th>Fee (BDT)</th>
+                    <th>Included Entitlements</th>
+                    <th class="text-center">Enrolled</th>
+                    <th>Status</th>
+                    <th class="text-end pe-4" style="width: 140px;">Actions</th>
+                </tr>
+            </thead>
+            <tbody>
+                @if (!Model.Any())
+                {
+                    <tr>
+                        <td colspan="7" class="text-center py-5 text-muted">
+                            <p class="mb-2">No registration packages configured yet.</p>
+                            <button type="button" class="btn btn-sm btn-success rounded-pill px-3" data-bs-toggle="modal" data-bs-target="#addPackageModal">
+                                Create First Package
+                            </button>
+                        </td>
+                    </tr>
+                }
+                else
+                {
+                    @foreach (var pkg in Model)
+                    {
+                        var enrolledCount = pkg.Registrations?.Count ?? 0;
+                        <tr>
+                            <td class="ps-4">
+                                <span class="badge bg-light text-dark border">#@pkg.DisplayOrder</span>
+                            </td>
+                            <td>
+                                <div class="d-flex align-items-center gap-2">
+                                    <strong class="text-dark fs-6">@pkg.PackageName</strong>
+                                    @if (!string.IsNullOrEmpty(pkg.BadgeText))
+                                    {
+                                        <span class="badge bg-warning text-dark small">@pkg.BadgeText</span>
+                                    }
+                                    @if (pkg.IsFeatured)
+                                    {
+                                        <span class="badge bg-primary small">Featured</span>
+                                    }
+                                </div>
+                                @if (!string.IsNullOrEmpty(pkg.PackageNameBangla))
+                                {
+                                    <div class="text-muted small">@pkg.PackageNameBangla</div>
+                                }
+                                @if (!string.IsNullOrEmpty(pkg.Description))
+                                {
+                                    <div class="text-muted small mt-1" style="max-width: 450px;">@pkg.Description</div>
+                                }
+                            </td>
+                            <td>
+                                <span class="fw-bold text-success fs-5">৳ @pkg.Fee.ToString("N0")</span>
+                            </td>
+                            <td>
+                                <div class="d-flex flex-wrap gap-1">
+                                    @if (pkg.IncludesTShirt)
+                                    {
+                                        <span class="badge bg-light text-primary border">T-Shirt</span>
+                                    }
+                                    @if (pkg.IncludesKitBag)
+                                    {
+                                        <span class="badge bg-light text-success border">Kit Bag</span>
+                                    }
+                                    @if (pkg.IncludesFood)
+                                    {
+                                        <span class="badge bg-light text-warning text-dark border">Meals</span>
+                                    }
+                                    @if (pkg.IncludesRaffle)
+                                    {
+                                        <span class="badge bg-light text-info text-dark border">Raffle</span>
+                                    }
+                                    @if (pkg.IncludedGuests > 0)
+                                    {
+                                        <span class="badge bg-secondary">+@pkg.IncludedGuests Guest(s)</span>
+                                    }
+                                </div>
+                            </td>
+                            <td class="text-center">
+                                <span class="badge bg-light text-dark border fw-bold">@enrolledCount</span>
+                            </td>
+                            <td>
+                                @if (pkg.IsActive)
+                                {
+                                    <span class="badge bg-success">Active</span>
+                                }
+                                else
+                                {
+                                    <span class="badge bg-secondary">Inactive</span>
+                                }
+                            </td>
+                            <td class="text-end pe-4">
+                                <div class="d-inline-flex gap-1">
+                                    <button type="button" class="btn btn-sm btn-outline-secondary rounded-pill px-2 py-0"
+                                            onclick="openEditPackageModal('@pkg.Id', '@pkg.PackageName', '@(pkg.PackageNameBangla?.Replace("'", "\\'"))', '@pkg.Fee', '@(pkg.Description?.Replace("'", "\\'"))', '@pkg.BadgeText', '@pkg.DisplayOrder', '@pkg.IncludesTShirt.ToString().ToLower()', '@pkg.IncludesKitBag.ToString().ToLower()', '@pkg.IncludesFood.ToString().ToLower()', '@pkg.IncludesRaffle.ToString().ToLower()', '@pkg.IncludedGuests', '@pkg.IsFeatured.ToString().ToLower()', '@pkg.IsActive.ToString().ToLower()')"
+                                            title="Edit Package">
+                                        Edit
+                                    </button>
+                                    <form asp-controller="Packages" asp-action="DeletePackage" method="post" class="d-inline m-0"
+                                          onsubmit="return confirm('Are you sure you want to delete package &quot;@pkg.PackageName&quot;?')">
+                                        @Html.AntiForgeryToken()
+                                        <input type="hidden" name="id" value="@pkg.Id" />
+                                        <button type="submit" class="btn btn-sm btn-outline-danger rounded-pill px-2 py-0" title="Delete Package">
+                                            Delete
+                                        </button>
+                                    </form>
+                                </div>
+                            </td>
+                        </tr>
+                    }
+                }
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<!-- Add Package Modal -->
+<div class="modal fade" id="addPackageModal" tabindex="-1">
+    <div class="modal-dialog modal-dialog-centered modal-lg">
+        <div class="modal-content rounded-4 border-0 shadow">
+            <form asp-controller="Packages" asp-action="CreatePackage" method="post">
+                @Html.AntiForgeryToken()
+                <div class="modal-header border-bottom">
+                    <h5 class="modal-title fw-bold">Create Registration Package</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body p-4">
+                    <div class="row g-3">
+                        <div class="col-md-6">
+                            <label class="form-label fw-semibold">Package Name (English) <span class="text-danger">*</span></label>
+                            <input type="text" name="PackageName" class="form-control" placeholder="e.g. Regular Alumnus" required />
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label fw-semibold">Package Name (Bangla)</label>
+                            <input type="text" name="PackageNameBangla" class="form-control" placeholder="e.g. সাধারণ প্রাক্তন ছাত্রী" />
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label fw-semibold">Registration Fee (BDT) <span class="text-danger">*</span></label>
+                            <input type="number" step="1" name="Fee" class="form-control" placeholder="1500" required />
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label fw-semibold">Promotional Badge Text</label>
+                            <input type="text" name="BadgeText" class="form-control" placeholder="e.g. Most Popular, Couple, VIP" />
+                        </div>
+                        <div class="col-12">
+                            <label class="form-label fw-semibold">Package Description / Inclusions</label>
+                            <textarea name="Description" class="form-control" rows="3" placeholder="Detail what is included: meals, kits, passes, gifts..."></textarea>
+                        </div>
+                        <div class="col-md-4">
+                            <label class="form-label fw-semibold">Display Sort Order</label>
+                            <input type="number" name="DisplayOrder" class="form-control" value="1" min="1" />
+                        </div>
+                        <div class="col-md-4">
+                            <label class="form-label fw-semibold">Included Extra Guests</label>
+                            <input type="number" name="IncludedGuests" class="form-control" value="0" min="0" />
+                        </div>
+                        <div class="col-md-4">
+                            <label class="form-label fw-semibold">Visibility</label>
+                            <div class="form-check form-switch mt-2">
+                                <input class="form-check-input" type="checkbox" name="IsActive" value="true" checked id="addIsActive">
+                                <label class="form-check-label" for="addIsActive">Active for registration</label>
+                            </div>
+                        </div>
+                        <div class="col-12">
+                            <label class="form-label fw-semibold d-block">Entitlements Included in this Package</label>
+                            <div class="d-flex flex-wrap gap-4 p-3 bg-light rounded-3 border">
+                                <div class="form-check">
+                                    <input class="form-check-input" type="checkbox" name="IncludesTShirt" value="true" checked id="addTShirt">
+                                    <label class="form-check-label" for="addTShirt">Polo T-Shirt</label>
+                                </div>
+                                <div class="form-check">
+                                    <input class="form-check-input" type="checkbox" name="IncludesKitBag" value="true" checked id="addKit">
+                                    <label class="form-check-label" for="addKit">Executive Backpack &amp; Hamper</label>
+                                </div>
+                                <div class="form-check">
+                                    <input class="form-check-input" type="checkbox" name="IncludesFood" value="true" checked id="addFood">
+                                    <label class="form-check-label" for="addFood">Full Day Meals &amp; Snacks</label>
+                                </div>
+                                <div class="form-check">
+                                    <input class="form-check-input" type="checkbox" name="IncludesRaffle" value="true" checked id="addRaffle">
+                                    <label class="form-check-label" for="addRaffle">Raffle Draw Coupon</label>
+                                </div>
+                                <div class="form-check">
+                                    <input class="form-check-input" type="checkbox" name="IsFeatured" value="true" id="addFeatured">
+                                    <label class="form-check-label fw-bold text-primary" for="addFeatured">Featured / Primary Choice</label>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer border-top">
+                    <button type="button" class="btn btn-secondary rounded-pill px-3" data-bs-dismiss="modal">Cancel</button>
+                    <button type="submit" class="btn btn-success rounded-pill px-4">Create Package</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- Edit Package Modal -->
+<div class="modal fade" id="editPackageModal" tabindex="-1">
+    <div class="modal-dialog modal-dialog-centered modal-lg">
+        <div class="modal-content rounded-4 border-0 shadow">
+            <form asp-controller="Packages" asp-action="EditPackage" method="post">
+                @Html.AntiForgeryToken()
+                <input type="hidden" name="Id" id="editPkgId" />
+                <div class="modal-header border-bottom">
+                    <h5 class="modal-title fw-bold">Edit Registration Package</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body p-4">
+                    <div class="row g-3">
+                        <div class="col-md-6">
+                            <label class="form-label fw-semibold">Package Name (English) <span class="text-danger">*</span></label>
+                            <input type="text" name="PackageName" id="editPkgName" class="form-control" required />
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label fw-semibold">Package Name (Bangla)</label>
+                            <input type="text" name="PackageNameBangla" id="editPkgNameBangla" class="form-control" />
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label fw-semibold">Registration Fee (BDT) <span class="text-danger">*</span></label>
+                            <input type="number" step="1" name="Fee" id="editPkgFee" class="form-control" required />
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label fw-semibold">Promotional Badge Text</label>
+                            <input type="text" name="BadgeText" id="editPkgBadge" class="form-control" />
+                        </div>
+                        <div class="col-12">
+                            <label class="form-label fw-semibold">Package Description / Inclusions</label>
+                            <textarea name="Description" id="editPkgDesc" class="form-control" rows="3"></textarea>
+                        </div>
+                        <div class="col-md-4">
+                            <label class="form-label fw-semibold">Display Sort Order</label>
+                            <input type="number" name="DisplayOrder" id="editPkgOrder" class="form-control" min="1" />
+                        </div>
+                        <div class="col-md-4">
+                            <label class="form-label fw-semibold">Included Extra Guests</label>
+                            <input type="number" name="IncludedGuests" id="editPkgGuests" class="form-control" min="0" />
+                        </div>
+                        <div class="col-md-4">
+                            <label class="form-label fw-semibold">Visibility</label>
+                            <div class="form-check form-switch mt-2">
+                                <input class="form-check-input" type="checkbox" name="IsActive" value="true" id="editPkgActive">
+                                <label class="form-check-label" for="editPkgActive">Active for registration</label>
+                            </div>
+                        </div>
+                        <div class="col-12">
+                            <label class="form-label fw-semibold d-block">Entitlements Included in this Package</label>
+                            <div class="d-flex flex-wrap gap-4 p-3 bg-light rounded-3 border">
+                                <div class="form-check">
+                                    <input class="form-check-input" type="checkbox" name="IncludesTShirt" value="true" id="editPkgTShirt">
+                                    <label class="form-check-label" for="editPkgTShirt">Polo T-Shirt</label>
+                                </div>
+                                <div class="form-check">
+                                    <input class="form-check-input" type="checkbox" name="IncludesKitBag" value="true" id="editPkgKit">
+                                    <label class="form-check-label" for="editPkgKit">Executive Backpack &amp; Hamper</label>
+                                </div>
+                                <div class="form-check">
+                                    <input class="form-check-input" type="checkbox" name="IncludesFood" value="true" id="editPkgFood">
+                                    <label class="form-check-label" for="editPkgFood">Full Day Meals &amp; Snacks</label>
+                                </div>
+                                <div class="form-check">
+                                    <input class="form-check-input" type="checkbox" name="IncludesRaffle" value="true" id="editPkgRaffle">
+                                    <label class="form-check-label" for="editPkgRaffle">Raffle Draw Coupon</label>
+                                </div>
+                                <div class="form-check">
+                                    <input class="form-check-input" type="checkbox" name="IsFeatured" value="true" id="editPkgFeatured">
+                                    <label class="form-check-label fw-bold text-primary" for="editPkgFeatured">Featured / Primary Choice</label>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer border-top">
+                    <button type="button" class="btn btn-secondary rounded-pill px-3" data-bs-dismiss="modal">Cancel</button>
+                    <button type="submit" class="btn btn-primary rounded-pill px-4">Save Changes</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        function openEditPackageModal(id, name, nameBn, fee, desc, badge, order, tshirt, kit, food, raffle, guests, featured, active) {
+            document.getElementById('editPkgId').value = id;
+            document.getElementById('editPkgName').value = name;
+            document.getElementById('editPkgNameBangla').value = nameBn || '';
+            document.getElementById('editPkgFee').value = fee;
+            document.getElementById('editPkgDesc').value = desc || '';
+            document.getElementById('editPkgBadge').value = badge || '';
+            document.getElementById('editPkgOrder').value = order;
+            document.getElementById('editPkgGuests').value = guests;
+            document.getElementById('editPkgTShirt').checked = (tshirt === 'true');
+            document.getElementById('editPkgKit').checked = (kit === 'true');
+            document.getElementById('editPkgFood').checked = (food === 'true');
+            document.getElementById('editPkgRaffle').checked = (raffle === 'true');
+            document.getElementById('editPkgFeatured').checked = (featured === 'true');
+            document.getElementById('editPkgActive').checked = (active === 'true');
+
+            new bootstrap.Modal(document.getElementById('editPackageModal')).show();
+        }
+    </script>
+}

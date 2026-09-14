@@ -1,0 +1,655 @@
+@model EasyAlumni.Web.ViewModels.LandingPageViewModel
+@{
+    var ev = Model.Event;
+    var heroTitle = Model.Settings.GetValueOrDefault("LandingHeroTitle", ev?.EventTitle ?? "Grand Alumni Reunion 2026");
+    ViewData["Title"] = heroTitle;
+    var heroSubtitle = Model.Settings.GetValueOrDefault("LandingHeroSubtitle", ev?.TitleBangla ?? "শহীদ নাজমুল হক বালিকা উচ্চ বিদ্যালয় প্রাক্তন ছাত্রী পুনর্মিলনী উৎসব");
+    var heroTagline = Model.Settings.GetValueOrDefault("LandingHeroTagline", "A grand reunion of cherished memories, heartfelt reunions, and boundless nostalgia. Welcome home, dear alumni!");
+    var heroBg = Model.Settings.GetValueOrDefault("LandingHeroBgImage", "https://images.unsplash.com/photo-1523580494863-6f3031224c94?auto=format&fit=crop&w=1920&q=80");
+    var aboutTitle = Model.Settings.GetValueOrDefault("AboutTitle", "About the Grand Reunion");
+    var aboutSubtitle = Model.Settings.GetValueOrDefault("AboutSubtitle", "A historic day where old classmates, mentors, and friends reunite under one grand roof.");
+    var aboutStory = Model.Settings.GetValueOrDefault("AboutStory", ev?.Description ?? "শহীদ নাজমুল হক বালিকা উচ্চ বিদ্যালয় সুদীর্ঘ কাল ধরে নারী শিক্ষা ও ব্যক্তিত্ব বিকাশে অনন্য ভূমিকা রেখে আসছে। আমাদের প্রিয় ক্যাম্পাসে কাটানো সোনালী দিনগুলো আমাদের জীবনের শ্রেষ্ঠ স্মৃতি। এই জমকালো পুনর্মিলনী উৎসবটি সেই মধুর স্মৃতি রোমন্থন, প্রিয় সহপাঠী ও শ্রদ্ধেয় শিক্ষকদের সাথে মিলিত হবার এক মহতী মিলনমেলা।");
+    var aboutImg = Model.Settings.GetValueOrDefault("AboutImageUrl", "https://images.unsplash.com/photo-1511578314322-379afb476865?auto=format&fit=crop&w=800&q=80");
+    var eventDateStr = Model.Settings.GetValueOrDefault("ReunionDate", ev?.EventDate.ToString("yyyy-MM-ddTHH:mm:ss") ?? "2026-12-25T09:00:00");
+    var venue = Model.Settings.GetValueOrDefault("EventVenue", ev?.VenueName ?? "বিদ্যালয় প্রাঙ্গণ ও মিলনায়তন");
+    var mapUrl = Model.Settings.GetValueOrDefault("GoogleMapEmbedUrl", "https://maps.google.com/maps?q=Shahid+Nazmul+Huq+Girls+High+School+Rajshahi&hl=en&z=16&output=embed");
+}
+
+@section Styles {
+    <style>
+        .hero-section {
+            min-height: 92vh;
+            background: linear-gradient(135deg, rgba(15, 23, 42, 0.92), rgba(0, 77, 56, 0.88)),
+                        url('@heroBg') center/cover no-repeat fixed;
+            display: flex;
+            align-items: center;
+            color: #fff;
+            padding-top: 100px;
+            padding-bottom: 60px;
+            position: relative;
+        }
+
+        .countdown-card {
+            background: rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(14px);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            border-radius: 18px;
+            padding: 20px 15px;
+            text-align: center;
+            min-width: 95px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
+        }
+
+        .countdown-number {
+            font-size: 2.6rem;
+            font-weight: 800;
+            color: var(--accent);
+            line-height: 1;
+        }
+
+        .countdown-label {
+            font-size: 0.82rem;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            opacity: 0.9;
+            margin-top: 5px;
+        }
+
+        .section-padding {
+            padding: 85px 0;
+        }
+
+        .section-title {
+            font-weight: 800;
+            color: var(--dark);
+            margin-bottom: 12px;
+            position: relative;
+        }
+
+        .section-subtitle {
+            color: #64748b;
+            font-size: 1.1rem;
+            max-width: 650px;
+            margin: 0 auto 50px;
+        }
+
+        .card-custom {
+            border: none;
+            border-radius: 20px;
+            transition: all 0.3s ease;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.06);
+            overflow: hidden;
+            background: #fff;
+        }
+
+        .card-custom:hover {
+            transform: translateY(-6px);
+            box-shadow: 0 18px 40px rgba(0,0,0,0.12);
+        }
+
+        .schedule-time {
+            width: 110px;
+            font-weight: 700;
+            color: var(--primary);
+            flex-shrink: 0;
+        }
+
+        .pricing-card {
+            border: 2px solid #e2e8f0;
+            border-radius: 20px;
+            padding: 35px 25px;
+            text-align: center;
+            transition: all 0.3s ease;
+            background: #fff;
+            height: 100%;
+        }
+
+        .pricing-card.featured {
+            border-color: var(--primary);
+            box-shadow: 0 15px 35px rgba(0, 106, 78, 0.15);
+            position: relative;
+        }
+
+        .pricing-badge {
+            position: absolute;
+            top: -14px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: var(--primary);
+            color: white;
+            padding: 4px 18px;
+            border-radius: 50px;
+            font-size: 0.8rem;
+            font-weight: 600;
+        }
+    </style>
+}
+
+<!-- Hero Section -->
+<section class="hero-section" id="home">
+    <div class="container text-center">
+        <div class="d-inline-block px-3 py-1 mb-3 rounded-pill" style="background: rgba(245, 158, 11, 0.2); border: 1px solid var(--accent); color: var(--accent); font-weight: 600;">
+            <i class="fas fa-calendar-check me-2"></i> Celebrating Lifelong Bonds &amp; Brotherhood
+        </div>
+        <h1 class="display-3 fw-bold mb-2">@heroTitle</h1>
+        <h3 class="fw-semibold text-warning mb-3">@heroSubtitle</h3>
+        <p class="lead mb-4 mx-auto text-light opacity-90" style="max-width: 750px;">
+            @heroTagline
+        </p>
+
+        <!-- Live Countdown Timer -->
+        <div class="d-flex justify-content-center gap-3 my-4 flex-wrap" id="countdownTimer">
+            <div class="countdown-card">
+                <div class="countdown-number" id="days">00</div>
+                <div class="countdown-label">Days</div>
+            </div>
+            <div class="countdown-card">
+                <div class="countdown-number" id="hours">00</div>
+                <div class="countdown-label">Hours</div>
+            </div>
+            <div class="countdown-card">
+                <div class="countdown-number" id="minutes">00</div>
+                <div class="countdown-label">Minutes</div>
+            </div>
+            <div class="countdown-card">
+                <div class="countdown-number" id="seconds">00</div>
+                <div class="countdown-label">Seconds</div>
+            </div>
+        </div>
+
+        <div class="mt-4 d-flex justify-content-center gap-3 flex-wrap">
+            <a asp-controller="Enrollment" asp-action="Register" class="btn btn-lg btn-danger px-4 py-3 rounded-pill fw-bold shadow-lg">
+                <i class="fas fa-user-plus me-2"></i> Register for Reunion
+            </a>
+            <a href="/#about" class="btn btn-lg btn-outline-light px-4 py-3 rounded-pill fw-bold">
+                <i class="fas fa-info-circle me-2"></i> Event Details
+            </a>
+        </div>
+
+        <div class="mt-5 text-light opacity-80 small">
+            <i class="fas fa-map-marker-alt text-warning me-1"></i> Venue: <strong>@venue</strong> &nbsp;|&nbsp; 
+            <i class="fas fa-users text-info me-1"></i> Already <strong>@Model.TotalRegisteredCount Alumni</strong> Enrolled!
+        </div>
+    </div>
+</section>
+
+<!-- Notices Ticker -->
+@if (Model.Notices.Any())
+{
+    <div class="bg-warning text-dark py-2 px-3">
+        <div class="container d-flex align-items-center">
+            <span class="badge bg-danger me-3 px-2 py-1"><i class="fas fa-bullhorn me-1"></i> Notice</span>
+            <div class="overflow-hidden flex-grow-1" style="white-space: nowrap;">
+                @foreach (var notice in Model.Notices)
+                {
+                    <span class="me-5 fw-semibold">
+                        <a asp-controller="Home" asp-action="Notice" asp-route-id="@notice.Id" class="text-dark text-decoration-none">
+                            <i class="fas fa-angle-right me-1"></i> @notice.Title
+                        </a>
+                    </span>
+                }
+            </div>
+        </div>
+    </div>
+}
+
+<!-- About Section -->
+<section class="section-padding" id="about">
+    <div class="container">
+        <div class="text-center">
+            <h2 class="section-title">@aboutTitle</h2>
+            <p class="section-subtitle">@aboutSubtitle</p>
+        </div>
+        <div class="row align-items-center g-5">
+            <div class="col-lg-6">
+                <img src="@aboutImg" alt="@aboutTitle" class="img-fluid rounded-4 shadow-lg" style="width: 100%; max-height: 420px; object-fit: cover;" onerror="this.onerror=null; this.src='/images/placeholder.svg';">
+            </div>
+            <div class="col-lg-6">
+                <h3 class="fw-bold text-dark mb-3">Rekindle Memories That Shaped Us</h3>
+                <p class="text-muted leading-relaxed" style="white-space: pre-line;">
+                    @aboutStory
+                </p>
+                <div class="row g-3 mt-2">
+                    <div class="col-sm-6">
+                        <div class="p-3 bg-light rounded-3 border-start border-4 border-success">
+                            <h5 class="fw-bold mb-1"><i class="fas fa-gift text-success me-2"></i> Commemorative Kit</h5>
+                            <small class="text-muted">Premium Polo T-shirt, gift hamper, backpack, and souvenir.</small>
+                        </div>
+                    </div>
+                    <div class="col-sm-6">
+                        <div class="p-3 bg-light rounded-3 border-start border-4 border-danger">
+                            <h5 class="fw-bold mb-1"><i class="fas fa-utensils text-danger me-2"></i> Grand Feast</h5>
+                            <small class="text-muted">Delicious breakfast, traditional lunch buffet, snacks &amp; dinner.</small>
+                        </div>
+                    </div>
+                    <div class="col-sm-6">
+                        <div class="p-3 bg-light rounded-3 border-start border-4 border-primary">
+                            <h5 class="fw-bold mb-1"><i class="fas fa-music text-primary me-2"></i> Cultural Gala</h5>
+                            <small class="text-muted">Celebrity band concert, nostalgic skits, and raffle prizes.</small>
+                        </div>
+                    </div>
+                    <div class="col-sm-6">
+                        <div class="p-3 bg-light rounded-3 border-start border-4 border-warning">
+                            <h5 class="fw-bold mb-1"><i class="fas fa-chalkboard-teacher text-warning me-2"></i> Felicitation</h5>
+                            <small class="text-muted">Honoring respected teachers and retired staff.</small>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- Event Schedule Timeline -->
+<section class="section-padding bg-light" id="schedule">
+    <div class="container">
+        <div class="text-center">
+            <h2 class="section-title">Program Schedule</h2>
+            <p class="section-subtitle">A power-packed itinerary planned meticulously from morning till evening.</p>
+        </div>
+        <div class="row justify-content-center">
+            <div class="col-lg-8">
+                <div class="card card-custom p-4">
+                    <ul class="list-group list-group-flush">
+                        <li class="list-group-item d-flex align-items-center py-3">
+                            <span class="schedule-time"><i class="fas fa-clock text-warning me-1"></i> 08:30 AM</span>
+                            <div>
+                                <h6 class="mb-0 fw-bold">Arrival &amp; Reception Desk</h6>
+                                <small class="text-muted">Digital pass scanning, breakfast box, and gift kit handover.</small>
+                            </div>
+                        </li>
+                        <li class="list-group-item d-flex align-items-center py-3">
+                            <span class="schedule-time"><i class="fas fa-clock text-warning me-1"></i> 10:00 AM</span>
+                            <div>
+                                <h6 class="mb-0 fw-bold">Grand Alumni Color Rally</h6>
+                                <small class="text-muted">Campus procession with band, balloons, and batch banners.</small>
+                            </div>
+                        </li>
+                        <li class="list-group-item d-flex align-items-center py-3">
+                            <span class="schedule-time"><i class="fas fa-clock text-warning me-1"></i> 11:30 AM</span>
+                            <div>
+                                <h6 class="mb-0 fw-bold">Inauguration &amp; Teacher Felicitation</h6>
+                                <small class="text-muted">Honoring respected teachers and memorial tribute to departed souls.</small>
+                            </div>
+                        </li>
+                        <li class="list-group-item d-flex align-items-center py-3">
+                            <span class="schedule-time"><i class="fas fa-clock text-warning me-1"></i> 01:30 PM</span>
+                            <div>
+                                <h6 class="mb-0 fw-bold">Traditional Grand Feast (Buffet Lunch)</h6>
+                                <small class="text-muted">Multi-course buffet lunch for all attendees, spouses, and children.</small>
+                            </div>
+                        </li>
+                        <li class="list-group-item d-flex align-items-center py-3">
+                            <span class="schedule-time"><i class="fas fa-clock text-warning me-1"></i> 03:00 PM</span>
+                            <div>
+                                <h6 class="mb-0 fw-bold">Batch Nostalgia &amp; Open Floor</h6>
+                                <small class="text-muted">Storytelling, batch photos, and campus fun activities.</small>
+                            </div>
+                        </li>
+                        <li class="list-group-item d-flex align-items-center py-3">
+                            <span class="schedule-time"><i class="fas fa-clock text-warning me-1"></i> 05:00 PM</span>
+                            <div>
+                                <h6 class="mb-0 fw-bold">Mega Cultural Night &amp; Live Band</h6>
+                                <small class="text-muted">Electrifying music performances by renowned guest musicians.</small>
+                            </div>
+                        </li>
+                        <li class="list-group-item d-flex align-items-center py-3">
+                            <span class="schedule-time"><i class="fas fa-clock text-warning me-1"></i> 08:00 PM</span>
+                            <div>
+                                <h6 class="mb-0 fw-bold">Mega Raffle Draw &amp; Farewell</h6>
+                                <small class="text-muted">Exciting raffle prizes (Motorbike, Laptop, Smartphones) and group photos.</small>
+                            </div>
+                        </li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- Pricing Packages & Fees -->
+<!-- Pricing Packages & Fees -->
+<section class="section-padding" id="fees">
+    <div class="container">
+        <div class="text-center">
+            <h2 class="section-title">Registration Packages &amp; Fees</h2>
+            <p class="section-subtitle">Choose your registration package. All tiers include event access, dinner, and celebration.</p>
+        </div>
+        
+        @if (Model.Packages != null && Model.Packages.Any())
+        {
+            <div class="row g-4 justify-content-center">
+                @foreach (var pkg in Model.Packages)
+                {
+                    var colClass = Model.Packages.Count switch
+                    {
+                        1 => "col-lg-6 col-md-8",
+                        2 => "col-lg-5 col-md-6",
+                        3 => "col-lg-4 col-md-6",
+                        _ => "col-lg-3 col-md-6"
+                    };
+                    <div class="@colClass">
+                        <div class="pricing-card @(pkg.IsFeatured ? "featured" : "") h-100 d-flex flex-column justify-content-between">
+                            <div>
+                                @if (pkg.IsFeatured)
+                                {
+                                    <span class="pricing-badge"><i class="fas fa-star me-1"></i> @(string.IsNullOrEmpty(pkg.BadgeText) ? "Most Popular" : pkg.BadgeText)</span>
+                                }
+                                <h5 class="fw-bold @(pkg.IsFeatured ? "text-primary" : "text-dark") mb-1">@pkg.PackageName</h5>
+                                @if (!string.IsNullOrEmpty(pkg.PackageNameBangla))
+                                {
+                                    <div class="small text-muted mb-2">@pkg.PackageNameBangla</div>
+                                }
+                                <h2 class="fw-bold @(pkg.IsFeatured ? "text-primary" : "text-dark") my-3">৳ @pkg.Fee.ToString("N0")</h2>
+                                @if (!string.IsNullOrEmpty(pkg.Description))
+                                {
+                                    <p class="small text-muted mb-4">@pkg.Description</p>
+                                }
+                                <ul class="list-unstyled text-start small mb-4">
+                                    @if (pkg.IncludesTShirt)
+                                    {
+                                        <li class="mb-2"><i class="fas fa-check text-success me-2"></i> <strong>Premium Polo T-Shirt</strong></li>
+                                    }
+                                    @if (pkg.IncludesKitBag)
+                                    {
+                                        <li class="mb-2"><i class="fas fa-check text-success me-2"></i> <strong>Executive Backpack &amp; Hamper</strong></li>
+                                    }
+                                    @if (pkg.IncludesFood)
+                                    {
+                                        <li class="mb-2"><i class="fas fa-check text-success me-2"></i> <strong>Full Day Access &amp; Gourmet Meals</strong></li>
+                                    }
+                                    @if (pkg.IncludesRaffle)
+                                    {
+                                        <li class="mb-2"><i class="fas fa-check text-success me-2"></i> <strong>Mega Raffle Draw Coupon</strong></li>
+                                    }
+                                    @if (pkg.IncludedGuests > 0)
+                                    {
+                                        <li class="mb-2 text-primary fw-bold"><i class="fas fa-user-friends me-2"></i> <strong>+@pkg.IncludedGuests Accompanying Guest Included</strong></li>
+                                    }
+                                </ul>
+                            </div>
+                            <div class="pt-3">
+                                <a asp-controller="Enrollment" asp-action="Register" asp-route-packageId="@pkg.Id" 
+                                   class="btn @(pkg.IsFeatured ? "btn-primary" : "btn-outline-primary") rounded-pill w-100 py-2 fw-bold">
+                                    Register Now
+                                </a>
+                            </div>
+                        </div>
+                    </div>
+                }
+            </div>
+            
+            <div class="mt-4 text-center">
+                <div class="d-inline-flex flex-wrap justify-content-center gap-4 p-3 bg-light rounded-pill border small">
+                    <span class="text-muted"><i class="fas fa-plus-circle text-success me-1"></i> Optional Add-ons:</span>
+                    <span><strong>Spouse:</strong> ৳@(ev?.SpouseFee.ToString("N0") ?? "800")</span>
+                    <span><strong>Child (&gt;5 yrs):</strong> ৳@(ev?.ChildFee.ToString("N0") ?? "400")</span>
+                    <span><strong>Driver / Attendant:</strong> ৳@(ev?.GuestFee.ToString("N0") ?? "500")</span>
+                </div>
+            </div>
+        }
+        else
+        {
+            <div class="row g-4 justify-content-center">
+                <div class="col-lg-4 col-md-6">
+                    <div class="pricing-card featured">
+                        <span class="pricing-badge"><i class="fas fa-star me-1"></i> Primary Ticket</span>
+                        <h5 class="fw-bold text-primary">Single Alumni</h5>
+                        <h2 class="fw-bold text-primary my-3">৳ @(ev?.BaseAlumniFee.ToString("N0") ?? "1,500")</h2>
+                        <p class="small text-muted mb-4">Complete alumni entitlement package</p>
+                        <a asp-controller="Enrollment" asp-action="Register" class="btn btn-primary rounded-pill w-100 py-2 fw-bold">
+                            Register Now
+                        </a>
+                    </div>
+                </div>
+            </div>
+        }
+    </div>
+</section>
+
+<!-- Committee Showcase -->
+@if (Model.Committees.Any())
+{
+    <section class="section-padding bg-light" id="committee">
+        <div class="container">
+            <div class="text-center">
+                <h2 class="section-title">Organizing Committee</h2>
+                <p class="section-subtitle">The dedicated alumni leaders working tirelessly to make this grand day a resounding success.</p>
+            </div>
+            @foreach (var comm in Model.Committees.Take(2))
+            {
+                <div class="text-center mb-4">
+                    <h4 class="fw-bold text-success">@comm.CommitteeName</h4>
+                    @if (!string.IsNullOrEmpty(comm.CommitteeNameBangla))
+                    {
+                        <p class="text-muted">@comm.CommitteeNameBangla</p>
+                    }
+                </div>
+                <div class="row g-4 justify-content-center mb-5">
+                    @foreach (var member in comm.Members.Take(4))
+                    {
+                        <div class="col-lg-3 col-md-6 text-center">
+                            <div class="card card-custom p-4 text-center h-100">
+                                <div class="mx-auto mb-3" style="width: 110px; height: 110px; border-radius: 50%; overflow: hidden; border: 3px solid var(--primary); background: #f1f5f9;">
+                                    <img src="@(string.IsNullOrEmpty(member.PhotoPath) ? "https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=200&q=80" : member.PhotoPath)" 
+                                         alt="@member.FullName" class="w-100 h-100 object-fit-cover" />
+                                </div>
+                                <h5 class="fw-bold mb-1">@member.FullName</h5>
+                                <p class="text-success fw-semibold small mb-1">@member.Designation</p>
+                                @if (member.BatchYear.HasValue)
+                                {
+                                    <span class="badge bg-secondary rounded-pill px-3 py-1 mb-2">Batch @member.BatchYear</span>
+                                }
+                                @if (!string.IsNullOrEmpty(member.Mobile))
+                                {
+                                    <p class="small text-muted mb-0"><i class="fas fa-phone-alt me-1 text-warning"></i> @member.Mobile</p>
+                                }
+                            </div>
+                        </div>
+                    }
+                </div>
+            }
+            <div class="text-center">
+                <a asp-controller="Home" asp-action="Committee" class="btn btn-outline-success rounded-pill px-4 py-2">
+                    <i class="fas fa-users me-1"></i> View Full Committee Directory
+                </a>
+            </div>
+        </div>
+    </section>
+}
+
+<!-- Photo Gallery -->
+<section class="section-padding" id="gallery">
+    <div class="container">
+        <div class="text-center">
+            <h2 class="section-title">Campus Memories &amp; Moments</h2>
+            <p class="section-subtitle">Glimpses of golden school days, past alumni assemblies, and timeless friendships.</p>
+        </div>
+        @if (Model.GalleryImages != null && Model.GalleryImages.Any())
+        {
+            <div class="row g-4">
+                @foreach (var img in Model.GalleryImages.Take(6))
+                {
+                    <div class="col-lg-4 col-md-6">
+                        <div class="card card-custom overflow-hidden h-100 shadow-sm border-0 position-relative">
+                            <div style="height: 240px; overflow: hidden; background: #0f172a;">
+                                <img src="@img.ImagePath" class="w-100 h-100 object-fit-cover" alt="@img.Title"
+                                     onerror="this.onerror=null; this.src='/images/placeholder.svg';" />
+                            </div>
+                            <div class="card-body p-3">
+                                <div class="d-flex justify-content-between align-items-center mb-1">
+                                    <h6 class="fw-bold mb-0 text-dark">@img.Title</h6>
+                                    @if (!string.IsNullOrEmpty(img.Category))
+                                    {
+                                        <span class="badge bg-light text-primary border small">@img.Category</span>
+                                    }
+                                </div>
+                                @if (!string.IsNullOrEmpty(img.Caption))
+                                {
+                                    <p class="small text-muted mb-0">@img.Caption</p>
+                                }
+                            </div>
+                        </div>
+                    </div>
+                }
+            </div>
+            <div class="text-center mt-5">
+                <a asp-controller="Home" asp-action="Gallery" class="btn btn-outline-success rounded-pill px-5 py-3 fw-bold shadow-sm">
+                    <i class="fas fa-images me-2"></i> View Full Photo Gallery (@Model.GalleryImages.Count Photos)
+                </a>
+            </div>
+        }
+        else
+        {
+            <div class="row g-3">
+                <div class="col-md-4 col-sm-6">
+                    <div class="card card-custom overflow-hidden">
+                        <img src="https://images.unsplash.com/photo-1523580494863-6f3031224c94?auto=format&fit=crop&w=600&q=80" class="img-fluid" alt="Campus Life" onerror="this.onerror=null; this.src='/images/placeholder.svg';">
+                    </div>
+                </div>
+                <div class="col-md-4 col-sm-6">
+                    <div class="card card-custom overflow-hidden">
+                        <img src="https://images.unsplash.com/photo-1541339907198-e08756dedf3f?auto=format&fit=crop&w=600&q=80" class="img-fluid" alt="Reunion Joy">
+                    </div>
+                </div>
+                <div class="col-md-4 col-sm-6">
+                    <div class="card card-custom overflow-hidden">
+                        <img src="https://images.unsplash.com/photo-1529156069898-49953e39b3ac?auto=format&fit=crop&w=600&q=80" class="img-fluid" alt="Batch Reunion">
+                    </div>
+                </div>
+                <div class="col-md-4 col-sm-6">
+                    <div class="card card-custom overflow-hidden">
+                        <img src="https://images.unsplash.com/photo-1517486808906-6ca8b3f04846?auto=format&fit=crop&w=600&q=80" class="img-fluid" alt="Classmates">
+                    </div>
+                </div>
+                <div class="col-md-4 col-sm-6">
+                    <div class="card card-custom overflow-hidden">
+                        <img src="https://images.unsplash.com/photo-1492684223066-81342ee5ff30?auto=format&fit=crop&w=600&q=80" class="img-fluid" alt="Grand Stage">
+                    </div>
+                </div>
+                <div class="col-md-4 col-sm-6">
+                    <div class="card card-custom overflow-hidden">
+                        <img src="https://images.unsplash.com/photo-1577495508048-b635879837f1?auto=format&fit=crop&w=600&q=80" class="img-fluid" alt="Celebration">
+                    </div>
+                </div>
+            </div>
+        }
+    </div>
+</section>
+
+<!-- Contact & Venue -->
+<section class="section-padding bg-light" id="contact">
+    <div class="container">
+        <div class="row g-5 align-items-center">
+            <div class="col-lg-5">
+                <h2 class="section-title text-start">Have Questions? We're Here to Help!</h2>
+                <p class="text-muted mb-4">Feel free to reach out to our reunion coordination center for assistance with registration, payments, or special accommodation requests.</p>
+                <div class="d-flex align-items-center mb-4">
+                    <div class="bg-success text-white p-3 rounded-circle me-3"><i class="fas fa-map-marker-alt fa-lg"></i></div>
+                    <div>
+                        <h6 class="fw-bold mb-0">Event Location</h6>
+                        <small class="text-muted">@venue</small>
+                    </div>
+                </div>
+                <div class="d-flex align-items-center mb-4">
+                    <div class="bg-warning text-dark p-3 rounded-circle me-3"><i class="fas fa-phone-alt fa-lg"></i></div>
+                    <div>
+                        <h6 class="fw-bold mb-0">Help Desk Hotlines</h6>
+                        <small class="text-muted">@(Model.Settings.GetValueOrDefault("ContactHotline", "+880 1700-000000"))</small>
+                    </div>
+                </div>
+                <div class="d-flex align-items-center">
+                    <div class="bg-primary text-white p-3 rounded-circle me-3"><i class="fas fa-envelope fa-lg"></i></div>
+                    <div>
+                        <h6 class="fw-bold mb-0">Official Email</h6>
+                        <small class="text-muted">@(Model.Settings.GetValueOrDefault("ContactEmail", "reunion@easyalumni.com"))</small>
+                    </div>
+                </div>
+            </div>
+            <div class="col-lg-7">
+                <div class="card card-custom p-4">
+                    <h4 class="fw-bold text-dark mb-4"><i class="fas fa-paper-plane text-success me-2"></i> Send us a Message</h4>
+                    <form onsubmit="event.preventDefault(); Swal.fire('Thank you!', 'Your query has been submitted. Our volunteer desk will reach you shortly.', 'success');">
+                        <div class="row g-3">
+                            <div class="col-md-6">
+                                <label class="form-label fw-semibold">Your Name</label>
+                                <input type="text" class="form-control" placeholder="e.g. Tanvir Ahmed" required>
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label fw-semibold">Mobile Number</label>
+                                <input type="tel" class="form-control" placeholder="01XXXXXXXXX" required>
+                            </div>
+                            <div class="col-12">
+                                <label class="form-label fw-semibold">Passing Batch / Year</label>
+                                <input type="number" class="form-control" placeholder="e.g. 2010">
+                            </div>
+                            <div class="col-12">
+                                <label class="form-label fw-semibold">Your Question or Feedback</label>
+                                <textarea class="form-control" rows="4" placeholder="How can we assist you?" required></textarea>
+                            </div>
+                            <div class="col-12">
+                                <button type="submit" class="btn btn-success rounded-pill px-5 py-2 fw-bold">
+                                    <i class="fas fa-paper-plane me-1"></i> Submit Message
+                                </button>
+                            </div>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+
+        <!-- Google Map Section -->
+        <div class="row mt-5">
+            <div class="col-12">
+                <div class="card card-custom overflow-hidden p-0 border-0 rounded-4 shadow-sm">
+                    <div class="p-3 bg-white border-bottom d-flex justify-content-between align-items-center flex-wrap gap-2">
+                        <div>
+                            <h5 class="fw-bold text-dark mb-0">
+                                <i class="fas fa-map-marked-alt text-success me-2"></i> Campus Venue Location Map
+                            </h5>
+                            <small class="text-muted">@venue - @(Model.Settings.GetValueOrDefault("VenueAddress", "Hetem Khan, Boalia, Rajshahi"))</small>
+                        </div>
+                        <a href="https://maps.google.com/?q=@Uri.EscapeDataString(venue + " " + Model.Settings.GetValueOrDefault("VenueAddress", "Rajshahi"))" target="_blank" rel="noopener noreferrer" class="btn btn-sm btn-outline-success rounded-pill px-3">
+                            <i class="fas fa-external-link-alt me-1"></i> Open in Google Maps
+                        </a>
+                    </div>
+                    <div style="height: 380px; width: 100%; position: relative;">
+                        <iframe src="@mapUrl" width="100%" height="100%" style="border:0;" allowfullscreen="" loading="lazy" referrerpolicy="no-referrer-when-downgrade"></iframe>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+
+@section Scripts {
+    <script>
+        // Real-Time Countdown Timer
+        const targetDate = new Date("@eventDateStr").getTime();
+
+        function updateCountdown() {
+            const now = new Date().getTime();
+            const difference = targetDate - now;
+
+            if (difference > 0) {
+                const days = Math.floor(difference / (1000 * 60 * 60 * 24));
+                const hours = Math.floor((difference % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
+                const minutes = Math.floor((difference % (1000 * 60 * 60)) / (1000 * 60));
+                const seconds = Math.floor((difference % (1000 * 60)) / 1000);
+
+                document.getElementById('days').innerText = String(days).padStart(2, '0');
+                document.getElementById('hours').innerText = String(hours).padStart(2, '0');
+                document.getElementById('minutes').innerText = String(minutes).padStart(2, '0');
+                document.getElementById('seconds').innerText = String(seconds).padStart(2, '0');
+            } else {
+                document.getElementById('days').innerText = "00";
+                document.getElementById('hours').innerText = "00";
+                document.getElementById('minutes').innerText = "00";
+                document.getElementById('seconds').innerText = "00";
+            }
+        }
+
+        setInterval(updateCountdown, 1000);
+        updateCountdown();
+    </script>
+}

@@ -1,0 +1,95 @@
+@model IEnumerable<dynamic>
+@{
+    ViewData["Title"] = "Catering & Headcount Report";
+    Layout = "_AdminLayout";
+}
+
+<!-- Page Header -->
+<div class="d-flex justify-content-between align-items-center flex-wrap gap-3 mb-4">
+    <div>
+        <h2 class="h4 fw-bold text-dark mb-1">Catering &amp; Headcount Report</h2>
+        <p class="text-muted small mb-0">Accurate headcount for food packets, buffet catering, and seating arrangements</p>
+    </div>
+    <div>
+        <button type="button" class="btn btn-warning rounded-pill px-3" onclick="window.print()">
+            Print / PDF
+        </button>
+    </div>
+</div>
+    <!-- Summary Stat Cards -->
+    <div class="row g-3 mb-4">
+        <div class="col">
+            <div class="card border-0 shadow-sm rounded-4 p-3 text-center bg-primary text-white">
+                <span class="small opacity-80 text-uppercase">Total Alumni</span>
+                <h2 class="fw-bold mb-0">@ViewBag.GrandTotalAlumni</h2>
+            </div>
+        </div>
+        <div class="col">
+            <div class="card border-0 shadow-sm rounded-4 p-3 text-center bg-success text-white">
+                <span class="small opacity-80 text-uppercase">Spouses</span>
+                <h2 class="fw-bold mb-0">@ViewBag.GrandTotalSpouses</h2>
+            </div>
+        </div>
+        <div class="col">
+            <div class="card border-0 shadow-sm rounded-4 p-3 text-center bg-info text-white">
+                <span class="small opacity-80 text-uppercase">Children (5+ yrs)</span>
+                <h2 class="fw-bold mb-0">@ViewBag.GrandTotalChildren</h2>
+            </div>
+        </div>
+        <div class="col">
+            <div class="card border-0 shadow-sm rounded-4 p-3 text-center bg-warning text-dark">
+                <span class="small opacity-80 text-uppercase">Drivers / Guests</span>
+                <h2 class="fw-bold mb-0">@ViewBag.GrandTotalGuests</h2>
+            </div>
+        </div>
+        <div class="col">
+            <div class="card border-0 shadow-sm rounded-4 p-3 text-center bg-danger text-white">
+                <span class="small opacity-80 text-uppercase">TOTAL CATERING HEADS</span>
+                <h2 class="fw-bold mb-0">@ViewBag.GrandTotalHeads Heads</h2>
+            </div>
+        </div>
+    </div>
+
+    <!-- Batch Breakdown Table -->
+    <div class="card border-0 shadow-sm rounded-4 overflow-hidden">
+        <div class="card-header bg-white p-3 border-bottom">
+            <h5 class="fw-bold text-dark mb-0">Batch-wise Catering Breakdown</h5>
+        </div>
+        <div class="table-responsive p-3">
+            <table class="table table-bordered table-hover align-middle text-center mb-0">
+                <thead class="table-light">
+                    <tr>
+                        <th>Passing Batch</th>
+                        <th>Alumni Count</th>
+                        <th>Spouse Count</th>
+                        <th>Child Count</th>
+                        <th>Driver/Guest Count</th>
+                        <th class="bg-light fw-bold text-danger">Total Meals Required</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var b in Model)
+                    {
+                        <tr>
+                            <td><strong>Batch @b.Batch</strong></td>
+                            <td>@b.AlumniCount</td>
+                            <td>@b.SpouseCount</td>
+                            <td>@b.ChildCount</td>
+                            <td>@b.GuestCount</td>
+                            <td class="fw-bold fs-6 text-danger">@b.TotalHeads Meals</td>
+                        </tr>
+                    }
+                </tbody>
+                <tfoot class="table-dark fw-bold">
+                    <tr>
+                        <td>GRAND TOTAL:</td>
+                        <td>@ViewBag.GrandTotalAlumni</td>
+                        <td>@ViewBag.GrandTotalSpouses</td>
+                        <td>@ViewBag.GrandTotalChildren</td>
+                        <td>@ViewBag.GrandTotalGuests</td>
+                        <td class="text-warning fs-5">@ViewBag.GrandTotalHeads Meals</td>
+                    </tr>
+                </tfoot>
+            </table>
+        </div>
+    </div>

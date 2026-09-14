@@ -1,0 +1,108 @@
+@model EasyAlumni.Web.ViewModels.AccessMatrixViewModel
+@{
+    Layout = "_AdminLayout";
+    ViewData["Title"] = "Role Access Matrix";
+}
+
+<div class="d-flex justify-content-between align-items-center mb-4 flex-wrap gap-2">
+    <div>
+        <h4 class="fw-bold mb-1 text-dark">Role-Based Access Control (RBAC) Matrix</h4>
+        <p class="text-muted small mb-0">Overview of operational permissions and module authorization rules across user tiers.</p>
+    </div>
+    <div>
+        <a asp-action="Index" class="btn btn-outline-secondary rounded-3 px-3 py-2">
+            Back to Users Directory
+        </a>
+    </div>
+</div>
+
+<!-- Role Legend Cards -->
+<div class="row g-3 mb-4">
+    <div class="col-md">
+        <div class="card border-0 shadow-sm rounded-4 p-3 bg-white h-100">
+            <span class="badge bg-danger bg-opacity-10 text-danger border border-danger border-opacity-25 w-auto d-inline-block mb-2">SuperAdmin</span>
+            <p class="small text-muted mb-0">Unrestricted root system ownership, SMS gateway credentials, and user credential controls.</p>
+        </div>
+    </div>
+    <div class="col-md">
+        <div class="card border-0 shadow-sm rounded-4 p-3 bg-white h-100">
+            <span class="badge bg-success bg-opacity-10 text-success border border-success border-opacity-25 w-auto d-inline-block mb-2">Admin</span>
+            <p class="small text-muted mb-0">Overall reunion event operations, public website CMS, packages, committee, and reports.</p>
+        </div>
+    </div>
+    <div class="col-md">
+        <div class="card border-0 shadow-sm rounded-4 p-3 bg-white h-100">
+            <span class="badge bg-primary bg-opacity-10 text-primary border border-primary border-opacity-25 w-auto d-inline-block mb-2">Accounts</span>
+            <p class="small text-muted mb-0">Financial vouchers, cash book reconciliation, collection statements, and fee audits.</p>
+        </div>
+    </div>
+    <div class="col-md">
+        <div class="card border-0 shadow-sm rounded-4 p-3 bg-white h-100">
+            <span class="badge bg-warning bg-opacity-10 text-warning border border-warning border-opacity-25 w-auto d-inline-block mb-2">Volunteer</span>
+            <p class="small text-muted mb-0">Gate QR check-in kiosk for attendee scanning and souvenir kit parcel distribution.</p>
+        </div>
+    </div>
+    <div class="col-md">
+        <div class="card border-0 shadow-sm rounded-4 p-3 bg-white h-100">
+            <span class="badge bg-secondary bg-opacity-10 text-secondary border border-secondary border-opacity-25 w-auto d-inline-block mb-2">Alumni</span>
+            <p class="small text-muted mb-0">General participant profile, registration pass download, and public photo gallery.</p>
+        </div>
+    </div>
+</div>
+
+<!-- Matrix Table -->
+<div class="card border-0 shadow-sm rounded-4 overflow-hidden mb-4">
+    <div class="card-header bg-white border-bottom p-3">
+        <h6 class="fw-bold mb-0 text-dark">Module Permission Matrix</h6>
+    </div>
+    <div class="table-responsive">
+        <table class="table table-bordered align-middle mb-0 text-center">
+            <thead class="table-light">
+                <tr>
+                    <th class="text-start ps-4" style="width: 35%;">System Feature / Module</th>
+                    <th style="width: 13%;" class="text-danger">SuperAdmin</th>
+                    <th style="width: 13%;" class="text-success">Admin</th>
+                    <th style="width: 13%;" class="text-primary">Accounts</th>
+                    <th style="width: 13%;" class="text-warning">Volunteer</th>
+                    <th style="width: 13%;" class="text-secondary">Alumni</th>
+                </tr>
+            </thead>
+            <tbody>
+                @{
+                    var grouped = Model.Permissions.GroupBy(p => p.Category);
+                    foreach (var group in grouped)
+                    {
+                        <tr class="table-secondary bg-opacity-25">
+                            <td colspan="6" class="text-start ps-4 fw-bold text-dark py-2">
+                                @group.Key
+                            </td>
+                        </tr>
+                        foreach (var item in group)
+                        {
+                            <tr>
+                                <td class="text-start ps-4">
+                                    <div class="fw-bold text-dark">@item.ModuleName</div>
+                                    <small class="text-muted">@item.Description</small>
+                                </td>
+                                @foreach (var r in Model.Roles)
+                                {
+                                    var hasAccess = item.RoleAccess.GetValueOrDefault(r, false);
+                                    <td>
+                                        @if (hasAccess)
+                                        {
+                                            <span class="badge bg-success bg-opacity-10 text-success fs-6 rounded-circle p-2">✓</span>
+                                        }
+                                        else
+                                        {
+                                            <span class="text-muted opacity-25 fs-6">—</span>
+                                        }
+                                    </td>
+                                }
+                            </tr>
+                        }
+                    }
+                }
+            </tbody>
+        </table>
+    </div>
+</div>

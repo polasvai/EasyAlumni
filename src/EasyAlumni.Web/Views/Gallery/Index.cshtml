@@ -1,0 +1,317 @@
+@model List<EasyAlumni.Core.Entities.GalleryImage>
+@{
+    Layout = "_AdminLayout";
+    ViewData["Title"] = "Photo Gallery Management";
+    var totalPhotos = Model.Count;
+    var activePhotos = Model.Count(m => m.IsActive);
+    var categories = Model.Select(m => m.Category).Where(c => !string.IsNullOrEmpty(c)).Distinct().ToList();
+}
+
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <div>
+        <h2 class="fw-bold mb-1">Photo Gallery Management</h2>
+        <p class="text-muted mb-0">Upload, organize, and publish campus memory photos for the public gallery showcase</p>
+    </div>
+    <div class="d-flex gap-2">
+        <a href="/Home/Gallery" target="_blank" class="btn btn-outline-success">
+            View Public Gallery
+        </a>
+        <button type="button" class="btn btn-success" data-bs-toggle="modal" data-bs-target="#uploadModal">
+            Upload New Photo
+        </button>
+    </div>
+</div>
+
+@if (TempData["SuccessMessage"] != null)
+{
+    <div class="alert alert-success alert-dismissible fade show rounded-3 shadow-sm mb-4" role="alert">
+        <strong>Success!</strong> @TempData["SuccessMessage"]
+        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+    </div>
+}
+@if (TempData["ErrorMessage"] != null)
+{
+    <div class="alert alert-danger alert-dismissible fade show rounded-3 shadow-sm mb-4" role="alert">
+        <strong>Notice:</strong> @TempData["ErrorMessage"]
+        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+    </div>
+}
+
+<!-- KPI Cards -->
+<div class="row g-3 mb-4">
+    <div class="col-md-4">
+        <div class="card border-0 shadow-sm rounded-4 p-3 bg-white">
+            <div class="small text-muted text-uppercase fw-semibold">Total Gallery Photos</div>
+            <h2 class="fw-bold text-dark my-1">@totalPhotos</h2>
+            <div class="small text-success">Archived in database</div>
+        </div>
+    </div>
+    <div class="col-md-4">
+        <div class="card border-0 shadow-sm rounded-4 p-3 bg-white">
+            <div class="small text-muted text-uppercase fw-semibold">Active &amp; Published</div>
+            <h2 class="fw-bold text-success my-1">@activePhotos</h2>
+            <div class="small text-muted">Visible on landing page &amp; gallery</div>
+        </div>
+    </div>
+    <div class="col-md-4">
+        <div class="card border-0 shadow-sm rounded-4 p-3 bg-white">
+            <div class="small text-muted text-uppercase fw-semibold">Active Categories</div>
+            <h2 class="fw-bold text-primary my-1">@categories.Count</h2>
+            <div class="small text-muted">Campus Life, Reunions, Mentors, etc.</div>
+        </div>
+    </div>
+</div>
+
+<!-- Category Filter Pills -->
+@if (categories.Any())
+{
+    <div class="d-flex flex-wrap gap-2 mb-4">
+        <button class="btn btn-sm btn-outline-secondary rounded-pill px-3 active filter-tab-btn" onclick="filterGalleryAdmin('all', this)">
+            All Categories (@Model.Count)
+        </button>
+        @foreach (var cat in categories)
+        {
+            var cCount = Model.Count(m => m.Category == cat);
+            <button class="btn btn-sm btn-outline-secondary rounded-pill px-3 filter-tab-btn" onclick="filterGalleryAdmin('@cat.Replace("'", "\\'")', this)">
+                @cat (@cCount)
+            </button>
+        }
+    </div>
+}
+
+<!-- Photos Grid -->
+@if (Model.Any())
+{
+    <div class="row g-4" id="adminGalleryGrid">
+        @foreach (var img in Model)
+        {
+            <div class="col-lg-4 col-md-6 admin-gallery-item" data-category="@(img.Category ?? "")">
+                <div class="card border-0 shadow-sm rounded-4 overflow-hidden h-100 d-flex flex-column justify-content-between">
+                    <div>
+                        <div style="height: 200px; position: relative; background: #0f172a; overflow: hidden;">
+                            <img src="@img.ImagePath" class="w-100 h-100 object-fit-cover" alt="@img.Title"
+                                 onerror="this.onerror=null; this.src='/images/placeholder.svg';" />
+                            <div class="position-absolute top-0 start-0 p-2 d-flex gap-1">
+                                <span class="badge bg-dark bg-opacity-75 text-white small">Order: #@img.DisplayOrder</span>
+                                @if (img.IsActive)
+                                {
+                                    <span class="badge bg-success small">Published</span>
+                                }
+                                else
+                                {
+                                    <span class="badge bg-secondary small">Hidden</span>
+                                }
+                            </div>
+                            <div class="position-absolute top-0 end-0 p-2">
+                                <span class="badge bg-primary small">@img.Category</span>
+                            </div>
+                        </div>
+                        <div class="p-3">
+                            <h5 class="fw-bold text-dark mb-1">@img.Title</h5>
+                            <p class="small text-muted mb-0" style="min-height: 40px;">
+                                @(string.IsNullOrWhiteSpace(img.Caption) ? "No caption provided." : img.Caption)
+                            </p>
+                        </div>
+                    </div>
+                    <div class="p-3 bg-light border-top d-flex justify-content-between align-items-center">
+                        <small class="text-muted">ID: #@img.Id</small>
+                        <div class="d-flex gap-2">
+                            <button type="button" class="btn btn-sm btn-outline-primary px-3"
+                                    onclick="openEditModal(@img.Id, '@img.Title.Replace("'", "\\'")', '@(img.Caption?.Replace("'", "\\'") ?? "")', '@(img.Category?.Replace("'", "\\'") ?? "")', @img.DisplayOrder, @(img.IsActive ? "true" : "false"), '@img.ImagePath')">
+                                Edit
+                            </button>
+                            <form method="post" asp-action="DeleteImage" asp-route-id="@img.Id" onsubmit="return confirm('Are you sure you want to permanently delete this photo?');" class="m-0">
+                                @Html.AntiForgeryToken()
+                                <button type="submit" class="btn btn-sm btn-outline-danger px-3">
+                                    Delete
+                                </button>
+                            </form>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        }
+    </div>
+}
+else
+{
+    <div class="card border-0 shadow-sm rounded-4 p-5 text-center bg-white">
+        <h4 class="fw-bold text-dark mb-2">No Gallery Photos Found</h4>
+        <p class="text-muted mb-4">Start uploading pictures from previous assemblies, campus days, and cultural celebrations.</p>
+        <div>
+            <button type="button" class="btn btn-success px-4" data-bs-toggle="modal" data-bs-target="#uploadModal">
+                Upload First Photo
+            </button>
+        </div>
+    </div>
+}
+
+<!-- Modal: Upload New Photo -->
+<div class="modal fade" id="uploadModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered modal-lg">
+        <div class="modal-content border-0 rounded-4 shadow-lg overflow-hidden">
+            <form method="post" asp-action="UploadImage" enctype="multipart/form-data">
+                @Html.AntiForgeryToken()
+                <div class="modal-header bg-light border-bottom p-4">
+                    <h5 class="modal-title fw-bold">Upload New Gallery Photo</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body p-4">
+                    <div class="row g-3">
+                        <div class="col-md-8">
+                            <label class="form-label fw-semibold">Photo Title <span class="text-danger">*</span></label>
+                            <input type="text" name="Title" class="form-control" placeholder="e.g. Annual Sports Day 2018" required />
+                        </div>
+                        <div class="col-md-4">
+                            <label class="form-label fw-semibold">Category</label>
+                            <input type="text" name="Category" class="form-control" list="categoryPresets" placeholder="Select or type..." value="Campus Life" required />
+                            <datalist id="categoryPresets">
+                                <option value="Campus Life" />
+                                <option value="Reunions" />
+                                <option value="Cultural &amp; Sports" />
+                                <option value="Teachers &amp; Mentors" />
+                                <option value="Classmates Memories" />
+                            </datalist>
+                        </div>
+                        <div class="col-12">
+                            <label class="form-label fw-semibold">Caption / Brief Story (Optional)</label>
+                            <textarea name="Caption" class="form-control" rows="2" placeholder="Describe this moment, batch year, or notable people..."></textarea>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label fw-semibold">Select Photo File (Max 10MB)</label>
+                            <input type="file" name="ImageFile" class="form-control" accept="image/*" onchange="previewUpload(this, 'uploadPreview')" />
+                            <small class="text-muted">Supported formats: JPG, PNG, WEBP</small>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label fw-semibold">Or Direct Image URL (Fallback)</label>
+                            <input type="url" name="ImageUrl" class="form-control" placeholder="https://images.unsplash.com/..." />
+                            <small class="text-muted">Used if no file is selected</small>
+                        </div>
+                        <div class="col-12" id="previewContainer" style="display: none;">
+                            <label class="form-label fw-semibold small text-muted">File Preview:</label>
+                            <div style="height: 180px; max-width: 320px; border-radius: 12px; overflow: hidden; background: #0f172a;">
+                                <img id="uploadPreview" src="" style="width: 100%; height: 100%; object-fit: cover;" alt="Preview" />
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label fw-semibold">Display Sort Order</label>
+                            <input type="number" name="DisplayOrder" class="form-control" value="1" min="1" />
+                            <small class="text-muted">Lower numbers appear first</small>
+                        </div>
+                        <div class="col-md-6 d-flex align-items-center pt-3">
+                            <div class="form-check form-switch">
+                                <input class="form-check-input" type="checkbox" name="IsActive" value="true" id="uploadActive" checked>
+                                <label class="form-check-label fw-semibold" for="uploadActive">Publish immediately on website</label>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer bg-light border-top p-3">
+                    <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <button type="submit" class="btn btn-success px-4">Upload &amp; Publish</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- Modal: Edit Existing Photo -->
+<div class="modal fade" id="editModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered modal-lg">
+        <div class="modal-content border-0 rounded-4 shadow-lg overflow-hidden">
+            <form method="post" asp-action="EditImage" enctype="multipart/form-data">
+                @Html.AntiForgeryToken()
+                <input type="hidden" name="Id" id="editId" />
+                <div class="modal-header bg-light border-bottom p-4">
+                    <h5 class="modal-title fw-bold">Edit Gallery Photo</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body p-4">
+                    <div class="row g-3">
+                        <div class="col-md-8">
+                            <label class="form-label fw-semibold">Photo Title <span class="text-danger">*</span></label>
+                            <input type="text" name="Title" id="editTitle" class="form-control" required />
+                        </div>
+                        <div class="col-md-4">
+                            <label class="form-label fw-semibold">Category</label>
+                            <input type="text" name="Category" id="editCategory" class="form-control" list="categoryPresets" required />
+                        </div>
+                        <div class="col-12">
+                            <label class="form-label fw-semibold">Caption / Brief Story</label>
+                            <textarea name="Caption" id="editCaption" class="form-control" rows="2"></textarea>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label fw-semibold">Replace Photo File (Optional)</label>
+                            <input type="file" name="NewImageFile" class="form-control" accept="image/*" onchange="previewUpload(this, 'editPhotoPreview')" />
+                            <small class="text-muted">Leave empty to keep existing photo</small>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label fw-semibold small text-muted">Current Photo:</label>
+                            <div style="height: 120px; max-width: 200px; border-radius: 8px; overflow: hidden; background: #0f172a;">
+                                <img id="editPhotoPreview" src="" style="width: 100%; height: 100%; object-fit: cover;" alt="Current Photo" />
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label fw-semibold">Display Sort Order</label>
+                            <input type="number" name="DisplayOrder" id="editDisplayOrder" class="form-control" min="1" />
+                        </div>
+                        <div class="col-md-6 d-flex align-items-center pt-3">
+                            <div class="form-check form-switch">
+                                <input class="form-check-input" type="checkbox" name="IsActive" value="true" id="editIsActive">
+                                <label class="form-check-label fw-semibold" for="editIsActive">Published &amp; Active</label>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer bg-light border-top p-3">
+                    <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <button type="submit" class="btn btn-success px-4">Save Changes</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        function filterGalleryAdmin(category, btn) {
+            document.querySelectorAll('.filter-tab-btn').forEach(b => b.classList.remove('active'));
+            btn.classList.add('active');
+
+            const items = document.querySelectorAll('.admin-gallery-item');
+            items.forEach(item => {
+                if (category === 'all' || item.getAttribute('data-category') === category) {
+                    item.style.display = 'block';
+                } else {
+                    item.style.display = 'none';
+                }
+            });
+        }
+
+        function previewUpload(input, previewImgId) {
+            if (input.files && input.files[0]) {
+                const reader = new FileReader();
+                reader.onload = function (e) {
+                    const img = document.getElementById(previewImgId);
+                    img.src = e.target.result;
+                    const container = document.getElementById('previewContainer');
+                    if (container) container.style.display = 'block';
+                };
+                reader.readAsDataURL(input.files[0]);
+            }
+        }
+
+        function openEditModal(id, title, caption, category, displayOrder, isActive, imagePath) {
+            document.getElementById('editId').value = id;
+            document.getElementById('editTitle').value = title;
+            document.getElementById('editCaption').value = caption;
+            document.getElementById('editCategory').value = category;
+            document.getElementById('editDisplayOrder').value = displayOrder;
+            document.getElementById('editIsActive').checked = isActive;
+            document.getElementById('editPhotoPreview').src = imagePath;
+
+            const modal = new bootstrap.Modal(document.getElementById('editModal'));
+            modal.show();
+        }
+    </script>
+}

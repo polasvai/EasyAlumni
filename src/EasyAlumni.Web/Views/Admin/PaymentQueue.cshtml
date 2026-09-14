@@ -1,0 +1,244 @@
+@model List<EasyAlumni.Core.Entities.RegistrationPayment>
+@{
+    ViewData["Title"] = "Payment Verification Queue";
+    Layout = "_AdminLayout";
+    var selectedStatus = (EasyAlumni.Core.Enums.PaymentStatus?)ViewBag.SelectedStatus;
+}
+
+<!-- Page Header -->
+<div class="d-flex justify-content-between align-items-center flex-wrap gap-3 mb-4">
+    <div>
+        <h2 class="h4 fw-bold text-dark mb-1">Payment Verification &amp; Approvals</h2>
+        <p class="text-muted small mb-0">Audit mobile banking TrxIDs, inspect slips, and authorize digital passes</p>
+    </div>
+    <div>
+        <a asp-controller="Admin" asp-action="Index" class="btn btn-outline-secondary rounded-pill px-3">
+            Dashboard
+        </a>
+    </div>
+</div>
+    @if (TempData["Success"] != null)
+    {
+        <div class="alert alert-success alert-dismissible fade show rounded-3" role="alert">
+            <i class="fas fa-check-circle me-2"></i> @TempData["Success"]
+            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        </div>
+    }
+    @if (TempData["Warning"] != null)
+    {
+        <div class="alert alert-warning alert-dismissible fade show rounded-3" role="alert">
+            <i class="fas fa-exclamation-triangle me-2"></i> @TempData["Warning"]
+            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        </div>
+    }
+
+    <!-- Filter Buttons -->
+    <div class="d-flex gap-2 mb-4">
+        <a asp-controller="Admin" asp-action="PaymentQueue" asp-route-status="0" 
+           class="btn rounded-pill px-4 @(selectedStatus == EasyAlumni.Core.Enums.PaymentStatus.Pending ? "btn-warning fw-bold" : "btn-outline-secondary")">
+            <i class="fas fa-clock me-1"></i> Pending Verification
+        </a>
+        <a asp-controller="Admin" asp-action="PaymentQueue" asp-route-status="1" 
+           class="btn rounded-pill px-4 @(selectedStatus == EasyAlumni.Core.Enums.PaymentStatus.Approved ? "btn-success fw-bold" : "btn-outline-secondary")">
+            <i class="fas fa-check-circle me-1"></i> Approved Payments
+        </a>
+        <a asp-controller="Admin" asp-action="PaymentQueue" asp-route-status="2" 
+           class="btn rounded-pill px-4 @(selectedStatus == EasyAlumni.Core.Enums.PaymentStatus.Rejected ? "btn-danger fw-bold" : "btn-outline-secondary")">
+            <i class="fas fa-times-circle me-1"></i> Rejected Payments
+        </a>
+    </div>
+
+    <!-- Payments Table -->
+    <div class="card border-0 shadow-sm rounded-4 overflow-hidden">
+        <div class="table-responsive p-3">
+            <table class="table table-hover align-middle" id="paymentTable">
+                <thead class="table-light small text-uppercase">
+                    <tr>
+                        <th>Ticket Code</th>
+                        <th>Alumnus / Batch</th>
+                        <th>Method</th>
+                        <th>TrxID</th>
+                        <th>Sender Number</th>
+                        <th>Amount</th>
+                        <th>Slip</th>
+                        <th>Status</th>
+                        <th class="text-end">Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var payment in Model)
+                    {
+                        var reg = payment.EventRegistration;
+                        var profile = reg?.AlumniProfile;
+                        <tr>
+                            <td>
+                                <span class="badge bg-light text-dark border fw-bold">@reg?.RegistrationNo</span>
+                                <small class="text-muted d-block">@payment.SubmittedAt.ToString("MMM dd, hh:mm tt")</small>
+                            </td>
+                            <td>
+                                <strong>@profile?.NameEnglish</strong>
+                                <span class="badge bg-secondary ms-1">Batch @profile?.PassingYear</span>
+                                <small class="text-muted d-block">@profile?.ContactNumber</small>
+                            </td>
+                            <td>
+                                <span class="badge bg-info text-dark">@payment.PaymentMode</span>
+                            </td>
+                            <td>
+                                <code class="fw-bold text-danger fs-6">@payment.TransactionId</code>
+                            </td>
+                            <td>
+                                <strong>@payment.SenderNumber</strong>
+                            </td>
+                            <td>
+                                <strong class="text-success fs-6">৳ @payment.Amount.ToString("N0")</strong>
+                            </td>
+                            <td>
+                                @if (!string.IsNullOrEmpty(payment.SlipAttachmentPath))
+                                {
+                                    <button type="button" class="btn btn-sm btn-outline-primary rounded-pill px-2"
+                                            onclick="viewSlip('@payment.SlipAttachmentPath', '@profile?.NameEnglish', '@payment.TransactionId', '@payment.Amount')">
+                                        <i class="fas fa-file-image me-1"></i> View Slip
+                                    </button>
+                                }
+                                else
+                                {
+                                    <span class="text-muted small">No Slip</span>
+                                }
+                            </td>
+                            <td>
+                                @if (payment.Status == EasyAlumni.Core.Enums.PaymentStatus.Approved)
+                                {
+                                    <span class="badge bg-success"><i class="fas fa-check me-1"></i> Approved</span>
+                                }
+                                else if (payment.Status == EasyAlumni.Core.Enums.PaymentStatus.Pending)
+                                {
+                                    <span class="badge bg-warning text-dark"><i class="fas fa-clock me-1"></i> Pending</span>
+                                }
+                                else
+                                {
+                                    <span class="badge bg-danger"><i class="fas fa-times me-1"></i> Rejected</span>
+                                }
+                            </td>
+                            <td class="text-end">
+                                @if (payment.Status == EasyAlumni.Core.Enums.PaymentStatus.Pending)
+                                {
+                                    <div class="d-inline-flex gap-1">
+                                        <form asp-controller="Admin" asp-action="ApprovePayment" method="post" class="d-inline"
+                                              onsubmit="return confirm('Approve payment for ticket @reg?.RegistrationNo? This will issue the digital pass and dispatch confirmation SMS.')">
+                                            @Html.AntiForgeryToken()
+                                            <input type="hidden" name="paymentId" value="@payment.Id" />
+                                            <button type="submit" class="btn btn-sm btn-success rounded-pill px-3 fw-semibold">
+                                                <i class="fas fa-check me-1"></i> Approve
+                                            </button>
+                                        </form>
+
+                                        <button type="button" class="btn btn-sm btn-outline-danger rounded-pill px-2"
+                                                onclick="openRejectModal('@payment.Id', '@reg?.RegistrationNo')">
+                                            <i class="fas fa-times"></i>
+                                        </button>
+                                    </div>
+                                }
+                                else if (payment.Status == EasyAlumni.Core.Enums.PaymentStatus.Approved)
+                                {
+                                    <a asp-controller="Pass" asp-action="ViewPass" asp-route-id="@reg?.RegistrationNo" target="_blank"
+                                       class="btn btn-sm btn-outline-dark rounded-pill px-2" title="View Pass">
+                                        <i class="fas fa-qrcode"></i>
+                                    </a>
+                                }
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+<!-- Slip Viewer Modal -->
+<div class="modal fade" id="slipModal" tabindex="-1">
+    <div class="modal-dialog modal-dialog-centered modal-lg">
+        <div class="modal-content rounded-4 border-0 shadow">
+            <div class="modal-header border-bottom">
+                <h5 class="modal-title fw-bold" id="slipModalTitle">Payment Slip Inspection</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body text-center p-4">
+                <div class="mb-3 text-muted small" id="slipModalMeta"></div>
+                <div class="p-2 border rounded-3 bg-light" style="max-height: 550px; overflow-y: auto;">
+                    <img id="slipImage" src="" class="img-fluid rounded shadow-sm" alt="Payment Attachment" style="display:none;" />
+                    <iframe id="slipPdf" src="" style="width: 100%; height: 500px; display:none;" frameborder="0"></iframe>
+                </div>
+            </div>
+            <div class="modal-footer border-top">
+                <a id="slipDownloadBtn" href="" target="_blank" class="btn btn-outline-primary rounded-pill px-3">
+                    <i class="fas fa-external-link-alt me-1"></i> Open Original
+                </a>
+                <button type="button" class="btn btn-secondary rounded-pill px-4" data-bs-dismiss="modal">Close</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Reject Reason Modal -->
+<div class="modal fade" id="rejectModal" tabindex="-1">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content rounded-4 border-0 shadow">
+            <form asp-controller="Admin" asp-action="RejectPayment" method="post">
+                @Html.AntiForgeryToken()
+                <input type="hidden" name="paymentId" id="rejectPaymentId" />
+                <div class="modal-header border-bottom">
+                    <h5 class="modal-title fw-bold text-danger"><i class="fas fa-times-circle me-1"></i> Reject Payment</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body p-4">
+                    <p class="small text-muted">Please specify the reason for rejecting ticket <strong id="rejectTicketNo"></strong>:</p>
+                    <div class="mb-3">
+                        <label class="form-label fw-semibold">Rejection Remarks</label>
+                        <textarea name="remarks" class="form-control" rows="3" placeholder="e.g. TrxID not found in mobile banking statement, amount mismatch." required></textarea>
+                    </div>
+                </div>
+                <div class="modal-footer border-top">
+                    <button type="button" class="btn btn-secondary rounded-pill px-3" data-bs-dismiss="modal">Cancel</button>
+                    <button type="submit" class="btn btn-danger rounded-pill px-4">Reject Payment</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        $(document).ready(function() {
+            $('#paymentTable').DataTable({
+                "order": [[0, "desc"]],
+                "pageLength": 25
+            });
+        });
+
+        function viewSlip(path, name, trxId, amount) {
+            document.getElementById('slipModalTitle').innerText = `Payment Slip - ${name}`;
+            document.getElementById('slipModalMeta').innerHTML = `<strong>TrxID:</strong> ${trxId} &nbsp;|&nbsp; <strong>Claimed Amount:</strong> ৳ ${parseFloat(amount).toLocaleString()}`;
+            document.getElementById('slipDownloadBtn').href = path;
+
+            const isPdf = path.toLowerCase().endsWith('.pdf');
+            if (isPdf) {
+                document.getElementById('slipImage').style.display = 'none';
+                const pdfFrame = document.getElementById('slipPdf');
+                pdfFrame.src = path;
+                pdfFrame.style.display = 'block';
+            } else {
+                document.getElementById('slipPdf').style.display = 'none';
+                const img = document.getElementById('slipImage');
+                img.src = path;
+                img.style.display = 'inline-block';
+            }
+
+            new bootstrap.Modal(document.getElementById('slipModal')).show();
+        }
+
+        function openRejectModal(paymentId, ticketNo) {
+            document.getElementById('rejectPaymentId').value = paymentId;
+            document.getElementById('rejectTicketNo').innerText = ticketNo;
+            new bootstrap.Modal(document.getElementById('rejectModal')).show();
+        }
+    </script>
+}

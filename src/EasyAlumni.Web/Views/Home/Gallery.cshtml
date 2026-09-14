@@ -1,0 +1,171 @@
+@model List<EasyAlumni.Core.Entities.GalleryImage>
+@{
+    ViewData["Title"] = "Campus Memories & Photo Gallery";
+    var categories = Model.Select(m => m.Category).Where(c => !string.IsNullOrEmpty(c)).Distinct().ToList();
+}
+
+@section Styles {
+    <style>
+        .gallery-card {
+            border-radius: 16px;
+            overflow: hidden;
+            background: #fff;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.06);
+            transition: transform 0.25s ease, box-shadow 0.25s ease;
+            position: relative;
+        }
+        .gallery-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 15px 35px rgba(0, 0, 0, 0.12);
+        }
+        .gallery-img-wrap {
+            height: 260px;
+            overflow: hidden;
+            position: relative;
+            background: #0f172a;
+            cursor: pointer;
+        }
+        .gallery-img-wrap img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            transition: transform 0.4s ease;
+        }
+        .gallery-card:hover .gallery-img-wrap img {
+            transform: scale(1.05);
+        }
+        .gallery-overlay {
+            position: absolute;
+            inset: 0;
+            background: rgba(15, 23, 42, 0.4);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            opacity: 0;
+            transition: opacity 0.2s ease;
+            color: #fff;
+            font-size: 1.5rem;
+        }
+        .gallery-card:hover .gallery-overlay {
+            opacity: 1;
+        }
+        .filter-btn.active {
+            background-color: #006a4e !important;
+            color: #fff !important;
+            border-color: #006a4e !important;
+        }
+    </style>
+}
+
+<div class="bg-dark text-white py-5" style="background: linear-gradient(135deg, #0f172a 0%, #004d38 100%) !important; padding-top: 120px !important;">
+    <div class="container text-center">
+        <span class="badge bg-warning text-dark px-3 py-1 rounded-pill mb-2 fw-bold">Alumni Photo Archives</span>
+        <h1 class="display-4 fw-bold">Campus Memories &amp; Photo Gallery</h1>
+        <p class="lead opacity-90 mx-auto" style="max-width: 700px;">
+            Cherished snapshots from school days, past reunions, faculty celebrations, and memorable campus events.
+        </p>
+    </div>
+</div>
+
+<div class="container py-5">
+    <!-- Category Filter Bar -->
+    @if (categories.Any())
+    {
+        <div class="d-flex justify-content-center flex-wrap gap-2 mb-5">
+            <button class="btn btn-outline-secondary rounded-pill px-4 filter-btn active" onclick="filterGallery('all', this)">
+                All Photos (@Model.Count)
+            </button>
+            @foreach (var cat in categories)
+            {
+                var count = Model.Count(m => m.Category == cat);
+                <button class="btn btn-outline-secondary rounded-pill px-4 filter-btn" onclick="filterGallery('@cat.Replace("'", "\\'")', this)">
+                    @cat (@count)
+                </button>
+            }
+        </div>
+    }
+
+    <!-- Image Grid -->
+    @if (Model != null && Model.Any())
+    {
+        <div class="row g-4" id="galleryGrid">
+            @foreach (var item in Model)
+            {
+                <div class="col-lg-4 col-md-6 gallery-item" data-category="@(item.Category ?? "")">
+                    <div class="gallery-card h-100 d-flex flex-column justify-content-between">
+                        <div class="gallery-img-wrap" onclick="openPhotoModal('@item.ImagePath', '@item.Title.Replace("'", "\\'")', '@(item.Caption?.Replace("'", "\\'") ?? "")')">
+                            <img src="@item.ImagePath" alt="@item.Title" onerror="this.onerror=null; this.src='/images/placeholder.svg';" />
+                            <div class="gallery-overlay">
+                                <i class="fas fa-search-plus"></i>
+                            </div>
+                        </div>
+                        <div class="p-3">
+                            <div class="d-flex justify-content-between align-items-center mb-1">
+                                <h6 class="fw-bold text-dark mb-0">@item.Title</h6>
+                                @if (!string.IsNullOrEmpty(item.Category))
+                                {
+                                    <span class="badge bg-light text-success border small">@item.Category</span>
+                                }
+                            </div>
+                            @if (!string.IsNullOrEmpty(item.Caption))
+                            {
+                                <p class="small text-muted mb-0">@item.Caption</p>
+                            }
+                        </div>
+                    </div>
+                </div>
+            }
+        </div>
+    }
+    else
+    {
+        <div class="text-center py-5">
+            <i class="fas fa-camera text-muted fa-4x mb-3"></i>
+            <h4 class="fw-bold text-dark">No Photos Uploaded Yet</h4>
+            <p class="text-muted">Stay tuned! Organizing committee members are archiving past snapshots and photos.</p>
+            <a href="/" class="btn btn-outline-primary rounded-pill px-4">Back to Home</a>
+        </div>
+    }
+</div>
+
+<!-- Photo Lightbox Modal -->
+<div class="modal fade" id="photoModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered modal-lg">
+        <div class="modal-content border-0 rounded-4 shadow-lg overflow-hidden">
+            <div class="modal-header border-0 pb-0">
+                <h5 class="modal-title fw-bold" id="modalPhotoTitle"></h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body text-center p-3">
+                <img id="modalPhotoImg" src="" class="img-fluid rounded-3 shadow-sm mb-3" style="max-height: 520px; object-fit: contain;" alt="Photo View" />
+                <p class="text-muted mb-0" id="modalPhotoCaption"></p>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        function filterGallery(category, btn) {
+            document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
+            btn.classList.add('active');
+
+            const items = document.querySelectorAll('.gallery-item');
+            items.forEach(item => {
+                if (category === 'all' || item.getAttribute('data-category') === category) {
+                    item.style.display = 'block';
+                } else {
+                    item.style.display = 'none';
+                }
+            });
+        }
+
+        function openPhotoModal(imgSrc, title, caption) {
+            document.getElementById('modalPhotoImg').src = imgSrc;
+            document.getElementById('modalPhotoTitle').innerText = title || 'Memory Photo';
+            document.getElementById('modalPhotoCaption').innerText = caption || '';
+            const modal = new bootstrap.Modal(document.getElementById('photoModal'));
+            modal.show();
+        }
+    </script>
+}

@@ -1,0 +1,399 @@
+@model List<EasyAlumni.Core.Entities.Committee>
+@{
+    ViewData["Title"] = "Committee Management";
+    Layout = "_AdminLayout";
+}
+
+<!-- Page Header -->
+<div class="d-flex justify-content-between align-items-center flex-wrap gap-3 mb-4">
+    <div>
+        <h2 class="h4 fw-bold text-dark mb-1">Organizing Committees &amp; Leadership</h2>
+        <p class="text-muted small mb-0">Manage executive committees, sub-committees, conveners, and member delegations</p>
+    </div>
+    <div class="d-flex gap-2">
+        <button type="button" class="btn btn-success rounded-pill px-4 fw-semibold shadow-sm" data-bs-toggle="modal" data-bs-target="#addCommitteeModal">
+            + New Committee
+        </button>
+        <a asp-controller="Admin" asp-action="Index" class="btn btn-outline-secondary rounded-pill px-3">
+            Dashboard
+        </a>
+    </div>
+</div>
+
+@if (Model == null || !Model.Any())
+{
+    <div class="card border-0 shadow-sm rounded-4 p-5 text-center">
+        <div class="p-3 bg-light rounded-circle d-inline-block mx-auto mb-3" style="width: 70px; height: 70px;">
+            <i class="fas fa-users-slash fa-2x text-muted"></i>
+        </div>
+        <h5 class="fw-bold text-dark">No Committees Configured Yet</h5>
+        <p class="text-muted small mb-4">Create your first organizing committee to showcase event leadership and manage volunteer sub-committees.</p>
+        <button type="button" class="btn btn-success rounded-pill px-4 mx-auto" data-bs-toggle="modal" data-bs-target="#addCommitteeModal">
+            Create Committee
+        </button>
+    </div>
+}
+else
+{
+    @foreach (var c in Model)
+    {
+        <div class="card border-0 shadow-sm rounded-4 mb-4 overflow-hidden">
+            <div class="card-header bg-white p-3 border-bottom d-flex justify-content-between align-items-center flex-wrap gap-2">
+                <div class="d-flex align-items-center gap-2">
+                    <span class="badge bg-light text-dark border px-2 py-1">Order #@c.OrderIndex</span>
+                    <h5 class="fw-bold text-dark mb-0">@c.CommitteeName</h5>
+                    @if (!string.IsNullOrEmpty(c.CommitteeNameBangla))
+                    {
+                        <span class="badge bg-success bg-opacity-10 text-success fw-semibold">@c.CommitteeNameBangla</span>
+                    }
+                    @if (c.IsActive)
+                    {
+                        <span class="badge bg-success px-2 py-1">Active</span>
+                    }
+                    else
+                    {
+                        <span class="badge bg-secondary px-2 py-1">Inactive</span>
+                    }
+                </div>
+                <div class="d-flex align-items-center gap-2">
+                    <button type="button" class="btn btn-sm btn-primary rounded-pill px-3"
+                            onclick="openAddMemberModal('@c.Id', '@c.CommitteeName')">
+                        + Add Member
+                    </button>
+                    <button type="button" class="btn btn-sm btn-outline-secondary rounded-pill px-3"
+                            onclick="openEditCommitteeModal('@c.Id', '@c.CommitteeName', '@c.CommitteeNameBangla', '@c.Description', '@c.OrderIndex', '@c.IsActive.ToString().ToLower()')">
+                        Edit
+                    </button>
+                    <form asp-controller="Committee" asp-action="DeleteCommittee" method="post" class="d-inline m-0"
+                          onsubmit="return confirm('Are you sure you want to delete the committee &quot;@c.CommitteeName&quot; and all its members?')">
+                        @Html.AntiForgeryToken()
+                        <input type="hidden" name="id" value="@c.Id" />
+                        <button type="submit" class="btn btn-sm btn-outline-danger rounded-pill px-2" title="Delete Committee">
+                            Delete
+                        </button>
+                    </form>
+                </div>
+            </div>
+
+            @if (!string.IsNullOrEmpty(c.Description))
+            {
+                <div class="bg-light px-4 py-2 border-bottom small text-muted">
+                    @c.Description
+                </div>
+            }
+
+            <div class="table-responsive p-0">
+                <table class="table table-hover align-middle mb-0">
+                    <thead class="table-light small text-uppercase">
+                        <tr>
+                            <th class="ps-4" style="width: 60px;">Photo</th>
+                            <th>Member Name</th>
+                            <th>Designation / Role</th>
+                            <th>Batch</th>
+                            <th>Contact</th>
+                            <th style="width: 90px;">Order</th>
+                            <th style="width: 90px;">Status</th>
+                            <th class="text-end pe-4" style="width: 140px;">Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @if (c.Members == null || !c.Members.Any())
+                        {
+                            <tr>
+                                <td colspan="8" class="text-center py-4 text-muted small">
+                                    No members added to this committee yet. Click "<strong>+ Add Member</strong>" above to add leadership representatives.
+                                </td>
+                            </tr>
+                        }
+                        else
+                        {
+                            @foreach (var m in c.Members.OrderBy(x => x.OrderIndex))
+                            {
+                                <tr>
+                                    <td class="ps-4">
+                                        <img src="@(string.IsNullOrEmpty(m.PhotoPath) ? "https://ui-avatars.com/api/?name=" + Uri.EscapeDataString(m.FullName) + "&background=006a4e&color=fff" : m.PhotoPath)"
+                                             alt="" style="width: 38px; height: 38px; border-radius: 50%; object-fit: cover; border: 1px solid #e2e8f0;" />
+                                    </td>
+                                    <td>
+                                        <strong class="text-dark">@m.FullName</strong>
+                                    </td>
+                                    <td>
+                                        <span class="badge bg-success bg-opacity-10 text-success fw-bold px-2 py-1">@m.Designation</span>
+                                    </td>
+                                    <td>
+                                        @(m.BatchYear.HasValue ? $"Batch {m.BatchYear}" : "-")
+                                    </td>
+                                    <td>
+                                        <div class="small">
+                                            @if (!string.IsNullOrEmpty(m.Mobile))
+                                            {
+                                                <div>@m.Mobile</div>
+                                            }
+                                            @if (!string.IsNullOrEmpty(m.Email))
+                                            {
+                                                <div class="text-muted">@m.Email</div>
+                                            }
+                                        </div>
+                                    </td>
+                                    <td>
+                                        <span class="badge bg-light text-dark border">@m.OrderIndex</span>
+                                    </td>
+                                    <td>
+                                        @if (m.IsActive)
+                                        {
+                                            <span class="badge bg-success">Active</span>
+                                        }
+                                        else
+                                        {
+                                            <span class="badge bg-secondary">Inactive</span>
+                                        }
+                                    </td>
+                                    <td class="text-end pe-4">
+                                        <div class="d-inline-flex gap-1">
+                                            <button type="button" class="btn btn-sm btn-outline-secondary rounded-pill px-2 py-0"
+                                                    onclick="openEditMemberModal('@m.Id', '@m.FullName', '@m.Designation', '@m.BatchYear', '@m.Mobile', '@m.Email', '@m.OrderIndex', '@m.IsActive.ToString().ToLower()')"
+                                                    title="Edit Member">
+                                                Edit
+                                            </button>
+                                            <form asp-controller="Committee" asp-action="DeleteMember" method="post" class="d-inline m-0"
+                                                  onsubmit="return confirm('Remove @m.FullName from committee?')">
+                                                @Html.AntiForgeryToken()
+                                                <input type="hidden" name="id" value="@m.Id" />
+                                                <button type="submit" class="btn btn-sm btn-outline-danger rounded-pill px-2 py-0" title="Delete Member">
+                                                    Delete
+                                                </button>
+                                            </form>
+                                        </div>
+                                    </td>
+                                </tr>
+                            }
+                        }
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    }
+}
+
+<!-- Add Committee Modal -->
+<div class="modal fade" id="addCommitteeModal" tabindex="-1">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content rounded-4 border-0 shadow">
+            <form asp-controller="Committee" asp-action="AddCommittee" method="post">
+                @Html.AntiForgeryToken()
+                <div class="modal-header border-bottom">
+                    <h5 class="modal-title fw-bold">Create Organizing Committee</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body p-4">
+                    <div class="mb-3">
+                        <label class="form-label fw-semibold">Committee Name (English) <span class="text-danger">*</span></label>
+                        <input type="text" name="committeeName" class="form-control" placeholder="e.g. Cultural &amp; Entertainment Sub-Committee" required />
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label fw-semibold">Committee Name (Bangla)</label>
+                        <input type="text" name="committeeNameBangla" class="form-control" placeholder="e.g. সাংস্কৃতিক উপ-কমিটি" />
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label fw-semibold">Description</label>
+                        <textarea name="description" class="form-control" rows="2" placeholder="Brief responsibility overview"></textarea>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label fw-semibold">Display Order</label>
+                        <input type="number" name="orderIndex" class="form-control" value="1" />
+                    </div>
+                </div>
+                <div class="modal-footer border-top">
+                    <button type="button" class="btn btn-secondary rounded-pill px-3" data-bs-dismiss="modal">Cancel</button>
+                    <button type="submit" class="btn btn-success rounded-pill px-4">Create Committee</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- Edit Committee Modal -->
+<div class="modal fade" id="editCommitteeModal" tabindex="-1">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content rounded-4 border-0 shadow">
+            <form asp-controller="Committee" asp-action="EditCommittee" method="post">
+                @Html.AntiForgeryToken()
+                <input type="hidden" name="id" id="editCommId" />
+                <div class="modal-header border-bottom">
+                    <h5 class="modal-title fw-bold">Edit Organizing Committee</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body p-4">
+                    <div class="mb-3">
+                        <label class="form-label fw-semibold">Committee Name (English) <span class="text-danger">*</span></label>
+                        <input type="text" name="committeeName" id="editCommName" class="form-control" required />
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label fw-semibold">Committee Name (Bangla)</label>
+                        <input type="text" name="committeeNameBangla" id="editCommNameBangla" class="form-control" />
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label fw-semibold">Description</label>
+                        <textarea name="description" id="editCommDesc" class="form-control" rows="2"></textarea>
+                    </div>
+                    <div class="row g-2 mb-3">
+                        <div class="col-md-6">
+                            <label class="form-label fw-semibold">Display Order</label>
+                            <input type="number" name="orderIndex" id="editCommOrder" class="form-control" />
+                        </div>
+                        <div class="col-md-6 d-flex align-items-center pt-4">
+                            <div class="form-check form-switch">
+                                <input class="form-check-input" type="checkbox" name="isActive" id="editCommActive" value="true">
+                                <label class="form-check-label fw-semibold" for="editCommActive">Active Committee</label>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer border-top">
+                    <button type="button" class="btn btn-secondary rounded-pill px-3" data-bs-dismiss="modal">Cancel</button>
+                    <button type="submit" class="btn btn-success rounded-pill px-4">Save Changes</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- Add Member Modal -->
+<div class="modal fade" id="addMemberModal" tabindex="-1">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content rounded-4 border-0 shadow">
+            <form asp-controller="Committee" asp-action="AddMember" method="post" enctype="multipart/form-data">
+                @Html.AntiForgeryToken()
+                <input type="hidden" name="committeeId" id="memberCommitteeId" />
+                <div class="modal-header border-bottom">
+                    <h5 class="modal-title fw-bold" id="addMemberModalTitle">Add Committee Member</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body p-4">
+                    <div class="mb-3">
+                        <label class="form-label fw-semibold">Full Name <span class="text-danger">*</span></label>
+                        <input type="text" name="fullName" class="form-control" placeholder="e.g. Dr. Sabrina Rahman" required />
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label fw-semibold">Designation / Role <span class="text-danger">*</span></label>
+                        <input type="text" name="designation" class="form-control" placeholder="e.g. Convener, Joint Secretary, Member" required />
+                    </div>
+                    <div class="row g-2 mb-3">
+                        <div class="col-md-6">
+                            <label class="form-label fw-semibold">Passing Batch</label>
+                            <input type="number" name="batchYear" class="form-control" placeholder="e.g. 2005" />
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label fw-semibold">Display Order</label>
+                            <input type="number" name="orderIndex" class="form-control" value="1" />
+                        </div>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label fw-semibold">Mobile Number</label>
+                        <input type="tel" name="mobile" class="form-control" placeholder="01XXXXXXXXX" />
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label fw-semibold">Email Address</label>
+                        <input type="email" name="email" class="form-control" placeholder="member@example.com" />
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label fw-semibold">Member Photo (Optional)</label>
+                        <input type="file" name="photoFile" class="form-control" accept="image/*" />
+                    </div>
+                </div>
+                <div class="modal-footer border-top">
+                    <button type="button" class="btn btn-secondary rounded-pill px-3" data-bs-dismiss="modal">Cancel</button>
+                    <button type="submit" class="btn btn-success rounded-pill px-4">Add Member</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- Edit Member Modal -->
+<div class="modal fade" id="editMemberModal" tabindex="-1">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content rounded-4 border-0 shadow">
+            <form asp-controller="Committee" asp-action="EditMember" method="post" enctype="multipart/form-data">
+                @Html.AntiForgeryToken()
+                <input type="hidden" name="id" id="editMemId" />
+                <div class="modal-header border-bottom">
+                    <h5 class="modal-title fw-bold">Edit Committee Member</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body p-4">
+                    <div class="mb-3">
+                        <label class="form-label fw-semibold">Full Name <span class="text-danger">*</span></label>
+                        <input type="text" name="fullName" id="editMemName" class="form-control" required />
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label fw-semibold">Designation / Role <span class="text-danger">*</span></label>
+                        <input type="text" name="designation" id="editMemDesig" class="form-control" required />
+                    </div>
+                    <div class="row g-2 mb-3">
+                        <div class="col-md-6">
+                            <label class="form-label fw-semibold">Passing Batch</label>
+                            <input type="number" name="batchYear" id="editMemBatch" class="form-control" />
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label fw-semibold">Display Order</label>
+                            <input type="number" name="orderIndex" id="editMemOrder" class="form-control" />
+                        </div>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label fw-semibold">Mobile Number</label>
+                        <input type="tel" name="mobile" id="editMemMobile" class="form-control" />
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label fw-semibold">Email Address</label>
+                        <input type="email" name="email" id="editMemEmail" class="form-control" />
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label fw-semibold">Replace Photo (Optional)</label>
+                        <input type="file" name="photoFile" class="form-control" accept="image/*" />
+                    </div>
+                    <div class="form-check form-switch mb-2">
+                        <input class="form-check-input" type="checkbox" name="isActive" id="editMemActive" value="true">
+                        <label class="form-check-label fw-semibold" for="editMemActive">Active Member</label>
+                    </div>
+                </div>
+                <div class="modal-footer border-top">
+                    <button type="button" class="btn btn-secondary rounded-pill px-3" data-bs-dismiss="modal">Cancel</button>
+                    <button type="submit" class="btn btn-success rounded-pill px-4">Save Changes</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        function openAddMemberModal(id, name) {
+            document.getElementById('memberCommitteeId').value = id;
+            document.getElementById('addMemberModalTitle').innerText = `Add Member to ${name}`;
+            new bootstrap.Modal(document.getElementById('addMemberModal')).show();
+        }
+
+        function openEditCommitteeModal(id, name, nameBn, desc, order, isActive) {
+            document.getElementById('editCommId').value = id;
+            document.getElementById('editCommName').value = name;
+            document.getElementById('editCommNameBangla').value = nameBn || '';
+            document.getElementById('editCommDesc').value = desc || '';
+            document.getElementById('editCommOrder').value = order;
+            document.getElementById('editCommActive').checked = (isActive === 'true');
+            new bootstrap.Modal(document.getElementById('editCommitteeModal')).show();
+        }
+
+        function openEditMemberModal(id, name, desig, batch, mobile, email, order, isActive) {
+            document.getElementById('editMemId').value = id;
+            document.getElementById('editMemName').value = name;
+            document.getElementById('editMemDesig').value = desig;
+            document.getElementById('editMemBatch').value = batch || '';
+            document.getElementById('editMemMobile').value = mobile || '';
+            document.getElementById('editMemEmail').value = email || '';
+            document.getElementById('editMemOrder').value = order;
+            document.getElementById('editMemActive').checked = (isActive === 'true');
+            new bootstrap.Modal(document.getElementById('editMemberModal')).show();
+        }
+    </script>
+}
