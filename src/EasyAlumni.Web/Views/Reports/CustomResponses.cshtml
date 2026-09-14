@@ -1,0 +1,227 @@
+@model IEnumerable<EasyAlumni.Core.Entities.RegistrationQuestionResponse>
+@{
+    ViewData["Title"] = "Custom Question Responses Report";
+    Layout = "_AdminLayout";
+    var questions = ViewBag.Questions as List<EasyAlumni.Core.Entities.EventCustomQuestion> ?? new();
+    var events = ViewBag.Events as List<EasyAlumni.Core.Entities.ReunionEvent> ?? new();
+    int? selectedEventId = ViewBag.SelectedEventId as int?;
+    int? selectedQuestionId = ViewBag.SelectedQuestionId as int?;
+    string? selectedAnswer = ViewBag.SelectedAnswer as string;
+}
+
+<!-- Page Header -->
+<div class="d-flex justify-content-between align-items-center flex-wrap gap-3 mb-4">
+    <div>
+        <h2 class="h4 fw-bold text-dark mb-1">Custom Question Responses</h2>
+        <p class="text-muted small mb-0">Exportable responses for Cultural Program parts, Volunteer interests, Donation pledges, and custom surveys</p>
+    </div>
+    <div class="d-flex gap-2">
+        <a asp-action="ExportCustomResponsesCsv" 
+           asp-route-eventId="@selectedEventId" 
+           asp-route-questionId="@selectedQuestionId" 
+           asp-route-answer="@selectedAnswer" 
+           class="btn btn-outline-success rounded-pill px-3 fw-semibold">
+            <i class="fas fa-file-csv me-1"></i> Export CSV
+        </a>
+        <button type="button" class="btn btn-warning rounded-pill px-3" onclick="window.print()">
+            <i class="fas fa-print me-1"></i> Print / PDF
+        </button>
+    </div>
+</div>
+
+<!-- Report Navigation Tabs / Shortcuts -->
+<div class="card border-0 shadow-sm rounded-4 mb-4 p-2 bg-white">
+    <div class="nav nav-pills nav-fill gap-2">
+        <a class="nav-link text-dark rounded-pill fw-semibold py-2" asp-controller="Reports" asp-action="Index">
+            Summary Overview
+        </a>
+        <a class="nav-link text-dark rounded-pill fw-semibold py-2" asp-controller="Reports" asp-action="CollectionReport">
+            Fee Collection Audit
+        </a>
+        <a class="nav-link text-dark rounded-pill fw-semibold py-2" asp-controller="Reports" asp-action="CateringReport">
+            Catering Headcount
+        </a>
+        <a class="nav-link text-dark rounded-pill fw-semibold py-2" asp-controller="Reports" asp-action="GuestBreakdown">
+            Guest Breakdown (Age &amp; Gender)
+        </a>
+        <a class="nav-link active rounded-pill fw-semibold py-2" asp-controller="Reports" asp-action="CustomResponses">
+            Custom Responses (Cultural/Volunteers)
+        </a>
+        <a class="nav-link text-dark rounded-pill fw-semibold py-2" asp-controller="Reports" asp-action="TShirtReport">
+            T-Shirt Inventory
+        </a>
+    </div>
+</div>
+
+<!-- KPI Stat Cards -->
+<div class="row g-3 mb-4">
+    <div class="col-md-3 col-6">
+        <div class="card border-0 shadow-sm rounded-4 p-3 text-center bg-primary text-white">
+            <span class="small opacity-80 text-uppercase">Total Responses</span>
+            <h2 class="fw-bold mb-0">@ViewBag.TotalResponses</h2>
+        </div>
+    </div>
+    <div class="col-md-3 col-6">
+        <div class="card border-0 shadow-sm rounded-4 p-3 text-center bg-success text-white">
+            <span class="small opacity-80 text-uppercase">"Yes" Answers</span>
+            <h2 class="fw-bold mb-0">@ViewBag.YesCount</h2>
+        </div>
+    </div>
+    <div class="col-md-3 col-6">
+        <div class="card border-0 shadow-sm rounded-4 p-3 text-center bg-secondary text-white">
+            <span class="small opacity-80 text-uppercase">"No" Answers</span>
+            <h2 class="fw-bold mb-0">@ViewBag.NoCount</h2>
+        </div>
+    </div>
+    <div class="col-md-3 col-6">
+        <div class="card border-0 shadow-sm rounded-4 p-3 text-center bg-info text-white">
+            <span class="small opacity-80 text-uppercase">Sub-Details Given</span>
+            <h2 class="fw-bold mb-0">@ViewBag.SubAnswerCount</h2>
+        </div>
+    </div>
+</div>
+
+<!-- Filter Bar -->
+<div class="card border-0 shadow-sm rounded-4 mb-4">
+    <div class="card-body p-3">
+        <form method="get" asp-action="CustomResponses" class="row g-2 align-items-center">
+            <div class="col-md-4">
+                <label class="form-label small fw-semibold text-muted mb-1">Filter by Question</label>
+                <select name="questionId" class="form-select form-select-sm">
+                    <option value="">-- All Configured Questions --</option>
+                    @foreach (var q in questions)
+                    {
+                        <option value="@q.Id" selected="@(selectedQuestionId == q.Id)">@q.QuestionText</option>
+                    }
+                </select>
+            </div>
+            <div class="col-md-3">
+                <label class="form-label small fw-semibold text-muted mb-1">Answer Status</label>
+                <select name="answer" class="form-select form-select-sm">
+                    <option value="">-- All Answers (Yes &amp; No) --</option>
+                    <option value="Yes" selected="@(selectedAnswer == "Yes")">Yes (হ্যাঁ)</option>
+                    <option value="No" selected="@(selectedAnswer == "No")">No (না)</option>
+                </select>
+            </div>
+            <div class="col-md-3">
+                <label class="form-label small fw-semibold text-muted mb-1">Event</label>
+                <select name="eventId" class="form-select form-select-sm">
+                    @foreach (var e in events)
+                    {
+                        <option value="@e.Id" selected="@(selectedEventId == e.Id)">@e.EventTitle (@e.EventDate.Year)</option>
+                    }
+                </select>
+            </div>
+            <div class="col-md-2 d-flex align-items-end gap-1 mt-3 mt-md-0">
+                <button type="submit" class="btn btn-success btn-sm rounded-pill w-100 fw-semibold">
+                    <i class="fas fa-filter me-1"></i> Filter
+                </button>
+                <a asp-action="CustomResponses" class="btn btn-outline-secondary btn-sm rounded-pill" title="Reset Filters">
+                    <i class="fas fa-undo"></i>
+                </a>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- Response Data Table -->
+<div class="card border-0 shadow-sm rounded-4 overflow-hidden">
+    <div class="card-header bg-white p-3 border-bottom d-flex justify-content-between align-items-center">
+        <h5 class="fw-bold text-dark mb-0">Registered Alumni Responses</h5>
+        <span class="badge bg-light text-dark border">Showing @Model.Count() response(s)</span>
+    </div>
+    <div class="table-responsive p-3">
+        <table class="table table-hover table-bordered align-middle mb-0" id="responsesTable">
+            <thead class="table-light text-muted small text-uppercase">
+                <tr>
+                    <th>Ticket / UserCode</th>
+                    <th>Alumnus Bio</th>
+                    <th>Batch</th>
+                    <th>Contact Info</th>
+                    <th>Question</th>
+                    <th class="text-center">Answer</th>
+                    <th>Sub-Answer Details / Category Part</th>
+                    <th>Date</th>
+                </tr>
+            </thead>
+            <tbody>
+                @if (!Model.Any())
+                {
+                    <tr>
+                        <td colspan="8" class="text-center py-5 text-muted">
+                            <i class="fas fa-clipboard-list fa-3x mb-3 text-secondary opacity-50"></i>
+                            <p class="mb-0">No responses match the selected filters.</p>
+                        </td>
+                    </tr>
+                }
+                else
+                {
+                    @foreach (var r in Model)
+                    {
+                        var reg = r.EventRegistration;
+                        var prof = reg?.AlumniProfile;
+                        var isYes = string.Equals(r.AnswerValue, "Yes", StringComparison.OrdinalIgnoreCase);
+
+                        <tr>
+                            <td>
+                                <strong class="text-primary">@reg?.RegistrationNo</strong>
+                                <small class="d-block text-muted">@prof?.UserCode</small>
+                            </td>
+                            <td>
+                                <div class="fw-bold text-dark">@prof?.NameEnglish</div>
+                                <small class="text-muted">@prof?.NameBangla</small>
+                            </td>
+                            <td>
+                                <span class="badge bg-light text-dark border">Batch @prof?.PassingYear</span>
+                            </td>
+                            <td>
+                                <div class="small"><i class="fas fa-phone-alt text-success me-1"></i> @prof?.ContactNumber</div>
+                                <div class="small text-muted"><i class="fas fa-envelope text-secondary me-1"></i> @prof?.Email</div>
+                            </td>
+                            <td>
+                                <span class="fw-semibold text-dark">@r.CustomQuestion?.QuestionText</span>
+                                @if (!string.IsNullOrEmpty(r.CustomQuestion?.QuestionTextBangla))
+                                {
+                                    <small class="d-block text-muted">@r.CustomQuestion.QuestionTextBangla</small>
+                                }
+                            </td>
+                            <td class="text-center">
+                                @if (isYes)
+                                {
+                                    <span class="badge bg-success-subtle text-success border px-2 py-1 fs-6">
+                                        <i class="fas fa-check-circle me-1"></i> Yes
+                                    </span>
+                                }
+                                else if (string.Equals(r.AnswerValue, "No", StringComparison.OrdinalIgnoreCase))
+                                {
+                                    <span class="badge bg-light text-secondary border px-2 py-1 fs-6">
+                                        <i class="fas fa-times-circle me-1"></i> No
+                                    </span>
+                                }
+                                else
+                                {
+                                    <span class="badge bg-info-subtle text-info border px-2 py-1">@r.AnswerValue</span>
+                                }
+                            </td>
+                            <td>
+                                @if (!string.IsNullOrEmpty(r.SubAnswerValue))
+                                {
+                                    <div class="p-2 bg-light rounded border text-dark fw-semibold small">
+                                        <i class="fas fa-info-circle text-primary me-1"></i> @r.SubAnswerValue
+                                    </div>
+                                }
+                                else
+                                {
+                                    <span class="text-muted small">&mdash;</span>
+                                }
+                            </td>
+                            <td class="small text-muted">
+                                @(r.EventRegistration?.RegisteredAt.ToString("MMM dd, yyyy") ?? "-")
+                            </td>
+                        </tr>
+                    }
+                }
+            </tbody>
+        </table>
+    </div>
+</div>

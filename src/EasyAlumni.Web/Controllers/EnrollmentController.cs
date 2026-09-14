@@ -50,7 +50,20 @@ namespace EasyAlumni.Web.Controllers
 
             var packages = await _context.RegistrationPackages
                 .Where(p => p.IsActive && p.ReunionEventId == reunionEvent.Id)
+                .Include(p => p.PackageGiftItems)
+                    .ThenInclude(pg => pg.GiftItem)
+                        .ThenInclude(g => g!.SizeStocks)
                 .OrderBy(p => p.DisplayOrder)
+                .ToListAsync();
+
+            var guestCategories = await _context.GuestCategories
+                .Where(g => g.IsActive && g.ReunionEventId == reunionEvent.Id)
+                .OrderBy(g => g.DisplayOrder)
+                .ToListAsync();
+
+            var customQuestions = await _context.EventCustomQuestions
+                .Where(q => q.IsActive && q.ReunionEventId == reunionEvent.Id)
+                .OrderBy(q => q.DisplayOrder)
                 .ToListAsync();
 
             var vm = new AlumniRegistrationViewModel
@@ -59,6 +72,8 @@ namespace EasyAlumni.Web.Controllers
                 ReunionEvent = reunionEvent,
                 PaymentSettings = paymentSettings,
                 AvailablePackages = packages,
+                AvailableGuestCategories = guestCategories,
+                AvailableCustomQuestions = customQuestions,
                 RegistrationPackageId = packages.FirstOrDefault(p => p.IsFeatured)?.Id ?? packages.FirstOrDefault()?.Id
             };
 
@@ -94,9 +109,64 @@ namespace EasyAlumni.Web.Controllers
                     .ToDictionaryAsync(s => s.SettingKey, s => s.SettingValue);
                 model.AvailablePackages = await _context.RegistrationPackages
                     .Where(p => p.IsActive && p.ReunionEventId == model.ReunionEventId)
+                    .Include(p => p.PackageGiftItems)
+                        .ThenInclude(pg => pg.GiftItem)
+                            .ThenInclude(g => g!.SizeStocks)
                     .OrderBy(p => p.DisplayOrder)
                     .ToListAsync();
+                model.AvailableGuestCategories = await _context.GuestCategories
+                    .Where(g => g.IsActive && g.ReunionEventId == model.ReunionEventId)
+                    .OrderBy(g => g.DisplayOrder)
+                    .ToListAsync();
+                model.AvailableCustomQuestions = await _context.EventCustomQuestions
+                    .Where(q => q.IsActive && q.ReunionEventId == model.ReunionEventId)
+                    .OrderBy(q => q.DisplayOrder)
+                    .ToListAsync();
                 return View(model);
+            }
+
+            // Validate Passing Year Package Eligibility
+            var selectedPackage = model.RegistrationPackageId.HasValue
+                ? await _context.RegistrationPackages
+                    .Include(p => p.PackageGiftItems)
+                        .ThenInclude(pg => pg.GiftItem)
+                    .FirstOrDefaultAsync(p => p.Id == model.RegistrationPackageId.Value && p.IsActive)
+                : null;
+
+            if (selectedPackage != null)
+            {
+                if (selectedPackage.MinPassingYear.HasValue && model.PassingYear < selectedPackage.MinPassingYear.Value)
+                {
+                    ModelState.AddModelError("RegistrationPackageId", $"The selected package '{selectedPackage.PackageName}' is only for passing years from {selectedPackage.MinPassingYear.Value} onwards.");
+                }
+                if (selectedPackage.MaxPassingYear.HasValue && model.PassingYear > selectedPackage.MaxPassingYear.Value)
+                {
+                    ModelState.AddModelError("RegistrationPackageId", $"The selected package '{selectedPackage.PackageName}' is only for passing years up to {selectedPackage.MaxPassingYear.Value}.");
+                }
+
+                if (!ModelState.IsValid)
+                {
+                    model.ReunionEvent = reunionEvent;
+                    model.PaymentSettings = await _context.SystemSettings
+                        .Where(s => s.SettingKey.StartsWith("Manual"))
+                        .ToDictionaryAsync(s => s.SettingKey, s => s.SettingValue);
+                    model.AvailablePackages = await _context.RegistrationPackages
+                        .Where(p => p.IsActive && p.ReunionEventId == model.ReunionEventId)
+                        .Include(p => p.PackageGiftItems)
+                            .ThenInclude(pg => pg.GiftItem)
+                                .ThenInclude(g => g!.SizeStocks)
+                        .OrderBy(p => p.DisplayOrder)
+                        .ToListAsync();
+                    model.AvailableGuestCategories = await _context.GuestCategories
+                        .Where(g => g.IsActive && g.ReunionEventId == model.ReunionEventId)
+                        .OrderBy(g => g.DisplayOrder)
+                        .ToListAsync();
+                    model.AvailableCustomQuestions = await _context.EventCustomQuestions
+                        .Where(q => q.IsActive && q.ReunionEventId == model.ReunionEventId)
+                        .OrderBy(q => q.DisplayOrder)
+                        .ToListAsync();
+                    return View(model);
+                }
             }
 
             try
@@ -165,21 +235,62 @@ namespace EasyAlumni.Web.Controllers
                 _context.AlumniProfiles.Add(profile);
                 await _context.SaveChangesAsync();
 
-                // 4. Calculate total fee based on selected package
-                var selectedPackage = model.RegistrationPackageId.HasValue
-                    ? await _context.RegistrationPackages.FirstOrDefaultAsync(p => p.Id == model.RegistrationPackageId.Value && p.IsActive)
-                    : null;
-
+                // 4. Calculate total fee based on selected package & dynamic guests
                 var basePackageFee = selectedPackage?.Fee ?? reunionEvent!.BaseAlumniFee;
 
-                var totalFee = basePackageFee
-                    + (model.SpouseCount * reunionEvent!.SpouseFee)
-                    + (model.ChildCount * reunionEvent.ChildFee)
-                    + (model.GuestCount * reunionEvent.GuestFee);
+                decimal dynamicGuestTotal = 0;
+                int spouseCount = 0;
+                int childCount = 0;
+                int otherGuestCount = 0;
+
+                var activeCategories = await _context.GuestCategories
+                    .Where(c => c.ReunionEventId == reunionEvent!.Id && c.IsActive)
+                    .ToDictionaryAsync(c => c.Id);
+
+                var validGuestsToSave = new List<RegistrationGuest>();
+
+                if (model.Guests != null && model.Guests.Any())
+                {
+                    foreach (var g in model.Guests)
+                    {
+                        if (activeCategories.TryGetValue(g.GuestCategoryId, out var cat))
+                        {
+                            var fee = cat.Fee;
+                            dynamicGuestTotal += fee;
+
+                            if (cat.CategoryName.Contains("Spouse", StringComparison.OrdinalIgnoreCase))
+                                spouseCount++;
+                            else if (cat.CategoryName.Contains("Child", StringComparison.OrdinalIgnoreCase))
+                                childCount++;
+                            else
+                                otherGuestCount++;
+
+                            validGuestsToSave.Add(new RegistrationGuest
+                            {
+                                GuestCategoryId = cat.Id,
+                                GuestName = g.GuestName?.Trim(),
+                                Gender = g.Gender?.Trim(),
+                                Age = g.Age,
+                                FeeCharged = fee
+                            });
+                        }
+                    }
+                }
+                else
+                {
+                    spouseCount = model.SpouseCount;
+                    childCount = model.ChildCount;
+                    otherGuestCount = model.GuestCount;
+                    dynamicGuestTotal = (model.SpouseCount * reunionEvent!.SpouseFee)
+                        + (model.ChildCount * reunionEvent.ChildFee)
+                        + (model.GuestCount * reunionEvent.GuestFee);
+                }
+
+                var totalFee = basePackageFee + dynamicGuestTotal;
 
                 // 5. Generate Ticket Registration Number
-                var regCount = await _context.EventRegistrations.CountAsync(r => r.ReunionEventId == reunionEvent.Id) + 1;
-                var regNo = $"RE-{reunionEvent.EventDate.Year}-{regCount:D5}";
+                var regCount = await _context.EventRegistrations.CountAsync(r => r.ReunionEventId == reunionEvent!.Id) + 1;
+                var regNo = $"RE-{reunionEvent!.EventDate.Year}-{regCount:D5}";
 
                 // 6. Create EventRegistration
                 var registration = new EventRegistration
@@ -189,9 +300,9 @@ namespace EasyAlumni.Web.Controllers
                     AlumniProfileId = profile.Id,
                     RegistrationPackageId = selectedPackage?.Id,
                     TShirtSize = model.TShirtSize,
-                    SpouseCount = model.SpouseCount,
-                    ChildCount = model.ChildCount,
-                    GuestCount = model.GuestCount,
+                    SpouseCount = spouseCount,
+                    ChildCount = childCount,
+                    GuestCount = otherGuestCount,
                     TotalAmount = totalFee,
                     PaidAmount = totalFee, // claimed amount submitted
                     Status = RegistrationStatus.Pending,
@@ -206,6 +317,50 @@ namespace EasyAlumni.Web.Controllers
                 registration.QrCodeBase64 = qrBase64;
 
                 _context.EventRegistrations.Add(registration);
+                await _context.SaveChangesAsync();
+
+                // 7. Save Dynamic Guests
+                foreach (var guest in validGuestsToSave)
+                {
+                    guest.EventRegistrationId = registration.Id;
+                    _context.RegistrationGuests.Add(guest);
+                }
+
+                // 8. Save Custom Registration Question Responses
+                if (model.QuestionResponses != null && model.QuestionResponses.Any())
+                {
+                    foreach (var qr in model.QuestionResponses)
+                    {
+                        if (qr.QuestionId > 0 && !string.IsNullOrWhiteSpace(qr.Answer))
+                        {
+                            _context.RegistrationQuestionResponses.Add(new RegistrationQuestionResponse
+                            {
+                                EventRegistrationId = registration.Id,
+                                EventCustomQuestionId = qr.QuestionId,
+                                AnswerValue = qr.Answer.Trim(),
+                                SubAnswerValue = qr.SubAnswer?.Trim()
+                            });
+                        }
+                    }
+                }
+
+                // 9. Save Dynamic Gift Size Choices
+                if (model.GiftSizeChoices != null && model.GiftSizeChoices.Any())
+                {
+                    foreach (var gc in model.GiftSizeChoices)
+                    {
+                        if (gc.GiftItemId > 0 && !string.IsNullOrWhiteSpace(gc.SelectedSize))
+                        {
+                            _context.RegistrationGiftChoices.Add(new RegistrationGiftChoice
+                            {
+                                EventRegistrationId = registration.Id,
+                                GiftItemId = gc.GiftItemId,
+                                SelectedSize = gc.SelectedSize.Trim()
+                            });
+                        }
+                    }
+                }
+
                 await _context.SaveChangesAsync();
 
                 // 7. Record Payment

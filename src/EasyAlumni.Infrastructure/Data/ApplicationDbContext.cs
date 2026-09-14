@@ -28,7 +28,13 @@ namespace EasyAlumni.Infrastructure.Data
         public DbSet<SystemSetting> SystemSettings => Set<SystemSetting>();
         public DbSet<NoticePost> NoticePosts => Set<NoticePost>();
         public DbSet<RegistrationPackage> RegistrationPackages => Set<RegistrationPackage>();
+        public DbSet<PackageGiftItem> PackageGiftItems => Set<PackageGiftItem>();
         public DbSet<GalleryImage> GalleryImages => Set<GalleryImage>();
+        public DbSet<GuestCategory> GuestCategories => Set<GuestCategory>();
+        public DbSet<RegistrationGuest> RegistrationGuests => Set<RegistrationGuest>();
+        public DbSet<EventCustomQuestion> EventCustomQuestions => Set<EventCustomQuestion>();
+        public DbSet<RegistrationQuestionResponse> RegistrationQuestionResponses => Set<RegistrationQuestionResponse>();
+        public DbSet<RegistrationGiftChoice> RegistrationGiftChoices => Set<RegistrationGiftChoice>();
 
         protected override void OnModelCreating(ModelBuilder builder)
         {
@@ -151,6 +157,70 @@ namespace EasyAlumni.Infrastructure.Data
                 .HasOne(g => g.ReunionEvent)
                 .WithMany(e => e.GalleryImages)
                 .HasForeignKey(g => g.ReunionEventId)
+                .OnDelete(DeleteBehavior.Cascade);
+
+            // Dynamic Package Gift Items
+            builder.Entity<PackageGiftItem>()
+                .HasOne(p => p.RegistrationPackage)
+                .WithMany(pkg => pkg.PackageGiftItems)
+                .HasForeignKey(p => p.RegistrationPackageId)
+                .OnDelete(DeleteBehavior.Cascade);
+
+            builder.Entity<PackageGiftItem>()
+                .HasOne(p => p.GiftItem)
+                .WithMany()
+                .HasForeignKey(p => p.GiftItemId)
+                .OnDelete(DeleteBehavior.Cascade);
+
+            // Dynamic Guest Categories & Registration Guests
+            builder.Entity<GuestCategory>()
+                .HasOne(c => c.ReunionEvent)
+                .WithMany()
+                .HasForeignKey(c => c.ReunionEventId)
+                .OnDelete(DeleteBehavior.Cascade);
+
+            builder.Entity<RegistrationGuest>()
+                .HasOne(g => g.EventRegistration)
+                .WithMany(r => r.Guests)
+                .HasForeignKey(g => g.EventRegistrationId)
+                .OnDelete(DeleteBehavior.Cascade);
+
+            builder.Entity<RegistrationGuest>()
+                .HasOne(g => g.GuestCategory)
+                .WithMany(c => c.Guests)
+                .HasForeignKey(g => g.GuestCategoryId)
+                .OnDelete(DeleteBehavior.Restrict);
+
+            // Dynamic Custom Questions & Responses
+            builder.Entity<EventCustomQuestion>()
+                .HasOne(q => q.ReunionEvent)
+                .WithMany()
+                .HasForeignKey(q => q.ReunionEventId)
+                .OnDelete(DeleteBehavior.Cascade);
+
+            builder.Entity<RegistrationQuestionResponse>()
+                .HasOne(resp => resp.EventRegistration)
+                .WithMany(r => r.QuestionResponses)
+                .HasForeignKey(resp => resp.EventRegistrationId)
+                .OnDelete(DeleteBehavior.Cascade);
+
+            builder.Entity<RegistrationQuestionResponse>()
+                .HasOne(resp => resp.CustomQuestion)
+                .WithMany(q => q.Responses)
+                .HasForeignKey(resp => resp.EventCustomQuestionId)
+                .OnDelete(DeleteBehavior.Cascade);
+
+            // Dynamic Gift Size Choices
+            builder.Entity<RegistrationGiftChoice>()
+                .HasOne(c => c.EventRegistration)
+                .WithMany(r => r.GiftChoices)
+                .HasForeignKey(c => c.EventRegistrationId)
+                .OnDelete(DeleteBehavior.Cascade);
+
+            builder.Entity<RegistrationGiftChoice>()
+                .HasOne(c => c.GiftItem)
+                .WithMany()
+                .HasForeignKey(c => c.GiftItemId)
                 .OnDelete(DeleteBehavior.Cascade);
         }
     }

@@ -18,6 +18,15 @@ namespace EasyAlumni.Web.ViewModels
         public int? RegistrationPackageId { get; set; }
         public List<RegistrationPackage> AvailablePackages { get; set; } = new();
 
+        // Dynamic Configuration Collections
+        public List<GuestCategory> AvailableGuestCategories { get; set; } = new();
+        public List<GuestInputModel> Guests { get; set; } = new();
+
+        public List<EventCustomQuestion> AvailableCustomQuestions { get; set; } = new();
+        public List<QuestionResponseInputModel> QuestionResponses { get; set; } = new();
+
+        public List<GiftSizeChoiceInputModel> GiftSizeChoices { get; set; } = new();
+
         // 1. Personal Information
         [Required(ErrorMessage = "বাংলায় নাম আবশ্যক")]
         [Display(Name = "Name (Bangla)")]
@@ -124,5 +133,26 @@ namespace EasyAlumni.Web.ViewModels
 
         [Display(Name = "Payment Slip Screenshot")]
         public IFormFile? SlipAttachmentFile { get; set; }
+    }
+
+    public class GuestInputModel
+    {
+        public int GuestCategoryId { get; set; }
+        public string? GuestName { get; set; }
+        public string? Gender { get; set; } // Male, Female
+        public int? Age { get; set; }
+    }
+
+    public class QuestionResponseInputModel
+    {
+        public int QuestionId { get; set; }
+        public string Answer { get; set; } = string.Empty;
+        public string? SubAnswer { get; set; }
+    }
+
+    public class GiftSizeChoiceInputModel
+    {
+        public int GiftItemId { get; set; }
+        public string? SelectedSize { get; set; }
     }
 }

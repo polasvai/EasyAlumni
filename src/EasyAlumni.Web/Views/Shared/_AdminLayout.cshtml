@@ -464,6 +464,12 @@
             <a asp-controller="Reports" asp-action="CateringReport" class="admin-nav-link @IsActive("Reports", "CateringReport")">
                 <span>Catering Headcount</span>
             </a>
+            <a asp-controller="Reports" asp-action="GuestBreakdown" class="admin-nav-link @IsActive("Reports", "GuestBreakdown")">
+                <span>Guest Breakdown (Demographics)</span>
+            </a>
+            <a asp-controller="Reports" asp-action="CustomResponses" class="admin-nav-link @IsActive("Reports", "CustomResponses")">
+                <span>Custom Question Responses</span>
+            </a>
             <a asp-controller="Reports" asp-action="TShirtReport" class="admin-nav-link @IsActive("Reports", "TShirtReport")">
                 <span>T-Shirt Size Matrix</span>
             </a>
@@ -485,6 +491,9 @@
             </a>
             <a asp-controller="VolunteerManagement" asp-action="Index" class="admin-nav-link @IsActive("VolunteerManagement", "Index")">
                 <span>Volunteer Roster</span>
+            </a>
+            <a asp-controller="DynamicSettings" asp-action="Index" class="admin-nav-link @IsActive("DynamicSettings")">
+                <span>Dynamic Settings &amp; Rules</span>
             </a>
             <a asp-controller="Settings" asp-action="Index" class="admin-nav-link @IsActive("Settings", "Index")">
                 <span>System &amp; SMS Gateway</span>

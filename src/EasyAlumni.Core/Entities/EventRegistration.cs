@@ -48,5 +48,8 @@ namespace EasyAlumni.Core.Entities
 
         public ICollection<RegistrationPayment> Payments { get; set; } = new List<RegistrationPayment>();
         public ICollection<GiftDistribution> GiftDistributions { get; set; } = new List<GiftDistribution>();
+        public ICollection<RegistrationGuest> Guests { get; set; } = new List<RegistrationGuest>();
+        public ICollection<RegistrationQuestionResponse> QuestionResponses { get; set; } = new List<RegistrationQuestionResponse>();
+        public ICollection<RegistrationGiftChoice> GiftChoices { get; set; } = new List<RegistrationGiftChoice>();
     }
 }

@@ -36,8 +36,12 @@ namespace EasyAlumni.Core.Entities
         [MaxLength(50)]
         public string? BadgeText { get; set; } // e.g. "Popular", "VIP", "Recommended"
 
+        public int? MinPassingYear { get; set; } // e.g. 1972
+        public int? MaxPassingYear { get; set; } // e.g. 2020
+
         public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
 
         public ICollection<EventRegistration> Registrations { get; set; } = new List<EventRegistration>();
+        public ICollection<PackageGiftItem> PackageGiftItems { get; set; } = new List<PackageGiftItem>();
     }
 }

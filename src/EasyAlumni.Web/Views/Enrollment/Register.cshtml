@@ -12,6 +12,19 @@
     var initialPackageId = selectedPkg?.Id ?? 0;
     var initialPackageFee = selectedPkg?.Fee ?? baseFee;
     var initialPackageName = selectedPkg?.PackageName ?? "Base Ticket";
+
+    // Gather all unique gift items across packages
+    var allGifts = Model.AvailablePackages?
+        .SelectMany(p => p.PackageGiftItems)
+        .Where(pg => pg.GiftItem != null)
+        .Select(pg => pg.GiftItem!)
+        .GroupBy(g => g.Id)
+        .Select(g => g.First())
+        .ToList() ?? new List<EasyAlumni.Core.Entities.GiftItem>();
+
+    var otherSizeGifts = allGifts
+        .Where(g => g.IsSizeSpecific && !g.ItemName.Contains("T-Shirt", StringComparison.OrdinalIgnoreCase))
+        .ToList();
 }
 
 @section Styles {
@@ -118,6 +131,14 @@
             background: #f0fdf4;
             box-shadow: 0 0 0 3px rgba(0, 106, 78, 0.2);
         }
+        .package-select-card.package-disabled {
+            opacity: 0.45;
+            cursor: not-allowed !important;
+            background: #f8fafc;
+            border-color: #cbd5e1 !important;
+            box-shadow: none !important;
+            transform: none !important;
+        }
         .package-badge-tag {
             position: absolute;
             top: -10px;
@@ -128,6 +149,34 @@
             font-weight: 700;
             padding: 2px 10px;
             border-radius: 50px;
+        }
+
+        .guest-row-card {
+            background: #f8fafc;
+            border: 1px solid #e2e8f0;
+            border-radius: 12px;
+            padding: 16px;
+            margin-bottom: 12px;
+            transition: all 0.2s ease;
+        }
+        .guest-row-card:hover {
+            border-color: #cbd5e1;
+            background: #fff;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.03);
+        }
+
+        .custom-question-card {
+            background: #f8fafc;
+            border: 1px solid #e2e8f0;
+            border-radius: 14px;
+            padding: 18px 20px;
+            margin-bottom: 15px;
+            transition: all 0.2s ease;
+        }
+        .custom-question-card:hover {
+            background: #fff;
+            border-color: #006a4e;
+            box-shadow: 0 4px 15px rgba(0, 106, 78, 0.05);
         }
     </style>
 }
@@ -202,14 +251,15 @@
                 </div>
                 <div class="col-md-4">
                     <label class="form-label fw-semibold">Passing Year (SSC / HSC) <span class="text-danger">*</span></label>
-                    <select asp-for="PassingYear" class="form-select" required>
+                    <select asp-for="PassingYear" class="form-select" id="passingYearSelect" onchange="filterPackagesByPassingYear()" required>
                         <option value="">-- Select Passing Year --</option>
                         @for (int yr = 2026; yr >= 1970; yr--)
                         {
                             <option value="@yr">@yr</option>
                         }
                     </select>
-                    <span asp-validation-for="PassingYear" class="text-danger small"></span>
+                    <small class="text-muted"><i class="fas fa-filter text-warning me-1"></i> Dynamically filters eligible packages below</small>
+                    <span asp-validation-for="PassingYear" class="text-danger small d-block"></span>
                 </div>
                 <div class="col-md-4">
                     <label class="form-label fw-semibold">Blood Group</label>
@@ -301,8 +351,16 @@
                     @foreach (var pkg in Model.AvailablePackages)
                     {
                         var isSelected = Model.RegistrationPackageId == pkg.Id || (!Model.RegistrationPackageId.HasValue && pkg.IsFeatured);
-                        <div class="col-lg-3 col-md-6">
+                        var giftIdsCsv = string.Join(",", pkg.PackageGiftItems != null ? pkg.PackageGiftItems.Select(g => g.GiftItemId) : Enumerable.Empty<int>());
+                        <div class="col-lg-3 col-md-6 package-col" id="pkg-col-@pkg.Id">
                             <div class="package-select-card @(isSelected ? "selected" : "")"
+                                 data-package-id="@pkg.Id"
+                                 data-fee="@pkg.Fee"
+                                 data-name="@pkg.PackageName"
+                                 data-min-year="@(pkg.MinPassingYear?.ToString() ?? "")"
+                                 data-max-year="@(pkg.MaxPassingYear?.ToString() ?? "")"
+                                 data-featured="@(pkg.IsFeatured.ToString().ToLower())"
+                                 data-gift-ids="@giftIdsCsv"
                                  onclick="selectPackage(@pkg.Id, @pkg.Fee, '@pkg.PackageName.Replace("'", "\\'")')"
                                  id="pkg-card-@pkg.Id">
                                 @if (!string.IsNullOrEmpty(pkg.BadgeText))
@@ -317,13 +375,35 @@
                                 </div>
                                 @if (!string.IsNullOrEmpty(pkg.PackageNameBangla))
                                 {
-                                    <div class="text-muted small mb-2">@pkg.PackageNameBangla</div>
+                                    <div class="text-muted small mb-1">@pkg.PackageNameBangla</div>
                                 }
+                                
+                                @if (pkg.MinPassingYear.HasValue || pkg.MaxPassingYear.HasValue)
+                                {
+                                    <div class="mb-2">
+                                        @if (pkg.MinPassingYear.HasValue && pkg.MaxPassingYear.HasValue)
+                                        {
+                                            <span class="badge bg-light text-primary border"><i class="fas fa-calendar-alt me-1"></i> Batches @pkg.MinPassingYear - @pkg.MaxPassingYear</span>
+                                        }
+                                        else if (pkg.MinPassingYear.HasValue)
+                                        {
+                                            <span class="badge bg-light text-primary border"><i class="fas fa-calendar-alt me-1"></i> Batches @pkg.MinPassingYear+</span>
+                                        }
+                                        else if (pkg.MaxPassingYear.HasValue)
+                                        {
+                                            <span class="badge bg-light text-primary border"><i class="fas fa-calendar-alt me-1"></i> Batches up to @pkg.MaxPassingYear</span>
+                                        }
+                                    </div>
+                                }
+
                                 <h3 class="fw-bold text-success mb-2">৳ @pkg.Fee.ToString("N0")</h3>
                                 @if (!string.IsNullOrEmpty(pkg.Description))
                                 {
-                                    <p class="small text-muted mb-3" style="min-height: 38px;">@pkg.Description</p>
+                                    <p class="small text-muted mb-2" style="min-height: 38px;">@pkg.Description</p>
                                 }
+
+                                <div class="package-eligibility-notice alert alert-danger py-1 px-2 small mb-2" style="display: none;"></div>
+
                                 <ul class="list-unstyled small border-top pt-2 text-muted mb-0">
                                     @if (pkg.IncludesTShirt)
                                     {
@@ -345,6 +425,20 @@
                                     {
                                         <li class="mb-1 text-primary fw-semibold"><i class="fas fa-user-friends me-1"></i> +@pkg.IncludedGuests Free Guest(s)</li>
                                     }
+
+                                     @if (pkg.PackageGiftItems != null && pkg.PackageGiftItems.Any())
+                                    {
+                                        @foreach (var pgi in pkg.PackageGiftItems.Where(g => g.GiftItem != null))
+                                        {
+                                            <li class="mb-1 text-dark">
+                                                <i class="fas fa-gift text-warning me-1"></i> @pgi.GiftItem!.ItemName
+                                                @if (pgi.GiftItem.IsSizeSpecific)
+                                                {
+                                                    <span class="badge bg-info-subtle text-info">Size Required</span>
+                                                }
+                                            </li>
+                                        }
+                                    }
                                 </ul>
                             </div>
                         </div>
@@ -352,12 +446,14 @@
                 </div>
             }
 
-            <!-- 5. Merchandise & Guests -->
+            <!-- 5. Merchandise & Accompanying Guests -->
             <div class="form-section-title">
                 <i class="fas fa-tshirt text-warning"></i>
                 <span>5. Merchandise, Kit &amp; Accompanying Guests</span>
             </div>
-            <div class="row g-4 mb-4 align-items-center">
+
+            <div class="row g-4 mb-4">
+                <!-- T-Shirt Size Selection -->
                 <div class="col-md-6">
                     <label class="form-label fw-semibold">Select Your Polo T-Shirt Size <span class="text-danger">*</span></label>
                     <select asp-for="TShirtSize" class="form-select form-select-lg" required>
@@ -370,9 +466,42 @@
                     </select>
                     <small class="text-muted"><i class="fas fa-info-circle me-1"></i> Included with your Alumni Registration Package.</small>
                 </div>
+
+                <!-- Dynamic Gift Size Selectors (e.g. Apron, Blazer, etc.) -->
+                @if (otherSizeGifts.Any())
+                {
+                    @for (int gi = 0; gi < otherSizeGifts.Count; gi++)
+                    {
+                        var gift = otherSizeGifts[gi];
+                        <div class="col-md-6 gift-size-selector-wrapper" data-gift-id="@gift.Id" id="gift-size-box-@gift.Id" style="display: none;">
+                            <input type="hidden" name="GiftSizeChoices[@gi].GiftItemId" value="@gift.Id" />
+                            <label class="form-label fw-semibold">
+                                <i class="fas fa-ruler-combined text-success me-1"></i> Select Your @gift.ItemName Size <span class="text-danger">*</span>
+                            </label>
+                            <select name="GiftSizeChoices[@gi].SelectedSize" class="form-select form-select-lg">
+                                @if (gift.SizeStocks != null && gift.SizeStocks.Any())
+                                {
+                                    foreach (var sz in gift.SizeStocks)
+                                    {
+                                        <option value="@sz.SizeName">@sz.SizeName</option>
+                                    }
+                                }
+                                else
+                                {
+                                    <option value="Regular">Regular Size</option>
+                                    <option value="Large">Large Size</option>
+                                    <option value="XL">Extra Large (XL)</option>
+                                    <option value="Free Size">Free Size</option>
+                                }
+                            </select>
+                            <small class="text-muted"><i class="fas fa-gift text-warning me-1"></i> Dynamic package gift requirement.</small>
+                        </div>
+                    }
+                }
+
                 <div class="col-md-6">
                     <div class="p-3 bg-light rounded-3 border">
-                        <h6 class="fw-bold mb-2 text-dark"><i class="fas fa-box-open text-success me-2"></i> Your Kit Entitlement Includes:</h6>
+                        <h6 class="fw-bold mb-2 text-dark"><i class="fas fa-box-open text-success me-2"></i> Standard Kit Entitlement Includes:</h6>
                         <ul class="list-unstyled small mb-0">
                             <li><i class="fas fa-check text-success me-2"></i> 1x Premium Polo T-Shirt (Your Selected Size)</li>
                             <li><i class="fas fa-check text-success me-2"></i> 1x Commemorative Gift Hamper (Mug, Diary, Pen)</li>
@@ -380,35 +509,35 @@
                         </ul>
                     </div>
                 </div>
+            </div>
 
-                <div class="col-md-4">
-                    <label class="form-label fw-semibold">Accompanying Spouse (+৳ @spouseFee.ToString("N0"))</label>
-                    <select asp-for="SpouseCount" class="form-select" id="spouseSelect" onchange="recalculateFee()">
-                        <option value="0">No Spouse (0)</option>
-                        <option value="1">With Spouse (1)</option>
-                    </select>
+            <!-- Dynamic Accompanying Guests Builder -->
+            <div class="card border rounded-3 p-3 mb-4 bg-light">
+                <div class="d-flex flex-wrap justify-content-between align-items-center mb-3">
+                    <div>
+                        <h6 class="fw-bold text-dark mb-0"><i class="fas fa-user-friends text-success me-2"></i> Accompanying Guests &amp; Family (সঙ্গী ও অতিথি)</h6>
+                        <small class="text-muted">Add your spouse, children, or driver attending the reunion event with you.</small>
+                    </div>
+                    <button type="button" class="btn btn-outline-success btn-sm rounded-pill fw-semibold" onclick="addGuestRow()">
+                        <i class="fas fa-user-plus me-1"></i> Add Accompanying Guest
+                    </button>
                 </div>
-                <div class="col-md-4">
-                    <label class="form-label fw-semibold">Children above 5 yrs (+৳ @childFee.ToString("N0") each)</label>
-                    <select asp-for="ChildCount" class="form-select" id="childSelect" onchange="recalculateFee()">
-                        <option value="0">0 Child</option>
-                        <option value="1">1 Child</option>
-                        <option value="2">2 Children</option>
-                        <option value="3">3 Children</option>
-                        <option value="4">4 Children</option>
-                    </select>
-                </div>
-                <div class="col-md-4">
-                    <label class="form-label fw-semibold">Driver / Guest (+৳ @guestFee.ToString("N0") each)</label>
-                    <select asp-for="GuestCount" class="form-select" id="guestSelect" onchange="recalculateFee()">
-                        <option value="0">0 Driver/Guest</option>
-                        <option value="1">1 Driver/Guest</option>
-                        <option value="2">2 Drivers/Guests</option>
-                    </select>
+
+                <!-- Hidden legacy count inputs for backward compatibility -->
+                <input type="hidden" asp-for="SpouseCount" id="legacySpouseCount" />
+                <input type="hidden" asp-for="ChildCount" id="legacyChildCount" />
+                <input type="hidden" asp-for="GuestCount" id="legacyGuestCount" />
+
+                <!-- Guest items container -->
+                <div id="guestsListContainer">
+                    <div id="noGuestsNotice" class="text-center py-4 px-3 bg-white rounded-3 border border-dashed text-muted">
+                        <i class="fas fa-users-slash fa-2x mb-2 text-secondary opacity-50"></i>
+                        <p class="mb-0 small">No accompanying guests added yet. Click <strong>"+ Add Accompanying Guest"</strong> if you are bringing family or guests.</p>
+                    </div>
                 </div>
             </div>
 
-            <!-- Dynamic Fee Calculation Summary -->
+            <!-- Dynamic Fee Calculation Summary Box -->
             <div class="fee-summary-box">
                 <div class="row align-items-center">
                     <div class="col-md-7">
@@ -424,10 +553,94 @@
                 </div>
             </div>
 
-            <!-- 6. Payment Submission -->
-            <div class="form-section-title mt-5">
+            <!-- 6. Dynamic Custom Questions -->
+            @if (Model.AvailableCustomQuestions != null && Model.AvailableCustomQuestions.Any())
+            {
+                <div class="form-section-title">
+                    <i class="fas fa-clipboard-question text-warning"></i>
+                    <span>6. Preferences &amp; Program Participation (ঐচ্ছিক কার্যক্রম ও পছন্দ)</span>
+                </div>
+                <div class="row g-3 mb-4">
+                    @for (int i = 0; i < Model.AvailableCustomQuestions.Count; i++)
+                    {
+                        var q = Model.AvailableCustomQuestions[i];
+                        <div class="col-12">
+                            <div class="custom-question-card">
+                                <input type="hidden" name="QuestionResponses[@i].QuestionId" value="@q.Id" />
+                                <div class="d-flex flex-wrap justify-content-between align-items-center mb-2">
+                                    <label class="form-label fw-bold text-dark mb-0 fs-6">
+                                        <i class="fas fa-question-circle text-success me-1"></i> @q.QuestionText
+                                        @if (!string.IsNullOrEmpty(q.QuestionTextBangla))
+                                        {
+                                            <span class="text-muted fw-normal small ms-1">(@q.QuestionTextBangla)</span>
+                                        }
+                                        @if (q.IsRequired)
+                                        {
+                                            <span class="text-danger">*</span>
+                                        }
+                                    </label>
+                                </div>
+
+                                @if (q.FieldType == "YesNoWithSubQuestion" || q.FieldType == "YesNo")
+                                {
+                                    <div class="d-flex gap-4 align-items-center mt-2">
+                                        <div class="form-check form-check-inline">
+                                            <input class="form-check-input question-radio" type="radio" 
+                                                   name="QuestionResponses[@i].Answer" id="q_yes_@q.Id" value="Yes" 
+                                                   onchange="toggleSubQuestion(@q.Id, true)" @(q.IsRequired ? "required" : "") />
+                                            <label class="form-check-label fw-semibold text-success" for="q_yes_@q.Id">
+                                                <i class="fas fa-check-circle me-1"></i> Yes (হ্যাঁ)
+                                            </label>
+                                        </div>
+                                        <div class="form-check form-check-inline">
+                                            <input class="form-check-input question-radio" type="radio" 
+                                                   name="QuestionResponses[@i].Answer" id="q_no_@q.Id" value="No" 
+                                                   checked
+                                                   onchange="toggleSubQuestion(@q.Id, false)" />
+                                            <label class="form-check-label fw-semibold text-muted" for="q_no_@q.Id">
+                                                <i class="fas fa-times-circle me-1"></i> No (না)
+                                            </label>
+                                        </div>
+                                    </div>
+
+                                    @if (q.FieldType == "YesNoWithSubQuestion" && !string.IsNullOrEmpty(q.SubQuestionText))
+                                    {
+                                        <div class="sub-question-container mt-3 p-3 bg-white rounded-3 border border-success-subtle shadow-sm" 
+                                             id="sub_q_box_@q.Id" style="display: none;">
+                                            <label class="form-label fw-semibold text-dark small mb-1">
+                                                <i class="fas fa-level-down-alt text-success me-1"></i> @q.SubQuestionText
+                                            </label>
+                                            <input type="text" name="QuestionResponses[@i].SubAnswer" class="form-control" 
+                                                   placeholder="e.g. Singing, Drama, Recitation, Dance, Donation amount, etc." />
+                                        </div>
+                                    }
+                                }
+                                else if (q.FieldType == "Dropdown" && !string.IsNullOrEmpty(q.OptionsJson))
+                                {
+                                    var opts = q.OptionsJson.Split(new[] { ',', ';' }, StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
+                                    <select name="QuestionResponses[@i].Answer" class="form-select mt-2" @(q.IsRequired ? "required" : "")>
+                                        <option value="">-- Select Option --</option>
+                                        @foreach (var opt in opts)
+                                        {
+                                            <option value="@opt">@opt</option>
+                                        }
+                                    </select>
+                                }
+                                else
+                                {
+                                    <input type="text" name="QuestionResponses[@i].Answer" class="form-control mt-2" 
+                                           placeholder="Enter your response" @(q.IsRequired ? "required" : "") />
+                                }
+                            </div>
+                        </div>
+                    }
+                </div>
+            }
+
+            <!-- 7. Payment Submission -->
+            <div class="form-section-title mt-4">
                 <i class="fas fa-credit-card text-warning"></i>
-                <span>6. Payment Submission (Send-Money)</span>
+                <span>7. Payment Submission (Send-Money)</span>
             </div>
 
             <div class="payment-box mb-4">
@@ -517,11 +730,30 @@
         let currentPackageId = @initialPackageId;
         let currentPackageFee = @initialPackageFee;
         let currentPackageName = "@Html.Raw(initialPackageName.Replace("\"", "\\\""))";
-        const spouseFee = @spouseFee;
-        const childFee = @childFee;
-        const guestFee = @guestFee;
+        
+        // Serialized guest categories from server
+        const guestCategories = @Html.Raw(System.Text.Json.JsonSerializer.Serialize(
+            Model.AvailableGuestCategories.Select(c => new {
+                id = c.Id,
+                name = c.CategoryName,
+                nameBangla = c.CategoryNameBangla,
+                fee = c.Fee,
+                rules = c.EligibilityRules,
+                maxAge = c.MaxAge,
+                minAge = c.MinAge,
+                gender = c.GenderRestriction,
+                maxAllowed = c.MaxAllowed
+            })
+        ));
+
+        let guestRowCounter = 0;
 
         function selectPackage(pkgId, fee, name) {
+            const card = document.getElementById('pkg-card-' + pkgId);
+            if (card && card.classList.contains('package-disabled')) {
+                return; // Disabled package cannot be selected
+            }
+
             currentPackageId = pkgId;
             currentPackageFee = fee;
             currentPackageName = name;
@@ -530,32 +762,321 @@
             if (input) input.value = pkgId;
 
             document.querySelectorAll('.package-select-card').forEach(el => el.classList.remove('selected'));
-            const activeCard = document.getElementById('pkg-card-' + pkgId);
-            if (activeCard) activeCard.classList.add('selected');
+            if (card) card.classList.add('selected');
 
             document.querySelectorAll('.pkg-radio').forEach(el => el.checked = false);
             const activeRadio = document.getElementById('radio-' + pkgId);
             if (activeRadio) activeRadio.checked = true;
 
+            // Show/Hide gift size selectors based on selected package's gifts
+            updateGiftSizeSelectors(card);
+
             recalculateFee();
         }
 
-        function recalculateFee() {
-            const spouse = parseInt(document.getElementById('spouseSelect')?.value) || 0;
-            const child = parseInt(document.getElementById('childSelect')?.value) || 0;
-            const guest = parseInt(document.getElementById('guestSelect')?.value) || 0;
+        function updateGiftSizeSelectors(packageCard) {
+            if (!packageCard) return;
+            const giftIdsAttr = packageCard.getAttribute('data-gift-ids') || '';
+            const giftIds = giftIdsAttr.split(',').map(s => parseInt(s.trim())).filter(n => !isNaN(n));
 
-            const total = currentPackageFee + (spouse * spouseFee) + (child * childFee) + (guest * guestFee);
+            document.querySelectorAll('.gift-size-selector-wrapper').forEach(box => {
+                const giftId = parseInt(box.getAttribute('data-gift-id'));
+                if (giftIds.includes(giftId)) {
+                    box.style.display = 'block';
+                } else {
+                    box.style.display = 'none';
+                }
+            });
+        }
+
+        function filterPackagesByPassingYear() {
+            const yrSelect = document.getElementById('passingYearSelect');
+            if (!yrSelect) return;
+            const yr = parseInt(yrSelect.value);
+            if (!yr || isNaN(yr)) return;
+
+            let currentlySelectedEligible = false;
+            let firstEligibleCard = null;
+            let featuredEligibleCard = null;
+
+            const cards = document.querySelectorAll('.package-select-card');
+            cards.forEach(card => {
+                const pkgId = parseInt(card.getAttribute('data-package-id'));
+                const minYr = parseInt(card.getAttribute('data-min-year'));
+                const maxYr = parseInt(card.getAttribute('data-max-year'));
+
+                let eligible = true;
+                let reason = '';
+
+                if (!isNaN(minYr) && yr < minYr) {
+                    eligible = false;
+                    reason = `Only for Batches ${minYr}+`;
+                }
+                if (!isNaN(maxYr) && yr > maxYr) {
+                    eligible = false;
+                    reason = `Only for Batches up to ${maxYr}`;
+                }
+
+                const noticeEl = card.querySelector('.package-eligibility-notice');
+                const radio = card.querySelector('.pkg-radio');
+
+                if (!eligible) {
+                    card.classList.add('package-disabled');
+                    if (noticeEl) {
+                        noticeEl.innerText = `Not eligible for Batch ${yr} (${reason})`;
+                        noticeEl.style.display = 'block';
+                    }
+                    if (card.classList.contains('selected')) {
+                        card.classList.remove('selected');
+                        if (radio) radio.checked = false;
+                    }
+                } else {
+                    card.classList.remove('package-disabled');
+                    if (noticeEl) noticeEl.style.display = 'none';
+                    if (card.classList.contains('selected')) {
+                        currentlySelectedEligible = true;
+                    }
+                    if (!firstEligibleCard) firstEligibleCard = card;
+                    if (card.getAttribute('data-featured') === 'true' && !featuredEligibleCard) {
+                        featuredEligibleCard = card;
+                    }
+                }
+            });
+
+            if (!currentlySelectedEligible) {
+                const targetCard = featuredEligibleCard || firstEligibleCard;
+                if (targetCard) {
+                    const pkgId = parseInt(targetCard.getAttribute('data-package-id'));
+                    const fee = parseFloat(targetCard.getAttribute('data-fee'));
+                    const name = targetCard.getAttribute('data-name');
+                    selectPackage(pkgId, fee, name);
+                } else {
+                    const displayEl = document.getElementById('totalAmountDisplay');
+                    if (displayEl) displayEl.innerText = "0";
+                    const breakdownEl = document.getElementById('breakdownText');
+                    if (breakdownEl) breakdownEl.innerText = `No packages eligible for Batch ${yr}.`;
+                }
+            } else {
+                const currentCard = document.getElementById('pkg-card-' + currentPackageId);
+                updateGiftSizeSelectors(currentCard);
+            }
+        }
+
+        // Accompanying Guests Dynamic Builder
+        function addGuestRow(catId = null, name = '', gender = 'Female', age = '') {
+            if (!guestCategories || guestCategories.length === 0) {
+                Swal.fire('Notice', 'No guest categories configured yet.', 'info');
+                return;
+            }
+
+            const container = document.getElementById('guestsListContainer');
+            const notice = document.getElementById('noGuestsNotice');
+            if (notice) notice.style.display = 'none';
+
+            const defaultCat = catId ? guestCategories.find(c => c.id === catId) : guestCategories[0];
+            const initialCatId = defaultCat ? defaultCat.id : guestCategories[0].id;
+            const initialFee = defaultCat ? defaultCat.fee : 0;
+            const idx = guestRowCounter++;
+
+            let optionsHtml = '';
+            guestCategories.forEach(c => {
+                optionsHtml += `<option value="${c.id}" ${c.id === initialCatId ? 'selected' : ''}>${c.name} (৳ ${c.fee.toLocaleString()})</option>`;
+            });
+
+            const rowHtml = `
+            <div class="guest-row-card" id="guest-row-${idx}">
+                <div class="row g-2 align-items-center">
+                    <div class="col-md-3">
+                        <label class="form-label small fw-semibold text-dark mb-1">Guest Category <span class="text-danger">*</span></label>
+                        <select name="Guests[${idx}].GuestCategoryId" class="form-select form-select-sm guest-cat-select" data-row="${idx}" onchange="onGuestCatChange(${idx})">
+                            ${optionsHtml}
+                        </select>
+                    </div>
+                    <div class="col-md-3">
+                        <label class="form-label small fw-semibold text-dark mb-1">Guest Name (Optional)</label>
+                        <input type="text" name="Guests[${idx}].GuestName" class="form-control form-control-sm" placeholder="Full Name" value="${name}" />
+                    </div>
+                    <div class="col-md-2 col-6">
+                        <label class="form-label small fw-semibold text-dark mb-1">Gender <span class="text-danger">*</span></label>
+                        <select name="Guests[${idx}].Gender" class="form-select form-select-sm guest-gender-select" data-row="${idx}" onchange="validateGuestRow(${idx})">
+                            <option value="Female" ${gender === 'Female' ? 'selected' : ''}>Female (নারী)</option>
+                            <option value="Male" ${gender === 'Male' ? 'selected' : ''}>Male (পুরুষ)</option>
+                        </select>
+                    </div>
+                    <div class="col-md-2 col-6">
+                        <label class="form-label small fw-semibold text-dark mb-1">Age (Years)</label>
+                        <input type="number" name="Guests[${idx}].Age" class="form-control form-control-sm guest-age-input" data-row="${idx}" placeholder="Age" min="0" max="100" value="${age}" oninput="validateGuestRow(${idx})" />
+                    </div>
+                    <div class="col-md-2 text-end d-flex align-items-center justify-content-end gap-2 mt-3 mt-md-0">
+                        <span class="badge bg-success-subtle text-success border px-2 py-2 fs-6" id="guest-fee-${idx}">৳ ${initialFee.toLocaleString()}</span>
+                        <button type="button" class="btn btn-outline-danger btn-sm" title="Remove Guest" onclick="removeGuestRow(${idx})">
+                            <i class="fas fa-trash-alt"></i>
+                        </button>
+                    </div>
+                </div>
+                <div class="mt-2 pt-2 border-top d-flex flex-wrap justify-content-between align-items-center">
+                    <small class="text-muted" id="guest-rule-${idx}"></small>
+                    <small class="text-danger fw-semibold" id="guest-warn-${idx}" style="display:none;"></small>
+                </div>
+            </div>`;
+
+            container.insertAdjacentHTML('beforeend', rowHtml);
+            onGuestCatChange(idx);
+            recalculateFee();
+        }
+
+        function removeGuestRow(idx) {
+            const row = document.getElementById(`guest-row-${idx}`);
+            if (row) row.remove();
+
+            const container = document.getElementById('guestsListContainer');
+            const remainingRows = container.querySelectorAll('.guest-row-card');
+            if (remainingRows.length === 0) {
+                const notice = document.getElementById('noGuestsNotice');
+                if (notice) notice.style.display = 'block';
+            }
+
+            reindexGuests();
+            recalculateFee();
+        }
+
+        function reindexGuests() {
+            const rows = document.querySelectorAll('#guestsListContainer .guest-row-card');
+            rows.forEach((row, newIdx) => {
+                row.querySelectorAll('input, select').forEach(input => {
+                    const name = input.getAttribute('name');
+                    if (name && name.startsWith('Guests[')) {
+                        input.setAttribute('name', name.replace(/Guests\[\d+\]/, `Guests[${newIdx}]`));
+                    }
+                });
+            });
+        }
+
+        function onGuestCatChange(idx) {
+            const row = document.getElementById(`guest-row-${idx}`);
+            if (!row) return;
+
+            const select = row.querySelector('.guest-cat-select');
+            const catId = parseInt(select.value);
+            const cat = guestCategories.find(c => c.id === catId);
+            if (!cat) return;
+
+            const feeBadge = document.getElementById(`guest-fee-${idx}`);
+            if (feeBadge) feeBadge.innerText = `৳ ${cat.fee.toLocaleString()}`;
+
+            const ruleEl = document.getElementById(`guest-rule-${idx}`);
+            if (ruleEl) {
+                ruleEl.innerHTML = cat.rules ? `<i class="fas fa-info-circle text-primary me-1"></i> ${cat.rules}` : '';
+            }
+
+            validateGuestRow(idx);
+            recalculateFee();
+        }
+
+        function validateGuestRow(idx) {
+            const row = document.getElementById(`guest-row-${idx}`);
+            if (!row) return;
+
+            const catSelect = row.querySelector('.guest-cat-select');
+            const genderSelect = row.querySelector('.guest-gender-select');
+            const ageInput = row.querySelector('.guest-age-input');
+            const warnEl = document.getElementById(`guest-warn-${idx}`);
+
+            const catId = parseInt(catSelect.value);
+            const cat = guestCategories.find(c => c.id === catId);
+            if (!cat) return;
+
+            const gender = genderSelect.value;
+            const age = parseInt(ageInput.value);
+
+            let warning = '';
+            if (cat.gender === 'MaleOnly' && gender !== 'Male') {
+                warning = 'This category requires Male gender.';
+            } else if (cat.gender === 'FemaleOnly' && gender !== 'Female') {
+                warning = 'This category requires Female gender.';
+            }
+
+            if (!isNaN(age)) {
+                if (cat.maxAge && age > cat.maxAge) {
+                    warning = `Max age for ${cat.name} is ${cat.maxAge} years.`;
+                }
+                if (cat.minAge && age < cat.minAge) {
+                    warning = `Min age for ${cat.name} is ${cat.minAge} years.`;
+                }
+            }
+
+            // Specific check for Child male under 5 yrs rule
+            if (cat.name.toLowerCase().includes('child') && cat.rules && cat.rules.toLowerCase().includes('under 5')) {
+                if (gender === 'Male' && !isNaN(age) && age > 5) {
+                    warning = `⚠️ Notice: Male child policy specifies under 5 years (Entered: ${age} yrs).`;
+                }
+            }
+
+            if (warnEl) {
+                if (warning) {
+                    warnEl.innerText = warning;
+                    warnEl.style.display = 'inline';
+                } else {
+                    warnEl.style.display = 'none';
+                }
+            }
+        }
+
+        function recalculateFee() {
+            let dynamicGuestTotal = 0;
+            let spouseCnt = 0;
+            let childCnt = 0;
+            let otherCnt = 0;
+
+            const guestRows = document.querySelectorAll('#guestsListContainer .guest-row-card');
+            guestRows.forEach(row => {
+                const catSelect = row.querySelector('.guest-cat-select');
+                if (catSelect) {
+                    const catId = parseInt(catSelect.value);
+                    const cat = guestCategories.find(c => c.id === catId);
+                    if (cat) {
+                        dynamicGuestTotal += cat.fee;
+                        if (cat.name.toLowerCase().includes('spouse')) spouseCnt++;
+                        else if (cat.name.toLowerCase().includes('child')) childCnt++;
+                        else otherCnt++;
+                    }
+                }
+            });
+
+            // Update legacy inputs for server backward compatibility
+            const legacySpouse = document.getElementById('legacySpouseCount');
+            if (legacySpouse) legacySpouse.value = spouseCnt;
+            const legacyChild = document.getElementById('legacyChildCount');
+            if (legacyChild) legacyChild.value = childCnt;
+            const legacyGuest = document.getElementById('legacyGuestCount');
+            if (legacyGuest) legacyGuest.value = otherCnt;
+
+            const total = currentPackageFee + dynamicGuestTotal;
             const displayEl = document.getElementById('totalAmountDisplay');
             if (displayEl) displayEl.innerText = total.toLocaleString();
 
             let breakdown = `${currentPackageName} (৳ ${currentPackageFee.toLocaleString()})`;
-            if (spouse > 0) breakdown += ` + Spouse (৳ ${(spouse * spouseFee).toLocaleString()})`;
-            if (child > 0) breakdown += ` + ${child} Child(ren) (৳ ${(child * childFee).toLocaleString()})`;
-            if (guest > 0) breakdown += ` + ${guest} Driver/Guest(s) (৳ ${(guest * guestFee).toLocaleString()})`;
+            if (guestRows.length > 0) {
+                breakdown += ` + ${guestRows.length} Guest(s) (৳ ${dynamicGuestTotal.toLocaleString()})`;
+            }
 
             const breakdownEl = document.getElementById('breakdownText');
             if (breakdownEl) breakdownEl.innerText = breakdown;
+        }
+
+        function toggleSubQuestion(qId, show) {
+            const box = document.getElementById(`sub_q_box_${qId}`);
+            if (box) {
+                if (show) {
+                    box.style.display = 'block';
+                    const input = box.querySelector('input');
+                    if (input) input.focus();
+                } else {
+                    box.style.display = 'none';
+                    const input = box.querySelector('input');
+                    if (input) input.value = '';
+                }
+            }
         }
 
         document.addEventListener('DOMContentLoaded', () => {
@@ -563,6 +1084,8 @@
             if (input && !input.value && currentPackageId > 0) {
                 input.value = currentPackageId;
             }
+
+            filterPackagesByPassingYear();
             recalculateFee();
         });
 

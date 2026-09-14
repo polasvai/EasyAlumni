@@ -419,6 +419,116 @@ namespace EasyAlumni.Infrastructure.Data
                         }
                     );
                 }
+
+                // 8. Seed Dynamic Guest Categories
+                if (!await context.GuestCategories.AnyAsync(g => g.ReunionEventId == reunion.Id))
+                {
+                    context.GuestCategories.AddRange(
+                        new GuestCategory
+                        {
+                            ReunionEventId = reunion.Id,
+                            CategoryName = "Spouse",
+                            CategoryNameBangla = "স্বামী / স্ত্রী",
+                            Fee = 1000,
+                            EligibilityRules = "Spouse of registered alumna (Max 1)",
+                            MaxAllowed = 1,
+                            DisplayOrder = 1,
+                            IsActive = true
+                        },
+                        new GuestCategory
+                        {
+                            ReunionEventId = reunion.Id,
+                            CategoryName = "Child",
+                            CategoryNameBangla = "সন্তান",
+                            Fee = 500,
+                            EligibilityRules = "Male child under 5 yrs, Female child no age restrictions",
+                            MaxAge = 5,
+                            MaxAllowed = 5,
+                            DisplayOrder = 2,
+                            IsActive = true
+                        },
+                        new GuestCategory
+                        {
+                            ReunionEventId = reunion.Id,
+                            CategoryName = "Driver / Attendant",
+                            CategoryNameBangla = "ড্রাইভার / সহযোগী",
+                            Fee = 500,
+                            EligibilityRules = "Personal driver or attendant for the day",
+                            MaxAllowed = 2,
+                            DisplayOrder = 3,
+                            IsActive = true
+                        }
+                    );
+                }
+
+                // 9. Seed Dynamic Custom Questions
+                if (!await context.EventCustomQuestions.AnyAsync(q => q.ReunionEventId == reunion.Id))
+                {
+                    context.EventCustomQuestions.AddRange(
+                        new EventCustomQuestion
+                        {
+                            ReunionEventId = reunion.Id,
+                            QuestionText = "Do you want to participate in the Cultural Program?",
+                            QuestionTextBangla = "আপনি কি সাংস্কৃতিক অনুষ্ঠানে অংশগ্রহণ করতে চান?",
+                            FieldType = "YesNoWithSubQuestion",
+                            SubQuestionText = "If yes, which part? (e.g. Singing, Drama, Recitation, Dance)",
+                            DisplayOrder = 1,
+                            IsRequired = false,
+                            IsActive = true
+                        },
+                        new EventCustomQuestion
+                        {
+                            ReunionEventId = reunion.Id,
+                            QuestionText = "Are you interested in volunteering for the reunion event?",
+                            QuestionTextBangla = "আপনি কি পুনর্মিলনী অনুষ্ঠানে ভলান্টিয়ার হিসেবে কাজ করতে আগ্রহী?",
+                            FieldType = "YesNo",
+                            DisplayOrder = 2,
+                            IsRequired = false,
+                            IsActive = true
+                        },
+                        new EventCustomQuestion
+                        {
+                            ReunionEventId = reunion.Id,
+                            QuestionText = "Would you like to make an additional voluntary donation?",
+                            QuestionTextBangla = "আপনি কি কোনো স্বেচ্ছাসেবী অনুদান প্রদান করতে চান?",
+                            FieldType = "YesNoWithSubQuestion",
+                            SubQuestionText = "If yes, pledge amount (BDT) & purpose",
+                            DisplayOrder = 3,
+                            IsRequired = false,
+                            IsActive = true
+                        }
+                    );
+                }
+
+                // 10. Link Gifts to Packages & Setup Passing Year Windows
+                var packages = await context.RegistrationPackages.Where(p => p.ReunionEventId == reunion.Id).ToListAsync();
+                var giftItems = await context.GiftItems.Where(g => g.IsActive).ToListAsync();
+
+                foreach (var pkg in packages)
+                {
+                    if (pkg.PackageName.Contains("Regular", StringComparison.OrdinalIgnoreCase) && !pkg.MinPassingYear.HasValue)
+                    {
+                        pkg.MinPassingYear = 1972;
+                        pkg.MaxPassingYear = 2020;
+                    }
+                    else if (pkg.PackageName.Contains("New", StringComparison.OrdinalIgnoreCase) && !pkg.MinPassingYear.HasValue)
+                    {
+                        pkg.MinPassingYear = 2021;
+                        pkg.MaxPassingYear = 2026;
+                    }
+
+                    if (!await context.PackageGiftItems.AnyAsync(pg => pg.RegistrationPackageId == pkg.Id))
+                    {
+                        foreach (var gift in giftItems)
+                        {
+                            context.PackageGiftItems.Add(new PackageGiftItem
+                            {
+                                RegistrationPackageId = pkg.Id,
+                                GiftItemId = gift.Id
+                            });
+                        }
+                    }
+                }
             }
 
             await context.SaveChangesAsync();

@@ -1,0 +1,729 @@
+@using EasyAlumni.Core.Entities
+@{
+    ViewData["Title"] = "Dynamic Settings & Event Rules";
+    Layout = "_AdminLayout";
+    var activeEvent = ViewBag.ActiveEvent as ReunionEvent;
+    var activeTab = ViewBag.ActiveTab as string ?? "packages";
+    var packages = ViewBag.Packages as List<RegistrationPackage> ?? new();
+    var allGiftItems = ViewBag.AllGiftItems as List<GiftItem> ?? new();
+    var guestCategories = ViewBag.GuestCategories as List<GuestCategory> ?? new();
+    var customQuestions = ViewBag.CustomQuestions as List<EventCustomQuestion> ?? new();
+}
+
+<div class="d-flex justify-content-between align-items-center flex-wrap gap-3 mb-4">
+    <div>
+        <h2 class="h4 fw-bold text-dark mb-1"><i class="fas fa-sliders-h text-primary me-2"></i> Dynamic Functions &amp; Event Rules</h2>
+        <p class="text-muted small mb-0">Configure conditional packages, dynamic gift inclusion, guest categories, custom questions, and item sizes</p>
+    </div>
+    <div class="d-flex gap-2">
+        <span class="badge bg-success-subtle text-success border border-success-subtle px-3 py-2 rounded-pill fs-6">
+            <i class="fas fa-calendar-check me-1"></i> @activeEvent?.EventTitle
+        </span>
+    </div>
+</div>
+
+@if (TempData["Success"] != null)
+{
+    <div class="alert alert-success alert-dismissible fade show rounded-3 shadow-sm mb-4" role="alert">
+        <i class="fas fa-check-circle me-2"></i> @TempData["Success"]
+        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+    </div>
+}
+@if (TempData["Error"] != null)
+{
+    <div class="alert alert-danger alert-dismissible fade show rounded-3 shadow-sm mb-4" role="alert">
+        <i class="fas fa-exclamation-triangle me-2"></i> @TempData["Error"]
+        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+    </div>
+}
+
+<!-- Navigation Tabs -->
+<div class="card border-0 shadow-sm rounded-4 mb-4">
+    <div class="card-header bg-white border-bottom p-2">
+        <ul class="nav nav-pills nav-fill" id="dynamicTabs" role="tablist">
+            <li class="nav-item" role="presentation">
+                <button class="nav-link rounded-pill py-2 @(activeTab == "packages" ? "active" : "")" id="packages-tab" data-bs-toggle="pill" data-bs-target="#packages-pane" type="button" role="tab">
+                    <i class="fas fa-cube me-1"></i> Package Rules &amp; Gifts
+                </button>
+            </li>
+            <li class="nav-item" role="presentation">
+                <button class="nav-link rounded-pill py-2 @(activeTab == "guests" ? "active" : "")" id="guests-tab" data-bs-toggle="pill" data-bs-target="#guests-pane" type="button" role="tab">
+                    <i class="fas fa-user-friends me-1"></i> Guest Categories &amp; Pricing
+                </button>
+            </li>
+            <li class="nav-item" role="presentation">
+                <button class="nav-link rounded-pill py-2 @(activeTab == "questions" ? "active" : "")" id="questions-tab" data-bs-toggle="pill" data-bs-target="#questions-pane" type="button" role="tab">
+                    <i class="fas fa-question-circle me-1"></i> Registration Questions
+                </button>
+            </li>
+            <li class="nav-item" role="presentation">
+                <button class="nav-link rounded-pill py-2 @(activeTab == "sizes" ? "active" : "")" id="sizes-tab" data-bs-toggle="pill" data-bs-target="#sizes-pane" type="button" role="tab">
+                    <i class="fas fa-ruler me-1"></i> Merchandise &amp; Custom Sizes
+                </button>
+            </li>
+        </ul>
+    </div>
+</div>
+
+<div class="tab-content" id="dynamicTabsContent">
+
+    <!-- ==================== TAB 1: PACKAGE RULES & GIFTS ==================== -->
+    <div class="tab-pane fade @(activeTab == "packages" ? "show active" : "")" id="packages-pane" role="tabpanel">
+        <div class="row g-4">
+            @foreach (var pkg in packages)
+            {
+                var includedGiftIds = pkg.PackageGiftItems.Select(p => p.GiftItemId).ToHashSet();
+                <div class="col-lg-6">
+                    <div class="card border-0 shadow-sm rounded-4 h-100">
+                        <div class="card-header bg-white p-3 border-bottom d-flex justify-content-between align-items-center">
+                            <div>
+                                <h5 class="fw-bold text-dark mb-0">@pkg.PackageName</h5>
+                                <small class="text-muted">Fee: <strong class="text-success">@pkg.Fee.ToString("N0") BDT</strong></small>
+                            </div>
+                            @if (!string.IsNullOrEmpty(pkg.BadgeText))
+                            {
+                                <span class="badge bg-primary rounded-pill px-3">@pkg.BadgeText</span>
+                            }
+                        </div>
+                        <div class="card-body p-4">
+                            <form asp-controller="DynamicSettings" asp-action="UpdatePackageRules" method="post">
+                                @Html.AntiForgeryToken()
+                                <input type="hidden" name="packageId" value="@pkg.Id" />
+
+                                <h6 class="fw-bold text-dark mb-2"><i class="fas fa-filter text-primary me-1"></i> Conditional Passing Year Eligibility</h6>
+                                <p class="text-muted small mb-3">Limit this package to specific passing year batches (e.g. 1972–2020 for Regular Alumni, 2021–2026 for New Alumni).</p>
+
+                                <div class="row g-2 mb-4">
+                                    <div class="col-6">
+                                        <label class="form-label small fw-semibold">Min Passing Year</label>
+                                        <input type="number" name="minPassingYear" value="@pkg.MinPassingYear" class="form-control" placeholder="e.g. 1972" min="1950" max="2035" />
+                                    </div>
+                                    <div class="col-6">
+                                        <label class="form-label small fw-semibold">Max Passing Year</label>
+                                        <input type="number" name="maxPassingYear" value="@pkg.MaxPassingYear" class="form-control" placeholder="e.g. 2020" min="1950" max="2035" />
+                                    </div>
+                                </div>
+
+                                <h6 class="fw-bold text-dark mb-2"><i class="fas fa-gifts text-success me-1"></i> Included Gift Items</h6>
+                                <p class="text-muted small mb-3">Select which active merchandise/gift items are provided with this package:</p>
+
+                                <div class="bg-light p-3 rounded-3 mb-4">
+                                    @if (!allGiftItems.Any())
+                                    {
+                                        <div class="text-muted small">No gift items found in inventory. Add items in Merchandise Inventory first.</div>
+                                    }
+                                    else
+                                    {
+                                        <div class="row g-2">
+                                            @foreach (var gift in allGiftItems)
+                                            {
+                                                var isChecked = includedGiftIds.Contains(gift.Id);
+                                                <div class="col-md-6">
+                                                    <div class="form-check">
+                                                        <input class="form-check-input" type="checkbox" name="selectedGiftItemIds" value="@gift.Id" id="pkg_@(pkg.Id)_gift_@(gift.Id)" @(isChecked ? "checked" : "")>
+                                                        <label class="form-check-label fw-semibold text-dark small" for="pkg_@(pkg.Id)_gift_@(gift.Id)">
+                                                            @gift.ItemName
+                                                            @if (gift.IsSizeSpecific)
+                                                            {
+                                                                <span class="badge bg-info-subtle text-info border border-info-subtle ms-1" style="font-size: 0.65rem;">Size-Specific</span>
+                                                            }
+                                                        </label>
+                                                    </div>
+                                                </div>
+                                            }
+                                        </div>
+                                    }
+                                </div>
+
+                                <div class="text-end">
+                                    <button type="submit" class="btn btn-primary rounded-pill px-4">
+                                        <i class="fas fa-save me-1"></i> Save Package Rules
+                                    </button>
+                                </div>
+                            </form>
+                        </div>
+                    </div>
+                </div>
+            }
+        </div>
+    </div>
+
+    <!-- ==================== TAB 2: GUEST CATEGORIES & PRICING ==================== -->
+    <div class="tab-pane fade @(activeTab == "guests" ? "show active" : "")" id="guests-pane" role="tabpanel">
+        <div class="card border-0 shadow-sm rounded-4 overflow-hidden">
+            <div class="card-header bg-white p-3 border-bottom d-flex justify-content-between align-items-center">
+                <div>
+                    <h5 class="fw-bold text-dark mb-0"><i class="fas fa-user-friends text-primary me-2"></i> Dynamic Guest Categories &amp; Pricing Rules</h5>
+                    <small class="text-muted">Define guest categories, fees per head, and eligibility rules (e.g. Male child under 5 yrs, Female child no restriction)</small>
+                </div>
+                <button type="button" class="btn btn-success rounded-pill px-4 fw-semibold shadow-sm" data-bs-toggle="modal" data-bs-target="#addGuestCategoryModal">
+                    <i class="fas fa-plus me-1"></i> Add Guest Category
+                </button>
+            </div>
+            <div class="table-responsive p-3">
+                <table class="table table-hover align-middle mb-0">
+                    <thead class="table-light small text-uppercase">
+                        <tr>
+                            <th>Category</th>
+                            <th>Fee (BDT)</th>
+                            <th>Eligibility Rules</th>
+                            <th>Gender / Age Limit</th>
+                            <th>Max / Alumna</th>
+                            <th>Status</th>
+                            <th class="text-end">Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach (var cat in guestCategories)
+                        {
+                            <tr>
+                                <td>
+                                    <strong class="text-dark">@cat.CategoryName</strong>
+                                    @if (!string.IsNullOrEmpty(cat.CategoryNameBangla))
+                                    {
+                                        <small class="text-muted d-block">@cat.CategoryNameBangla</small>
+                                    }
+                                </td>
+                                <td><strong class="text-success fs-6">@cat.Fee.ToString("N0") TK</strong></td>
+                                <td><span class="text-muted small">@(cat.EligibilityRules ?? "Standard attendance")</span></td>
+                                <td>
+                                    <span class="badge bg-light text-dark border">
+                                        @cat.GenderRestriction
+                                        @(cat.MaxAge.HasValue ? $" (< {cat.MaxAge} yrs)" : "")
+                                    </span>
+                                </td>
+                                <td><span class="badge bg-secondary">Max @cat.MaxAllowed</span></td>
+                                <td>
+                                    @if (cat.IsActive)
+                                    {
+                                        <span class="badge bg-success">Active</span>
+                                    }
+                                    else
+                                    {
+                                        <span class="badge bg-secondary">Inactive</span>
+                                    }
+                                </td>
+                                <td class="text-end text-nowrap">
+                                    <button type="button" class="btn btn-sm btn-outline-primary rounded-pill px-2 me-1"
+                                            onclick="openEditGuestModal(@cat.Id, '@Html.Raw(cat.CategoryName.Replace("'", "\\'"))', '@Html.Raw((cat.CategoryNameBangla ?? "").Replace("'", "\\'"))', @cat.Fee, '@Html.Raw((cat.EligibilityRules ?? "").Replace("'", "\\'"))', '@cat.GenderRestriction', @(cat.MaxAge?.ToString() ?? "null"), @cat.MaxAllowed, @cat.DisplayOrder, @(cat.IsActive ? "true" : "false"))">
+                                        <i class="fas fa-edit me-1"></i> Edit
+                                    </button>
+                                    <button type="button" class="btn btn-sm btn-outline-danger rounded-pill px-2"
+                                            onclick="confirmDeleteGuestCategory(@cat.Id, '@Html.Raw(cat.CategoryName.Replace("'", "\\'"))')">
+                                        <i class="fas fa-trash-alt me-1"></i> Delete
+                                    </button>
+                                </td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <!-- ==================== TAB 3: REGISTRATION QUESTIONS ==================== -->
+    <div class="tab-pane fade @(activeTab == "questions" ? "show active" : "")" id="questions-pane" role="tabpanel">
+        <div class="card border-0 shadow-sm rounded-4 overflow-hidden">
+            <div class="card-header bg-white p-3 border-bottom d-flex justify-content-between align-items-center">
+                <div>
+                    <h5 class="fw-bold text-dark mb-0"><i class="fas fa-question-circle text-primary me-2"></i> Dynamic Custom Registration Questions</h5>
+                    <small class="text-muted">Configure questions (Volunteering, Donations, Cultural Participation) with interactive conditional sub-questions</small>
+                </div>
+                <button type="button" class="btn btn-success rounded-pill px-4 fw-semibold shadow-sm" data-bs-toggle="modal" data-bs-target="#addQuestionModal">
+                    <i class="fas fa-plus me-1"></i> Add Custom Question
+                </button>
+            </div>
+            <div class="table-responsive p-3">
+                <table class="table table-hover align-middle mb-0">
+                    <thead class="table-light small text-uppercase">
+                        <tr>
+                            <th>Order</th>
+                            <th>Question Text</th>
+                            <th>Type</th>
+                            <th>Conditional Sub-Question</th>
+                            <th>Required?</th>
+                            <th>Status</th>
+                            <th class="text-end">Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach (var q in customQuestions)
+                        {
+                            <tr>
+                                <td><span class="badge bg-light text-dark border">#@q.DisplayOrder</span></td>
+                                <td>
+                                    <strong class="text-dark">@q.QuestionText</strong>
+                                    @if (!string.IsNullOrEmpty(q.QuestionTextBangla))
+                                    {
+                                        <small class="text-muted d-block">@q.QuestionTextBangla</small>
+                                    }
+                                </td>
+                                <td>
+                                    <span class="badge bg-info text-dark">@q.FieldType</span>
+                                </td>
+                                <td>
+                                    @if (!string.IsNullOrEmpty(q.SubQuestionText))
+                                    {
+                                        <span class="text-muted small"><i class="fas fa-level-down-alt me-1 text-primary"></i> @q.SubQuestionText</span>
+                                    }
+                                    else
+                                    {
+                                        <span class="text-muted small">- None -</span>
+                                    }
+                                </td>
+                                <td>
+                                    @if (q.IsRequired)
+                                    {
+                                        <span class="badge bg-danger">Required</span>
+                                    }
+                                    else
+                                    {
+                                        <span class="badge bg-secondary">Optional</span>
+                                    }
+                                </td>
+                                <td>
+                                    @if (q.IsActive)
+                                    {
+                                        <span class="badge bg-success">Active</span>
+                                    }
+                                    else
+                                    {
+                                        <span class="badge bg-secondary">Inactive</span>
+                                    }
+                                </td>
+                                <td class="text-end text-nowrap">
+                                    <button type="button" class="btn btn-sm btn-outline-primary rounded-pill px-2 me-1"
+                                            onclick="openEditQuestionModal(@q.Id, '@Html.Raw(q.QuestionText.Replace("'", "\\'"))', '@Html.Raw((q.QuestionTextBangla ?? "").Replace("'", "\\'"))', '@q.FieldType', '@Html.Raw((q.SubQuestionText ?? "").Replace("'", "\\'"))', @(q.IsRequired ? "true" : "false"), @q.DisplayOrder, @(q.IsActive ? "true" : "false"))">
+                                        <i class="fas fa-edit me-1"></i> Edit
+                                    </button>
+                                    <button type="button" class="btn btn-sm btn-outline-danger rounded-pill px-2"
+                                            onclick="confirmDeleteQuestion(@q.Id, '@Html.Raw(q.QuestionText.Replace("'", "\\'"))')">
+                                        <i class="fas fa-trash-alt me-1"></i> Delete
+                                    </button>
+                                </td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <!-- ==================== TAB 4: MERCHANDISE & CUSTOM SIZES ==================== -->
+    <div class="tab-pane fade @(activeTab == "sizes" ? "show active" : "")" id="sizes-pane" role="tabpanel">
+        <div class="row g-4">
+            @foreach (var gift in allGiftItems)
+            {
+                <div class="col-lg-6">
+                    <div class="card border-0 shadow-sm rounded-4 h-100">
+                        <div class="card-header bg-white p-3 border-bottom d-flex justify-content-between align-items-center">
+                            <div>
+                                <h5 class="fw-bold text-dark mb-0">@gift.ItemName</h5>
+                                <small class="text-muted">Total Stock: <strong class="text-primary">@gift.TotalStockQuantity Units</strong></small>
+                            </div>
+                            <span class="badge @(gift.IsSizeSpecific ? "bg-info text-dark" : "bg-secondary") rounded-pill px-3">
+                                @(gift.IsSizeSpecific ? "Size Specific" : "Standard Unit")
+                            </span>
+                        </div>
+                        <div class="card-body p-4">
+                            <h6 class="fw-bold text-dark mb-2">Available Size Variants</h6>
+                            <div class="table-responsive mb-3">
+                                <table class="table table-bordered table-sm align-middle text-center mb-0">
+                                    <thead class="table-light small">
+                                        <tr>
+                                            <th>Size Variant</th>
+                                            <th>Stock</th>
+                                            <th>Distributed</th>
+                                            <th>Action</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        @if (!gift.SizeStocks.Any())
+                                        {
+                                            <tr>
+                                                <td colspan="4" class="text-muted small py-3">No custom sizes configured. Using standard unit quantity.</td>
+                                            </tr>
+                                        }
+                                        else
+                                        {
+                                            @foreach (var size in gift.SizeStocks.OrderBy(s => s.SizeName))
+                                            {
+                                                <tr>
+                                                    <td><strong class="text-primary">@size.SizeName</strong></td>
+                                                    <td>@size.TotalStock</td>
+                                                    <td><span class="badge bg-success">@size.DistributedStock</span></td>
+                                                    <td>
+                                                        @if (size.DistributedStock == 0)
+                                                        {
+                                                            <form asp-controller="DynamicSettings" asp-action="DeleteGiftSize" method="post" class="d-inline">
+                                                                @Html.AntiForgeryToken()
+                                                                <input type="hidden" name="sizeStockId" value="@size.Id" />
+                                                                <button type="submit" class="btn btn-sm btn-link text-danger p-0" title="Delete Size">
+                                                                    <i class="fas fa-times-circle"></i>
+                                                                </button>
+                                                            </form>
+                                                        }
+                                                        else
+                                                        {
+                                                            <small class="text-muted">In Use</small>
+                                                        }
+                                                    </td>
+                                                </tr>
+                                            }
+                                        }
+                                    </tbody>
+                                </table>
+                            </div>
+
+                            <!-- Form to Add New Size Variant -->
+                            <form asp-controller="DynamicSettings" asp-action="AddGiftSize" method="post" class="border p-3 rounded-3 bg-light">
+                                @Html.AntiForgeryToken()
+                                <input type="hidden" name="giftItemId" value="@gift.Id" />
+                                <div class="small fw-bold text-dark mb-2">+ Add New Size (e.g. Regular, Large, Free Size, XXL)</div>
+                                <div class="row g-2">
+                                    <div class="col-7">
+                                        <input type="text" name="sizeName" class="form-control form-control-sm" placeholder="Size Name (e.g. Regular)" required />
+                                    </div>
+                                    <div class="col-3">
+                                        <input type="number" name="initialStock" class="form-control form-control-sm" value="100" min="0" required />
+                                    </div>
+                                    <div class="col-2">
+                                        <button type="submit" class="btn btn-sm btn-primary w-100 rounded-pill">Add</button>
+                                    </div>
+                                </div>
+                            </form>
+                        </div>
+                    </div>
+                </div>
+            }
+        </div>
+    </div>
+
+</div>
+
+<!-- ==================== MODALS ==================== -->
+
+<!-- Add Guest Category Modal -->
+<div class="modal fade" id="addGuestCategoryModal" tabindex="-1">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content rounded-4 border-0 shadow">
+            <form asp-controller="DynamicSettings" asp-action="AddGuestCategory" method="post">
+                @Html.AntiForgeryToken()
+                <div class="modal-header border-bottom">
+                    <h5 class="modal-title fw-bold"><i class="fas fa-plus me-1 text-success"></i> Add Guest Category</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body p-4">
+                    <div class="mb-3">
+                        <label class="form-label fw-semibold">Category Name (English) <span class="text-danger">*</span></label>
+                        <input type="text" name="CategoryName" class="form-control" placeholder="e.g. Child, Spouse, Driver" required />
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label fw-semibold">Category Name (Bangla)</label>
+                        <input type="text" name="CategoryNameBangla" class="form-control" placeholder="e.g. সন্তান, স্বামী / স্ত্রী" />
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label fw-semibold">Fee per Guest (BDT) <span class="text-danger">*</span></label>
+                        <input type="number" name="Fee" class="form-control" value="500" min="0" required />
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label fw-semibold">Eligibility Rules / Criteria</label>
+                        <input type="text" name="EligibilityRules" class="form-control" placeholder="e.g. Male child under 5 yrs, Female child no age restrictions" />
+                    </div>
+                    <div class="row g-2 mb-3">
+                        <div class="col-6">
+                            <label class="form-label fw-semibold">Gender Rule</label>
+                            <select name="GenderRestriction" class="form-select">
+                                <option value="None">None (Both)</option>
+                                <option value="MaleOnly">Male Only</option>
+                                <option value="FemaleOnly">Female Only</option>
+                            </select>
+                        </div>
+                        <div class="col-6">
+                            <label class="form-label fw-semibold">Max Age Limit</label>
+                            <input type="number" name="MaxAge" class="form-control" placeholder="e.g. 5" min="0" max="100" />
+                        </div>
+                    </div>
+                    <div class="row g-2 mb-3">
+                        <div class="col-6">
+                            <label class="form-label fw-semibold">Max Allowed per Alumna</label>
+                            <input type="number" name="MaxAllowed" class="form-control" value="5" min="1" max="20" required />
+                        </div>
+                        <div class="col-6">
+                            <label class="form-label fw-semibold">Display Order</label>
+                            <input type="number" name="DisplayOrder" class="form-control" value="1" min="1" required />
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer border-top">
+                    <button type="button" class="btn btn-secondary rounded-pill px-3" data-bs-dismiss="modal">Cancel</button>
+                    <button type="submit" class="btn btn-success rounded-pill px-4">Create Category</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- Edit Guest Category Modal -->
+<div class="modal fade" id="editGuestCategoryModal" tabindex="-1">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content rounded-4 border-0 shadow">
+            <form asp-controller="DynamicSettings" asp-action="EditGuestCategory" method="post">
+                @Html.AntiForgeryToken()
+                <input type="hidden" name="Id" id="editGuestCatId" />
+                <div class="modal-header border-bottom">
+                    <h5 class="modal-title fw-bold"><i class="fas fa-edit me-1 text-primary"></i> Edit Guest Category</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body p-4">
+                    <div class="mb-3">
+                        <label class="form-label fw-semibold">Category Name (English) <span class="text-danger">*</span></label>
+                        <input type="text" name="CategoryName" id="editGuestCatName" class="form-control" required />
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label fw-semibold">Category Name (Bangla)</label>
+                        <input type="text" name="CategoryNameBangla" id="editGuestCatNameBangla" class="form-control" />
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label fw-semibold">Fee per Guest (BDT) <span class="text-danger">*</span></label>
+                        <input type="number" name="Fee" id="editGuestCatFee" class="form-control" min="0" required />
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label fw-semibold">Eligibility Rules / Criteria</label>
+                        <input type="text" name="EligibilityRules" id="editGuestCatRules" class="form-control" />
+                    </div>
+                    <div class="row g-2 mb-3">
+                        <div class="col-6">
+                            <label class="form-label fw-semibold">Gender Rule</label>
+                            <select name="GenderRestriction" id="editGuestCatGender" class="form-select">
+                                <option value="None">None (Both)</option>
+                                <option value="MaleOnly">Male Only</option>
+                                <option value="FemaleOnly">Female Only</option>
+                            </select>
+                        </div>
+                        <div class="col-6">
+                            <label class="form-label fw-semibold">Max Age Limit</label>
+                            <input type="number" name="MaxAge" id="editGuestCatMaxAge" class="form-control" min="0" max="100" />
+                        </div>
+                    </div>
+                    <div class="row g-2 mb-3">
+                        <div class="col-6">
+                            <label class="form-label fw-semibold">Max Allowed per Alumna</label>
+                            <input type="number" name="MaxAllowed" id="editGuestCatMaxAllowed" class="form-control" min="1" max="20" required />
+                        </div>
+                        <div class="col-6">
+                            <label class="form-label fw-semibold">Display Order</label>
+                            <input type="number" name="DisplayOrder" id="editGuestCatOrder" class="form-control" min="1" required />
+                        </div>
+                    </div>
+                    <div class="form-check">
+                        <input class="form-check-input" type="checkbox" name="IsActive" id="editGuestCatIsActive" value="true">
+                        <label class="form-check-label fw-semibold" for="editGuestCatIsActive">
+                            Active &amp; Available in Registration
+                        </label>
+                    </div>
+                </div>
+                <div class="modal-footer border-top">
+                    <button type="button" class="btn btn-secondary rounded-pill px-3" data-bs-dismiss="modal">Cancel</button>
+                    <button type="submit" class="btn btn-primary rounded-pill px-4">Save Changes</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- Add Custom Question Modal -->
+<div class="modal fade" id="addQuestionModal" tabindex="-1">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content rounded-4 border-0 shadow">
+            <form asp-controller="DynamicSettings" asp-action="AddCustomQuestion" method="post">
+                @Html.AntiForgeryToken()
+                <div class="modal-header border-bottom">
+                    <h5 class="modal-title fw-bold"><i class="fas fa-plus me-1 text-success"></i> Add Custom Registration Question</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body p-4">
+                    <div class="mb-3">
+                        <label class="form-label fw-semibold">Question Text (English) <span class="text-danger">*</span></label>
+                        <input type="text" name="QuestionText" class="form-control" placeholder="e.g. Do you want to participate in Cultural Program?" required />
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label fw-semibold">Question Text (Bangla)</label>
+                        <input type="text" name="QuestionTextBangla" class="form-control" placeholder="e.g. আপনি কি সাংস্কৃতিক অনুষ্ঠানে অংশ নিতে চান?" />
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label fw-semibold">Field Type <span class="text-danger">*</span></label>
+                        <select name="FieldType" class="form-select">
+                            <option value="YesNoWithSubQuestion">Yes / No (with conditional sub-question)</option>
+                            <option value="YesNo">Simple Yes / No</option>
+                            <option value="Text">Open Text Input</option>
+                        </select>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label fw-semibold">Conditional Sub-Question (Shown when Yes is picked)</label>
+                        <input type="text" name="SubQuestionText" class="form-control" placeholder="e.g. If yes, which part? (Singing, Drama, Dance)" />
+                    </div>
+                    <div class="row g-2 mb-3">
+                        <div class="col-6">
+                            <label class="form-label fw-semibold">Display Order</label>
+                            <input type="number" name="DisplayOrder" class="form-control" value="1" min="1" required />
+                        </div>
+                        <div class="col-6 d-flex align-items-end">
+                            <div class="form-check pb-2">
+                                <input class="form-check-input" type="checkbox" name="IsRequired" id="addQuestionRequired" value="true">
+                                <label class="form-check-label fw-semibold" for="addQuestionRequired">
+                                    Mandatory Field
+                                </label>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer border-top">
+                    <button type="button" class="btn btn-secondary rounded-pill px-3" data-bs-dismiss="modal">Cancel</button>
+                    <button type="submit" class="btn btn-success rounded-pill px-4">Create Question</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- Edit Custom Question Modal -->
+<div class="modal fade" id="editQuestionModal" tabindex="-1">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content rounded-4 border-0 shadow">
+            <form asp-controller="DynamicSettings" asp-action="EditCustomQuestion" method="post">
+                @Html.AntiForgeryToken()
+                <input type="hidden" name="Id" id="editQuestionId" />
+                <div class="modal-header border-bottom">
+                    <h5 class="modal-title fw-bold"><i class="fas fa-edit me-1 text-primary"></i> Edit Custom Question</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body p-4">
+                    <div class="mb-3">
+                        <label class="form-label fw-semibold">Question Text (English) <span class="text-danger">*</span></label>
+                        <input type="text" name="QuestionText" id="editQuestionText" class="form-control" required />
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label fw-semibold">Question Text (Bangla)</label>
+                        <input type="text" name="QuestionTextBangla" id="editQuestionTextBangla" class="form-control" />
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label fw-semibold">Field Type <span class="text-danger">*</span></label>
+                        <select name="FieldType" id="editQuestionFieldType" class="form-select">
+                            <option value="YesNoWithSubQuestion">Yes / No (with conditional sub-question)</option>
+                            <option value="YesNo">Simple Yes / No</option>
+                            <option value="Text">Open Text Input</option>
+                        </select>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label fw-semibold">Conditional Sub-Question</label>
+                        <input type="text" name="SubQuestionText" id="editQuestionSubText" class="form-control" />
+                    </div>
+                    <div class="row g-2 mb-3">
+                        <div class="col-6">
+                            <label class="form-label fw-semibold">Display Order</label>
+                            <input type="number" name="DisplayOrder" id="editQuestionOrder" class="form-control" min="1" required />
+                        </div>
+                        <div class="col-6 d-flex align-items-end">
+                            <div class="form-check pb-2">
+                                <input class="form-check-input" type="checkbox" name="IsRequired" id="editQuestionRequired" value="true">
+                                <label class="form-check-label fw-semibold" for="editQuestionRequired">
+                                    Mandatory Field
+                                </label>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="form-check">
+                        <input class="form-check-input" type="checkbox" name="IsActive" id="editQuestionIsActive" value="true">
+                        <label class="form-check-label fw-semibold" for="editQuestionIsActive">
+                            Active &amp; Displayed on Form
+                        </label>
+                    </div>
+                </div>
+                <div class="modal-footer border-top">
+                    <button type="button" class="btn btn-secondary rounded-pill px-3" data-bs-dismiss="modal">Cancel</button>
+                    <button type="submit" class="btn btn-primary rounded-pill px-4">Save Changes</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- Hidden Delete Forms -->
+<form id="deleteGuestCategoryForm" asp-controller="DynamicSettings" asp-action="DeleteGuestCategory" method="post" style="display:none;">
+    @Html.AntiForgeryToken()
+    <input type="hidden" name="id" id="deleteGuestCatId" />
+</form>
+
+<form id="deleteQuestionForm" asp-controller="DynamicSettings" asp-action="DeleteCustomQuestion" method="post" style="display:none;">
+    @Html.AntiForgeryToken()
+    <input type="hidden" name="id" id="deleteQuestionId" />
+</form>
+
+@section Scripts {
+    <script>
+        function openEditGuestModal(id, name, bangla, fee, rules, gender, maxAge, maxAllowed, order, isActive) {
+            document.getElementById('editGuestCatId').value = id;
+            document.getElementById('editGuestCatName').value = name;
+            document.getElementById('editGuestCatNameBangla').value = bangla;
+            document.getElementById('editGuestCatFee').value = fee;
+            document.getElementById('editGuestCatRules').value = rules;
+            document.getElementById('editGuestCatGender').value = gender;
+            document.getElementById('editGuestCatMaxAge').value = maxAge !== null ? maxAge : '';
+            document.getElementById('editGuestCatMaxAllowed').value = maxAllowed;
+            document.getElementById('editGuestCatOrder').value = order;
+            document.getElementById('editGuestCatIsActive').checked = isActive;
+            new bootstrap.Modal(document.getElementById('editGuestCategoryModal')).show();
+        }
+
+        function confirmDeleteGuestCategory(id, name) {
+            Swal.fire({
+                title: 'Delete Guest Category?',
+                text: 'Are you sure you want to delete or deactivate "' + name + '"?',
+                icon: 'warning',
+                showCancelButton: true,
+                confirmButtonColor: '#dc3545',
+                cancelButtonColor: '#6c757d',
+                confirmButtonText: '<i class="fas fa-trash-alt me-1"></i> Yes, delete',
+                cancelButtonText: 'Cancel',
+                reverseButtons: true
+            }).then((result) => {
+                if (result.isConfirmed) {
+                    document.getElementById('deleteGuestCatId').value = id;
+                    document.getElementById('deleteGuestCategoryForm').submit();
+                }
+            });
+        }
+
+        function openEditQuestionModal(id, text, bangla, type, subText, isRequired, order, isActive) {
+            document.getElementById('editQuestionId').value = id;
+            document.getElementById('editQuestionText').value = text;
+            document.getElementById('editQuestionTextBangla').value = bangla;
+            document.getElementById('editQuestionFieldType').value = type;
+            document.getElementById('editQuestionSubText').value = subText;
+            document.getElementById('editQuestionRequired').checked = isRequired;
+            document.getElementById('editQuestionOrder').value = order;
+            document.getElementById('editQuestionIsActive').checked = isActive;
+            new bootstrap.Modal(document.getElementById('editQuestionModal')).show();
+        }
+
+        function confirmDeleteQuestion(id, text) {
+            Swal.fire({
+                title: 'Deactivate Custom Question?',
+                text: 'Are you sure you want to remove "' + text + '" from the registration form?',
+                icon: 'warning',
+                showCancelButton: true,
+                confirmButtonColor: '#dc3545',
+                cancelButtonColor: '#6c757d',
+                confirmButtonText: '<i class="fas fa-trash-alt me-1"></i> Yes, remove',
+                cancelButtonText: 'Cancel',
+                reverseButtons: true
+            }).then((result) => {
+                if (result.isConfirmed) {
+                    document.getElementById('deleteQuestionId').value = id;
+                    document.getElementById('deleteQuestionForm').submit();
+                }
+            });
+        }
+    </script>
+}

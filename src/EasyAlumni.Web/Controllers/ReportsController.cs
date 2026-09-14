@@ -1,4 +1,5 @@
 using System.Text;
+using EasyAlumni.Core.Entities;
 using EasyAlumni.Core.Enums;
 using EasyAlumni.Infrastructure.Data;
 using Microsoft.AspNetCore.Authorization;
@@ -245,6 +246,216 @@ namespace EasyAlumni.Web.Controllers
             }
 
             return File(Encoding.UTF8.GetBytes(builder.ToString()), "text/csv", $"CollectionReport_{DateTime.UtcNow:yyyyMMdd}.csv");
+        }
+
+        public async Task<IActionResult> CustomResponses(int? eventId, int? questionId, string? answer)
+        {
+            var activeEvent = await _context.ReunionEvents.OrderByDescending(e => e.EventDate).FirstOrDefaultAsync();
+            var targetEventId = eventId ?? activeEvent?.Id ?? 0;
+
+            var query = _context.RegistrationQuestionResponses
+                .Include(r => r.EventRegistration)
+                    .ThenInclude(reg => reg!.AlumniProfile)
+                .Include(r => r.CustomQuestion)
+                .Where(r => r.CustomQuestion!.ReunionEventId == targetEventId)
+                .AsQueryable();
+
+            if (questionId.HasValue && questionId.Value > 0)
+                query = query.Where(r => r.EventCustomQuestionId == questionId.Value);
+
+            if (!string.IsNullOrEmpty(answer))
+                query = query.Where(r => r.AnswerValue == answer);
+
+            var responses = await query
+                .OrderByDescending(r => r.Id)
+                .ToListAsync();
+
+            var questions = await _context.EventCustomQuestions
+                .Where(q => q.ReunionEventId == targetEventId && q.IsActive)
+                .OrderBy(q => q.DisplayOrder)
+                .ToListAsync();
+
+            var events = await _context.ReunionEvents
+                .OrderByDescending(e => e.EventDate)
+                .ToListAsync();
+
+            ViewBag.Questions = questions;
+            ViewBag.Events = events;
+            ViewBag.SelectedEventId = targetEventId;
+            ViewBag.SelectedQuestionId = questionId;
+            ViewBag.SelectedAnswer = answer;
+
+            int totalResp = responses.Count;
+            int yesCnt = responses.Count(r => !string.IsNullOrEmpty(r.AnswerValue) && r.AnswerValue.Equals("Yes", StringComparison.OrdinalIgnoreCase));
+            int noCnt = responses.Count(r => !string.IsNullOrEmpty(r.AnswerValue) && r.AnswerValue.Equals("No", StringComparison.OrdinalIgnoreCase));
+            int subCnt = responses.Count(r => !string.IsNullOrEmpty(r.SubAnswerValue));
+
+            ViewBag.TotalResponses = totalResp;
+            ViewBag.YesCount = yesCnt;
+            ViewBag.NoCount = noCnt;
+            ViewBag.SubAnswerCount = subCnt;
+
+            return View(responses);
+        }
+
+        public async Task<IActionResult> ExportCustomResponsesCsv(int? eventId, int? questionId, string? answer)
+        {
+            var activeEvent = await _context.ReunionEvents.OrderByDescending(e => e.EventDate).FirstOrDefaultAsync();
+            var targetEventId = eventId ?? activeEvent?.Id ?? 0;
+
+            var query = _context.RegistrationQuestionResponses
+                .Include(r => r.EventRegistration)
+                    .ThenInclude(reg => reg!.AlumniProfile)
+                .Include(r => r.CustomQuestion)
+                .Where(r => r.CustomQuestion!.ReunionEventId == targetEventId)
+                .AsQueryable();
+
+            if (questionId.HasValue && questionId.Value > 0)
+                query = query.Where(r => r.EventCustomQuestionId == questionId.Value);
+
+            if (!string.IsNullOrEmpty(answer))
+                query = query.Where(r => r.AnswerValue == answer);
+
+            var responses = await query
+                .OrderByDescending(r => r.Id)
+                .ToListAsync();
+
+            var sb = new StringBuilder();
+            sb.AppendLine("RegistrationNo,UserCode,AlumnusName,Batch,ContactMobile,Email,QuestionText,Answer,SubAnswerDetails,Date");
+
+            foreach (var r in responses)
+            {
+                var reg = r.EventRegistration;
+                var prof = reg?.AlumniProfile;
+                var q = r.CustomQuestion;
+
+                string regNo = reg?.RegistrationNo ?? string.Empty;
+                string code = prof?.UserCode ?? string.Empty;
+                string name = (prof?.NameEnglish ?? string.Empty).Replace("\"", "\"\"");
+                string batch = prof?.PassingYear.ToString() ?? string.Empty;
+                string phone = prof?.ContactNumber ?? string.Empty;
+                string email = (prof?.Email ?? string.Empty).Replace("\"", "\"\"");
+                string question = (q?.QuestionText ?? string.Empty).Replace("\"", "\"\"");
+                string ans = (r.AnswerValue ?? string.Empty).Replace("\"", "\"\"");
+                string sub = (r.SubAnswerValue ?? string.Empty).Replace("\"", "\"\"");
+                string date = reg != null ? reg.RegisteredAt.ToString("yyyy-MM-dd HH:mm") : string.Empty;
+
+                sb.AppendLine($"\"{regNo}\",\"{code}\",\"{name}\",\"{batch}\",\"{phone}\",\"{email}\",\"{question}\",\"{ans}\",\"{sub}\",\"{date}\"");
+            }
+
+            return File(Encoding.UTF8.GetBytes(sb.ToString()), "text/csv", $"CustomQuestionResponses_{DateTime.UtcNow:yyyyMMdd_HHmm}.csv");
+        }
+
+        public async Task<IActionResult> GuestBreakdown(int? eventId, int? categoryId, string? gender)
+        {
+            var activeEvent = await _context.ReunionEvents.OrderByDescending(e => e.EventDate).FirstOrDefaultAsync();
+            var targetEventId = eventId ?? activeEvent?.Id ?? 0;
+
+            var query = _context.RegistrationGuests
+                .Include(g => g.GuestCategory)
+                .Include(g => g.EventRegistration)
+                    .ThenInclude(r => r!.AlumniProfile)
+                .Where(g => g.GuestCategory!.ReunionEventId == targetEventId)
+                .AsQueryable();
+
+            if (categoryId.HasValue && categoryId.Value > 0)
+                query = query.Where(g => g.GuestCategoryId == categoryId.Value);
+
+            if (!string.IsNullOrEmpty(gender))
+                query = query.Where(g => g.Gender == gender);
+
+            var guests = await query
+                .OrderByDescending(g => g.Id)
+                .ToListAsync();
+
+            var categories = await _context.GuestCategories
+                .Where(c => c.ReunionEventId == targetEventId)
+                .OrderBy(c => c.DisplayOrder)
+                .ToListAsync();
+
+            var events = await _context.ReunionEvents
+                .OrderByDescending(e => e.EventDate)
+                .ToListAsync();
+
+            ViewBag.Categories = categories;
+            ViewBag.Events = events;
+            ViewBag.SelectedEventId = targetEventId;
+            ViewBag.SelectedCategoryId = categoryId;
+            ViewBag.SelectedGender = gender;
+
+            ViewBag.TotalGuests = guests.Count;
+            ViewBag.TotalMale = guests.Count(g => g.Gender != null && g.Gender.Equals("Male", StringComparison.OrdinalIgnoreCase));
+            ViewBag.TotalFemale = guests.Count(g => g.Gender != null && g.Gender.Equals("Female", StringComparison.OrdinalIgnoreCase));
+            ViewBag.TotalUnder5 = guests.Count(g => g.Age.HasValue && g.Age.Value < 5);
+            ViewBag.TotalChildren5To12 = guests.Count(g => g.Age.HasValue && g.Age.Value >= 5 && g.Age.Value <= 12);
+            ViewBag.TotalAbove12 = guests.Count(g => g.Age.HasValue && g.Age.Value > 12);
+            ViewBag.TotalFees = guests.Sum(g => g.FeeCharged);
+
+            // Group summary by Category
+            var categoryBreakdown = guests
+                .GroupBy(g => g.GuestCategory?.CategoryName ?? "Unknown")
+                .Select(grp => new
+                {
+                    Category = grp.Key,
+                    Count = grp.Count(),
+                    MaleCount = grp.Count(x => x.Gender == "Male"),
+                    FemaleCount = grp.Count(x => x.Gender == "Female"),
+                    TotalFee = grp.Sum(x => x.FeeCharged)
+                })
+                .ToList();
+
+            ViewBag.CategoryBreakdown = categoryBreakdown;
+
+            return View(guests);
+        }
+
+        public async Task<IActionResult> ExportGuestsCsv(int? eventId, int? categoryId, string? gender)
+        {
+            var activeEvent = await _context.ReunionEvents.OrderByDescending(e => e.EventDate).FirstOrDefaultAsync();
+            var targetEventId = eventId ?? activeEvent?.Id ?? 0;
+
+            var query = _context.RegistrationGuests
+                .Include(g => g.GuestCategory)
+                .Include(g => g.EventRegistration)
+                    .ThenInclude(r => r!.AlumniProfile)
+                .Where(g => g.GuestCategory!.ReunionEventId == targetEventId)
+                .AsQueryable();
+
+            if (categoryId.HasValue && categoryId.Value > 0)
+                query = query.Where(g => g.GuestCategoryId == categoryId.Value);
+
+            if (!string.IsNullOrEmpty(gender))
+                query = query.Where(g => g.Gender == gender);
+
+            var guests = await query
+                .OrderByDescending(g => g.Id)
+                .ToListAsync();
+
+            var sb = new StringBuilder();
+            sb.AppendLine("RegistrationNo,UserCode,AlumnusName,Batch,AlumnusMobile,GuestCategory,GuestName,Gender,Age,FeeCharged,RegStatus");
+
+            foreach (var g in guests)
+            {
+                var reg = g.EventRegistration;
+                var prof = reg?.AlumniProfile;
+                var cat = g.GuestCategory;
+
+                var regNo = reg?.RegistrationNo ?? "";
+                var code = prof?.UserCode ?? "";
+                var alumnusName = (prof?.NameEnglish ?? "").Replace("\"", "\"\"");
+                var batch = prof?.PassingYear.ToString() ?? "";
+                var phone = prof?.ContactNumber ?? "";
+                var catName = (cat?.CategoryName ?? "").Replace("\"", "\"\"");
+                var guestName = (g.GuestName ?? "").Replace("\"", "\"\"");
+                var gGender = g.Gender ?? "";
+                var age = g.Age?.ToString() ?? "";
+                var fee = g.FeeCharged.ToString("F2");
+                var status = reg?.Status.ToString() ?? "";
+
+                sb.AppendLine($"\"{regNo}\",\"{code}\",\"{alumnusName}\",\"{batch}\",\"{phone}\",\"{catName}\",\"{guestName}\",\"{gGender}\",\"{age}\",\"{fee}\",\"{status}\"");
+            }
+
+            return File(Encoding.UTF8.GetBytes(sb.ToString()), "text/csv", $"GuestBreakdownReport_{DateTime.UtcNow:yyyyMMdd_HHmm}.csv");
         }
     }
 }
