@@ -100,9 +100,8 @@ namespace EasyAlumni.Web.ViewModels
         public IFormFile? TestimonialFile { get; set; }
 
         // 4. Merchandise & Guests
-        [Required(ErrorMessage = "T-Shirt size is required")]
         [Display(Name = "T-Shirt Size")]
-        public string TShirtSize { get; set; } = "L";
+        public string? TShirtSize { get; set; } = "L";
 
         [Range(0, 1, ErrorMessage = "Spouse count can be 0 or 1")]
         [Display(Name = "Spouse Attendance")]

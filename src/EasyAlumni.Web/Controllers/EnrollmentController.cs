@@ -299,7 +299,7 @@ namespace EasyAlumni.Web.Controllers
                     ReunionEventId = reunionEvent.Id,
                     AlumniProfileId = profile.Id,
                     RegistrationPackageId = selectedPackage?.Id,
-                    TShirtSize = model.TShirtSize,
+                    TShirtSize = !string.IsNullOrWhiteSpace(model.TShirtSize) ? model.TShirtSize : "L",
                     SpouseCount = spouseCount,
                     ChildCount = childCount,
                     GuestCount = otherGuestCount,

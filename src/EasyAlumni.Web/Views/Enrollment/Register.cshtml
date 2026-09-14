@@ -22,8 +22,8 @@
         .Select(g => g.First())
         .ToList() ?? new List<EasyAlumni.Core.Entities.GiftItem>();
 
-    var otherSizeGifts = allGifts
-        .Where(g => g.IsSizeSpecific && !g.ItemName.Contains("T-Shirt", StringComparison.OrdinalIgnoreCase))
+    var sizeSpecificGifts = allGifts
+        .Where(g => g.IsSizeSpecific)
         .ToList();
 }
 
@@ -202,29 +202,20 @@
             @Html.AntiForgeryToken()
             <input type="hidden" asp-for="ReunionEventId" />
 
-            <!-- 1. Photos Section -->
+            <!-- 1. Photograph Section -->
             <div class="form-section-title">
                 <i class="fas fa-camera text-warning"></i>
-                <span>1. Photograph Uploads</span>
+                <span>1. Photograph Upload</span>
             </div>
-            <div class="row g-4 mb-4">
-                <div class="col-md-6">
-                    <div class="image-drop-box" onclick="document.getElementById('oldPhotoInput').click()">
-                        <img id="oldPhotoPreview" src="https://ui-avatars.com/api/?name=Old+Photo&background=e2e8f0&color=64748b" class="image-preview-circle" alt="Old Photo Preview" />
-                        <span class="fw-semibold text-primary d-block"><i class="fas fa-upload me-1"></i> Upload Old School / College Picture</span>
-                        <small class="text-muted">Recommended: 1:1 square ratio</small>
-                        <input id="oldPhotoInput" type="file" asp-for="OldPhotoFile" accept="image/*" style="display:none;" onchange="previewImage(this, 'oldPhotoPreview')" />
-                    </div>
-                    <span asp-validation-for="OldPhotoFile" class="text-danger small"></span>
-                </div>
-                <div class="col-md-6">
+            <div class="row mb-4 justify-content-center">
+                <div class="col-md-8 col-lg-6">
                     <div class="image-drop-box" onclick="document.getElementById('recentPhotoInput').click()">
                         <img id="recentPhotoPreview" src="https://ui-avatars.com/api/?name=Recent+Photo&background=e2e8f0&color=64748b" class="image-preview-circle" alt="Recent Photo Preview" />
-                        <span class="fw-semibold text-success d-block"><i class="fas fa-upload me-1"></i> Upload Recent Passport / Portrait Picture</span>
-                        <small class="text-muted">Will be printed on your Digital Pass</small>
+                        <span class="fw-semibold text-success d-block fs-6 mb-1"><i class="fas fa-upload me-1"></i> Upload Recent Passport / Portrait Picture <span class="text-danger">*</span></span>
+                        <small class="text-muted d-block">Will be printed on your Official Reunion Digital Pass</small>
                         <input id="recentPhotoInput" type="file" asp-for="RecentPhotoFile" accept="image/*" style="display:none;" onchange="previewImage(this, 'recentPhotoPreview')" />
                     </div>
-                    <span asp-validation-for="RecentPhotoFile" class="text-danger small"></span>
+                    <span asp-validation-for="RecentPhotoFile" class="text-danger small text-center d-block mt-1"></span>
                 </div>
             </div>
 
@@ -405,28 +396,12 @@
                                 <div class="package-eligibility-notice alert alert-danger py-1 px-2 small mb-2" style="display: none;"></div>
 
                                 <ul class="list-unstyled small border-top pt-2 text-muted mb-0">
-                                    @if (pkg.IncludesTShirt)
-                                    {
-                                        <li class="mb-1"><i class="fas fa-check text-success me-1"></i> Polo T-Shirt</li>
-                                    }
-                                    @if (pkg.IncludesKitBag)
-                                    {
-                                        <li class="mb-1"><i class="fas fa-check text-success me-1"></i> Backpack &amp; Hamper</li>
-                                    }
-                                    @if (pkg.IncludesFood)
-                                    {
-                                        <li class="mb-1"><i class="fas fa-check text-success me-1"></i> Gourmet Meals</li>
-                                    }
-                                    @if (pkg.IncludesRaffle)
-                                    {
-                                        <li class="mb-1"><i class="fas fa-check text-success me-1"></i> Raffle Draw</li>
-                                    }
                                     @if (pkg.IncludedGuests > 0)
                                     {
                                         <li class="mb-1 text-primary fw-semibold"><i class="fas fa-user-friends me-1"></i> +@pkg.IncludedGuests Free Guest(s)</li>
                                     }
 
-                                     @if (pkg.PackageGiftItems != null && pkg.PackageGiftItems.Any())
+                                    @if (pkg.PackageGiftItems != null && pkg.PackageGiftItems.Any())
                                     {
                                         @foreach (var pgi in pkg.PackageGiftItems.Where(g => g.GiftItem != null))
                                         {
@@ -434,7 +409,7 @@
                                                 <i class="fas fa-gift text-warning me-1"></i> @pgi.GiftItem!.ItemName
                                                 @if (pgi.GiftItem.IsSizeSpecific)
                                                 {
-                                                    <span class="badge bg-info-subtle text-info">Size Required</span>
+                                                    <span class="badge bg-info-subtle text-info ms-1">Size Required</span>
                                                 }
                                             </li>
                                         }
@@ -446,33 +421,22 @@
                 </div>
             }
 
-            <!-- 5. Merchandise & Accompanying Guests -->
+            <!-- 5. Accompanying Guests & Preferences -->
             <div class="form-section-title">
-                <i class="fas fa-tshirt text-warning"></i>
-                <span>5. Merchandise, Kit &amp; Accompanying Guests</span>
+                <i class="fas fa-user-friends text-warning"></i>
+                <span>5. Accompanying Guests &amp; Preferences</span>
             </div>
 
-            <div class="row g-4 mb-4">
-                <!-- T-Shirt Size Selection -->
-                <div class="col-md-6">
-                    <label class="form-label fw-semibold">Select Your Polo T-Shirt Size <span class="text-danger">*</span></label>
-                    <select asp-for="TShirtSize" class="form-select form-select-lg" required>
-                        <option value="S">S (Small - Chest 36")</option>
-                        <option value="M">M (Medium - Chest 38")</option>
-                        <option value="L" selected>L (Large - Chest 40")</option>
-                        <option value="XL">XL (Extra Large - Chest 42")</option>
-                        <option value="XXL">XXL (Double XL - Chest 44")</option>
-                        <option value="XXXL">XXXL (Triple XL - Chest 46")</option>
-                    </select>
-                    <small class="text-muted"><i class="fas fa-info-circle me-1"></i> Included with your Alumni Registration Package.</small>
-                </div>
+            <!-- Fallback hidden input for TShirtSize -->
+            <input type="hidden" asp-for="TShirtSize" value="L" id="tshirtSizeHiddenInput" />
 
-                <!-- Dynamic Gift Size Selectors (e.g. Apron, Blazer, etc.) -->
-                @if (otherSizeGifts.Any())
-                {
-                    @for (int gi = 0; gi < otherSizeGifts.Count; gi++)
+            <!-- Dynamic Gift Size Selectors (Shown only if selected package includes size-specific items) -->
+            @if (sizeSpecificGifts.Any())
+            {
+                <div class="row g-3 mb-4" id="dynamicGiftSizesContainer">
+                    @for (int gi = 0; gi < sizeSpecificGifts.Count; gi++)
                     {
-                        var gift = otherSizeGifts[gi];
+                        var gift = sizeSpecificGifts[gi];
                         <div class="col-md-6 gift-size-selector-wrapper" data-gift-id="@gift.Id" id="gift-size-box-@gift.Id" style="display: none;">
                             <input type="hidden" name="GiftSizeChoices[@gi].GiftItemId" value="@gift.Id" />
                             <label class="form-label fw-semibold">
@@ -494,22 +458,11 @@
                                     <option value="Free Size">Free Size</option>
                                 }
                             </select>
-                            <small class="text-muted"><i class="fas fa-gift text-warning me-1"></i> Dynamic package gift requirement.</small>
+                            <small class="text-muted"><i class="fas fa-gift text-warning me-1"></i> Included with your selected package.</small>
                         </div>
                     }
-                }
-
-                <div class="col-md-6">
-                    <div class="p-3 bg-light rounded-3 border">
-                        <h6 class="fw-bold mb-2 text-dark"><i class="fas fa-box-open text-success me-2"></i> Standard Kit Entitlement Includes:</h6>
-                        <ul class="list-unstyled small mb-0">
-                            <li><i class="fas fa-check text-success me-2"></i> 1x Premium Polo T-Shirt (Your Selected Size)</li>
-                            <li><i class="fas fa-check text-success me-2"></i> 1x Commemorative Gift Hamper (Mug, Diary, Pen)</li>
-                            <li><i class="fas fa-check text-success me-2"></i> 1x Alumni Backpack &amp; Laminated Pass with Lanyard</li>
-                        </ul>
-                    </div>
                 </div>
-            </div>
+            }
 
             <!-- Dynamic Accompanying Guests Builder -->
             <div class="card border rounded-3 p-3 mb-4 bg-light">
