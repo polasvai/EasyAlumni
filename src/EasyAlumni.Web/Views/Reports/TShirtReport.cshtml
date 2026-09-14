@@ -1,80 +1,365 @@
-@model EasyAlumni.Core.Entities.GiftItem
+@model EasyAlumni.Web.ViewModels.GiftReportViewModel
 @{
-    ViewData["Title"] = "T-Shirt Size Distribution Report";
+    ViewData["Title"] = "Gifts & Merchandise Reconciliation Report";
     Layout = "_AdminLayout";
-    var demands = (Dictionary<string, int>)ViewBag.RegisteredDemands;
+    var selectedGift = Model.SelectedGiftItem;
+    var sizeDemands = Model.SelectedItemSizeDemands;
+    var batchDemands = Model.BatchDemands;
 }
 
 <!-- Page Header -->
 <div class="d-flex justify-content-between align-items-center flex-wrap gap-3 mb-4">
     <div>
-        <h2 class="h4 fw-bold text-dark mb-1">T-Shirt Procurement &amp; Distribution Report</h2>
-        <p class="text-muted small mb-0">Reconcile ordered stock, registered attendee demand, and physical gate handovers</p>
+        <h2 class="h4 fw-bold text-dark mb-1">Gifts &amp; Merchandise Reconciliation Report</h2>
+        <p class="text-muted small mb-0">Reconcile dynamic gift items, attendee size demands, procured stocks, and physical distributions</p>
     </div>
-    <div>
+    <div class="d-flex gap-2">
+        <a asp-action="ExportGiftReportCsv" asp-route-giftItemId="@Model.SelectedGiftItemId" class="btn btn-outline-success rounded-pill px-3 fw-semibold">
+            <i class="fas fa-file-csv me-1"></i> Export @(selectedGift != null ? selectedGift.ItemName : "All Gifts") CSV
+        </a>
         <button type="button" class="btn btn-warning rounded-pill px-3" onclick="window.print()">
-            Print / PDF
+            <i class="fas fa-print me-1"></i> Print / PDF
         </button>
     </div>
 </div>
-    <div class="card border-0 shadow-sm rounded-4 overflow-hidden mb-4">
-        <div class="card-header bg-white p-3 border-bottom d-flex justify-content-between align-items-center">
-            <h5 class="fw-bold text-dark mb-0">@(Model?.ItemName ?? "Polo T-Shirt") - Size Reconciliation Matrix</h5>
-            <span class="badge bg-success rounded-pill px-3 py-2">Total Procured: @(Model?.TotalStockQuantity ?? 0) Pcs</span>
+
+<!-- Report Navigation Tabs / Shortcuts -->
+<div class="card border-0 shadow-sm rounded-4 mb-4 p-2 bg-white">
+    <div class="nav nav-pills nav-fill gap-2">
+        <a class="nav-link text-dark rounded-pill fw-semibold py-2" asp-controller="Reports" asp-action="Index">
+            Summary Overview
+        </a>
+        <a class="nav-link text-dark rounded-pill fw-semibold py-2" asp-controller="Reports" asp-action="CollectionReport">
+            Fee Collection Audit
+        </a>
+        <a class="nav-link text-dark rounded-pill fw-semibold py-2" asp-controller="Reports" asp-action="CateringReport">
+            Catering Headcount
+        </a>
+        <a class="nav-link text-dark rounded-pill fw-semibold py-2" asp-controller="Reports" asp-action="GuestBreakdown">
+            Guest Breakdown
+        </a>
+        <a class="nav-link text-dark rounded-pill fw-semibold py-2" asp-controller="Reports" asp-action="CustomResponses">
+            Custom Responses
+        </a>
+        <a class="nav-link active rounded-pill fw-semibold py-2" asp-controller="Reports" asp-action="TShirtReport">
+            Dynamic Gifts Matrix
+        </a>
+        <a class="nav-link text-dark rounded-pill fw-semibold py-2" asp-controller="Reports" asp-action="FinancialStatement">
+            Financial Statement
+        </a>
+    </div>
+</div>
+
+<!-- KPI Stat Cards -->
+<div class="row g-3 mb-4">
+    <div class="col-lg-3 col-6">
+        <div class="card border-0 shadow-sm rounded-4 p-3 text-center bg-primary text-white h-100">
+            <span class="small opacity-80 text-uppercase">Total Procured Stock</span>
+            <h2 class="fw-bold mb-0">@Model.TotalProcuredAllGifts Pcs</h2>
+            <small class="opacity-75">All Gifts Combined</small>
         </div>
-        <div class="table-responsive p-3">
-            <table class="table table-bordered table-hover align-middle text-center mb-0">
-                <thead class="table-light">
+    </div>
+    <div class="col-lg-3 col-6">
+        <div class="card border-0 shadow-sm rounded-4 p-3 text-center bg-info text-white h-100">
+            <span class="small opacity-80 text-uppercase">Attendee Demand</span>
+            <h2 class="fw-bold mb-0">@Model.TotalDemandedAllGifts Units</h2>
+            <small class="opacity-75">Approved Registrations</small>
+        </div>
+    </div>
+    <div class="col-lg-3 col-6">
+        <div class="card border-0 shadow-sm rounded-4 p-3 text-center bg-success text-white h-100">
+            <span class="small opacity-80 text-uppercase">Distributed at Gate</span>
+            <h2 class="fw-bold mb-0">@Model.TotalDistributedAllGifts Units</h2>
+            <small class="opacity-75">Handed Over</small>
+        </div>
+    </div>
+    <div class="col-lg-3 col-6">
+        @{
+            var netBalanceAll = Model.TotalProcuredAllGifts - Model.TotalDemandedAllGifts;
+        }
+        <div class="card border-0 shadow-sm rounded-4 p-3 text-center @(netBalanceAll >= 0 ? "bg-dark" : "bg-danger") text-white h-100">
+            <span class="small opacity-80 text-uppercase">Inventory Status</span>
+            <h2 class="fw-bold mb-0 text-warning">@(netBalanceAll >= 0 ? $"+{netBalanceAll} Surplus" : $"{netBalanceAll} Shortage")</h2>
+            <small class="opacity-75">Procured vs Demanded</small>
+        </div>
+    </div>
+</div>
+
+<!-- 1. All Gifts Master Inventory Status Table -->
+<div class="card border-0 shadow-sm rounded-4 overflow-hidden mb-4">
+    <div class="card-header bg-white p-3 border-bottom d-flex justify-content-between align-items-center">
+        <div>
+            <h5 class="fw-bold text-dark mb-0"><i class="fas fa-boxes text-success me-2"></i> All Dynamic Gifts &amp; Merchandise Status</h5>
+            <small class="text-muted">Master overview of all merchandise configured in the Dynamic Settings hub</small>
+        </div>
+        <a asp-controller="DynamicSettings" asp-action="Index" class="btn btn-outline-secondary btn-sm rounded-pill">
+            <i class="fas fa-cog me-1"></i> Manage Gifts in Settings
+        </a>
+    </div>
+    <div class="table-responsive p-3">
+        <table class="table table-hover table-bordered align-middle text-center mb-0">
+            <thead class="table-light text-muted small text-uppercase">
+                <tr>
+                    <th class="text-start">Gift Item Name</th>
+                    <th>Type</th>
+                    <th>Procured Stock</th>
+                    <th>Attendee Demand (Approved)</th>
+                    <th>Handed Over</th>
+                    <th>Stock Balance</th>
+                    <th>Actions</th>
+                </tr>
+            </thead>
+            <tbody>
+                @if (!Model.GiftItems.Any())
+                {
                     <tr>
-                        <th>Size Code</th>
-                        <th>Procured Stock</th>
-                        <th>Attendee Demand (Approved)</th>
-                        <th>Actually Handed Over</th>
-                        <th>Surplus / Deficit in Stock</th>
+                        <td colspan="7" class="py-4 text-muted">No dynamic gift items found. Add items in Dynamic Settings hub.</td>
                     </tr>
-                </thead>
-                <tbody>
-                    @if (Model != null && Model.SizeStocks.Any())
+                }
+                else
+                {
+                    @foreach (var g in Model.GiftItems)
                     {
-                        @foreach (var s in Model.SizeStocks.OrderBy(x => x.SizeName))
+                        var isCurrent = Model.SelectedGiftItemId == g.GiftItemId;
+                        <tr class="@(isCurrent ? "table-success" : "")">
+                            <td class="text-start fw-bold">
+                                <div class="text-dark">@g.ItemName</div>
+                                @if (!string.IsNullOrEmpty(g.Description))
+                                {
+                                    <small class="text-muted fw-normal">@g.Description</small>
+                                }
+                            </td>
+                            <td>
+                                @if (g.IsSizeSpecific)
+                                {
+                                    <span class="badge bg-info-subtle text-info border">
+                                        <i class="fas fa-ruler me-1"></i> Size-Specific
+                                    </span>
+                                }
+                                else
+                                {
+                                    <span class="badge bg-light text-secondary border">Standard</span>
+                                }
+                            </td>
+                            <td><strong>@g.TotalProcured Pcs</strong></td>
+                            <td><span class="badge bg-primary-subtle text-primary border fs-6">@g.TotalDemanded</span></td>
+                            <td><span class="badge bg-success-subtle text-success border fs-6">@g.TotalDistributed</span></td>
+                            <td>
+                                @if (g.StockBalance >= 0)
+                                {
+                                    <span class="badge bg-success fs-6">+@g.StockBalance Pcs Surplus</span>
+                                }
+                                else
+                                {
+                                    <span class="badge bg-danger fs-6">@g.StockBalance Pcs Shortage!</span>
+                                }
+                            </td>
+                            <td>
+                                <a asp-action="TShirtReport" asp-route-giftItemId="@g.GiftItemId" class="btn btn-sm @(isCurrent ? "btn-success" : "btn-outline-primary") rounded-pill px-3">
+                                    @(isCurrent ? "Inspecting" : "Inspect Matrix")
+                                </a>
+                            </td>
+                        </tr>
+                    }
+                }
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<!-- 2. Deep Dive on Selected Gift Item -->
+@if (selectedGift != null)
+{
+    var isTShirt = selectedGift.ItemName.Contains("T-Shirt", StringComparison.OrdinalIgnoreCase);
+
+    <div class="card border-0 shadow-sm rounded-4 overflow-hidden mb-4 border-start border-4 border-success">
+        <div class="card-header bg-white p-3 border-bottom d-flex flex-wrap justify-content-between align-items-center gap-2">
+            <div>
+                <h5 class="fw-bold text-dark mb-0">
+                    <i class="fas fa-gift text-warning me-2"></i> @selectedGift.ItemName &mdash; Reconciliation Matrix
+                </h5>
+                <small class="text-muted">Procured Stock: <strong>@selectedGift.TotalStockQuantity Pcs</strong> | Distributed: <strong>@selectedGift.DistributedQuantity Pcs</strong></small>
+            </div>
+            <div class="d-flex align-items-center gap-2">
+                <label class="small text-muted fw-semibold">Switch Item:</label>
+                <form method="get" asp-action="TShirtReport" class="d-inline">
+                    <select name="giftItemId" class="form-select form-select-sm" onchange="this.form.submit()">
+                        @foreach (var g in Model.GiftItems)
                         {
-                            var demand = demands.GetValueOrDefault(s.SizeName, 0);
-                            var surplus = s.TotalStock - demand;
+                            <option value="@g.GiftItemId" selected="@(Model.SelectedGiftItemId == g.GiftItemId)">@g.ItemName (@(g.IsSizeSpecific ? "Size-Specific" : "Standard"))</option>
+                        }
+                    </select>
+                </form>
+            </div>
+        </div>
+
+        @if (selectedGift.IsSizeSpecific)
+        {
+            <div class="p-3">
+                <h6 class="fw-bold text-muted small text-uppercase mb-3"><i class="fas fa-ruler-combined text-primary me-1"></i> Size Breakdown &amp; Stock Balance</h6>
+                <div class="table-responsive">
+                    <table class="table table-bordered table-hover align-middle text-center mb-0">
+                        <thead class="table-light text-muted small text-uppercase">
                             <tr>
-                                <td><strong class="fs-5 text-primary">@s.SizeName</strong></td>
-                                <td><strong>@s.TotalStock</strong></td>
-                                <td><span class="badge bg-info text-dark fs-6">@demand</span></td>
-                                <td><span class="badge bg-success fs-6">@s.DistributedStock</span></td>
+                                <th>Size Code</th>
+                                <th>Procured Stock</th>
+                                <th>Attendee Demand (Approved)</th>
+                                <th>Actually Handed Over</th>
+                                <th>Surplus / Shortage in Stock</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @if (sizeDemands.Any())
+                            {
+                                foreach (var kvp in sizeDemands)
+                                {
+                                    var szName = kvp.Key;
+                                    var demand = kvp.Value;
+                                    var stockRecord = selectedGift.SizeStocks.FirstOrDefault(s => s.SizeName.Equals(szName, StringComparison.OrdinalIgnoreCase));
+                                    var procured = stockRecord?.TotalStock ?? 0;
+                                    var handedOver = stockRecord?.DistributedStock ?? 0;
+                                    var surplus = procured - demand;
+
+                                    <tr>
+                                        <td><strong class="fs-5 text-primary">@szName</strong></td>
+                                        <td><strong>@procured</strong></td>
+                                        <td><span class="badge bg-info text-dark fs-6">@demand</span></td>
+                                        <td><span class="badge bg-success fs-6">@handedOver</span></td>
+                                        <td>
+                                            @if (surplus >= 0)
+                                            {
+                                                <span class="badge bg-success fs-6">+@surplus Pcs Surplus</span>
+                                            }
+                                            else
+                                            {
+                                                <span class="badge bg-danger fs-6">@surplus Pcs Shortage!</span>
+                                            }
+                                        </td>
+                                    </tr>
+                                }
+                            }
+                            else
+                            {
+                                <tr>
+                                    <td colspan="5" class="py-3 text-muted">No sizes configured for this gift item yet. You can add size stocks in Dynamic Settings hub.</td>
+                                </tr>
+                            }
+                        </tbody>
+                        <tfoot class="table-light fw-bold">
+                            <tr>
+                                <td>TOTAL:</td>
+                                <td>@selectedGift.TotalStockQuantity Pcs</td>
+                                <td>@sizeDemands.Values.Sum() Units</td>
+                                <td>@selectedGift.DistributedQuantity Pcs</td>
                                 <td>
-                                    @if (surplus >= 0)
-                                    {
-                                        <span class="badge bg-success fs-6">+@surplus Pcs Surplus</span>
+                                    @{
+                                        var netItemSurplus = selectedGift.TotalStockQuantity - sizeDemands.Values.Sum();
                                     }
-                                    else
-                                    {
-                                        <span class="badge bg-danger fs-6">@surplus Pcs Shortage!</span>
-                                    }
+                                    <span class="@(netItemSurplus >= 0 ? "text-success" : "text-danger") fs-6">
+                                        @(netItemSurplus >= 0 ? $"+{netItemSurplus} Pcs Overall Surplus" : $"{netItemSurplus} Pcs Shortage")
+                                    </span>
+                                </td>
+                            </tr>
+                        </tfoot>
+                    </table>
+                </div>
+            </div>
+        }
+        else
+        {
+            <div class="p-4 bg-light">
+                <div class="row text-center g-3">
+                    <div class="col-md-4">
+                        <div class="p-3 bg-white rounded-3 border">
+                            <span class="text-muted small text-uppercase d-block">Procured Stock</span>
+                            <h3 class="fw-bold text-dark mb-0">@selectedGift.TotalStockQuantity Pcs</h3>
+                        </div>
+                    </div>
+                    <div class="col-md-4">
+                        <div class="p-3 bg-white rounded-3 border">
+                            <span class="text-muted small text-uppercase d-block">Entitled Attendee Demand</span>
+                            <h3 class="fw-bold text-primary mb-0">@(Model.GiftItems.FirstOrDefault(g => g.GiftItemId == selectedGift.Id)?.TotalDemanded ?? 0) Units</h3>
+                        </div>
+                    </div>
+                    <div class="col-md-4">
+                        <div class="p-3 bg-white rounded-3 border">
+                            <span class="text-muted small text-uppercase d-block">Net Stock Balance</span>
+                            @{
+                                var dem = Model.GiftItems.FirstOrDefault(g => g.GiftItemId == selectedGift.Id)?.TotalDemanded ?? 0;
+                                var bal = selectedGift.TotalStockQuantity - dem;
+                            }
+                            <h3 class="fw-bold @(bal >= 0 ? "text-success" : "text-danger") mb-0">
+                                @(bal >= 0 ? $"+{bal} Pcs Surplus" : $"{bal} Pcs Shortage")
+                            </h3>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        }
+
+        <!-- 3. Batch-Wise Demand Distribution -->
+        <div class="border-top p-3">
+            <h6 class="fw-bold text-muted small text-uppercase mb-3">
+                <i class="fas fa-graduation-cap text-success me-1"></i> Batch-Wise Demand Matrix (@selectedGift.ItemName)
+            </h6>
+            <div class="table-responsive">
+                <table class="table table-hover table-bordered align-middle text-center mb-0">
+                    <thead class="table-light small text-muted text-uppercase">
+                        <tr>
+                            <th class="text-start">Passing Batch</th>
+                            <th>Total Demand</th>
+                            @if (selectedGift.IsSizeSpecific && sizeDemands.Any())
+                            {
+                                @foreach (var sz in sizeDemands.Keys)
+                                {
+                                    <th>@sz</th>
+                                }
+                            }
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @if (!batchDemands.Any())
+                        {
+                            <tr>
+                                <td colspan="@(2 + (selectedGift.IsSizeSpecific ? sizeDemands.Count : 0))" class="text-muted py-3">
+                                    No registered alumni entitled to this gift item yet.
                                 </td>
                             </tr>
                         }
-                    }
-                </tbody>
-                <tfoot class="table-light fw-bold">
-                    <tr>
-                        <td>TOTAL:</td>
-                        <td>@(Model?.TotalStockQuantity ?? 0) Pcs</td>
-                        <td>@demands.Values.Sum() Pcs</td>
-                        <td>@(Model?.DistributedQuantity ?? 0) Pcs</td>
-                        <td>
-                            @{
-                                var netSurplus = (Model?.TotalStockQuantity ?? 0) - demands.Values.Sum();
+                        else
+                        {
+                            @foreach (var b in batchDemands)
+                            {
+                                <tr>
+                                    <td class="text-start"><strong>Batch @b.BatchYear</strong></td>
+                                    <td><span class="badge bg-primary-subtle text-primary border fs-6">@b.DemandCount</span></td>
+                                    @if (selectedGift.IsSizeSpecific && sizeDemands.Any())
+                                    {
+                                        @foreach (var sz in sizeDemands.Keys)
+                                        {
+                                            var count = b.SizeCounts.GetValueOrDefault(sz, 0);
+                                            <td>@(count > 0 ? count.ToString() : "-")</td>
+                                        }
+                                    }
+                                </tr>
                             }
-                            <span class="@(netSurplus >= 0 ? "text-success" : "text-danger") fs-6">
-                                @(netSurplus >= 0 ? $"+{netSurplus} Pcs Overall" : $"{netSurplus} Pcs Shortage")
-                            </span>
-                        </td>
-                    </tr>
-                </tfoot>
-            </table>
+                        }
+                    </tbody>
+                    <tfoot class="table-light fw-bold">
+                        <tr>
+                            <td class="text-start">TOTAL:</td>
+                            <td>@batchDemands.Sum(b => b.DemandCount) Units</td>
+                            @if (selectedGift.IsSizeSpecific && sizeDemands.Any())
+                            {
+                                @foreach (var sz in sizeDemands.Keys)
+                                {
+                                    <td>@sizeDemands.GetValueOrDefault(sz, 0)</td>
+                                }
+                            }
+                        </tr>
+                    </tfoot>
+                </table>
+            </div>
         </div>
     </div>
+}

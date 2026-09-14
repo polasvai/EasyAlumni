@@ -181,20 +181,186 @@ namespace EasyAlumni.Web.Controllers
             return View(batchSummaries);
         }
 
-        public async Task<IActionResult> TShirtReport()
+        public async Task<IActionResult> TShirtReport(int? giftItemId)
         {
-            var tShirtItem = await _context.GiftItems
+            var allGifts = await _context.GiftItems
                 .Include(g => g.SizeStocks)
-                .FirstOrDefaultAsync(g => g.IsSizeSpecific && g.ItemName.Contains("T-Shirt"));
+                .Where(g => g.IsActive)
+                .OrderBy(g => g.ItemName)
+                .ToListAsync();
 
-            var actualRegistrations = await _context.EventRegistrations
+            var approvedRegs = await _context.EventRegistrations
+                .Include(r => r.AlumniProfile)
+                .Include(r => r.RegistrationPackage)
+                    .ThenInclude(p => p!.PackageGiftItems)
+                .Include(r => r.GiftChoices)
                 .Where(r => r.Status == RegistrationStatus.Approved)
-                .GroupBy(r => r.TShirtSize)
-                .Select(g => new { Size = g.Key, Count = g.Count() })
-                .ToDictionaryAsync(x => x.Size, x => x.Count);
+                .ToListAsync();
 
-            ViewBag.RegisteredDemands = actualRegistrations;
-            return View(tShirtItem);
+            var vm = new GiftReportViewModel();
+
+            foreach (var gift in allGifts)
+            {
+                var isTShirt = gift.ItemName.Contains("T-Shirt", StringComparison.OrdinalIgnoreCase);
+                var entitledRegs = approvedRegs.Where(r =>
+                    (r.RegistrationPackage != null && r.RegistrationPackage.PackageGiftItems.Any(pg => pg.GiftItemId == gift.Id))
+                    || r.GiftChoices.Any(gc => gc.GiftItemId == gift.Id)
+                    || (isTShirt && !string.IsNullOrEmpty(r.TShirtSize))
+                ).ToList();
+
+                vm.GiftItems.Add(new GiftItemSummaryItem
+                {
+                    GiftItemId = gift.Id,
+                    ItemName = gift.ItemName,
+                    Description = gift.Description,
+                    IsSizeSpecific = gift.IsSizeSpecific,
+                    TotalProcured = gift.TotalStockQuantity,
+                    TotalDemanded = entitledRegs.Count,
+                    TotalDistributed = gift.DistributedQuantity,
+                    SizeStocks = gift.SizeStocks.ToList()
+                });
+            }
+
+            vm.TotalProcuredAllGifts = vm.GiftItems.Sum(g => g.TotalProcured);
+            vm.TotalDemandedAllGifts = vm.GiftItems.Sum(g => g.TotalDemanded);
+            vm.TotalDistributedAllGifts = vm.GiftItems.Sum(g => g.TotalDistributed);
+
+            GiftItem? selectedGift = null;
+            if (giftItemId.HasValue && giftItemId.Value > 0)
+            {
+                selectedGift = allGifts.FirstOrDefault(g => g.Id == giftItemId.Value);
+            }
+            if (selectedGift == null)
+            {
+                selectedGift = allGifts.FirstOrDefault(g => g.IsSizeSpecific) ?? allGifts.FirstOrDefault();
+            }
+
+            vm.SelectedGiftItem = selectedGift;
+            vm.SelectedGiftItemId = selectedGift?.Id;
+
+            if (selectedGift != null)
+            {
+                var targetGiftId = selectedGift.Id;
+                var isTShirt = selectedGift.ItemName.Contains("T-Shirt", StringComparison.OrdinalIgnoreCase);
+
+                var entitledRegs = approvedRegs.Where(r =>
+                    (r.RegistrationPackage != null && r.RegistrationPackage.PackageGiftItems.Any(pg => pg.GiftItemId == targetGiftId))
+                    || r.GiftChoices.Any(gc => gc.GiftItemId == targetGiftId)
+                    || (isTShirt && !string.IsNullOrEmpty(r.TShirtSize))
+                ).ToList();
+
+                var sizeDemands = new Dictionary<string, int>(StringComparer.OrdinalIgnoreCase);
+                if (selectedGift.IsSizeSpecific)
+                {
+                    foreach (var ss in selectedGift.SizeStocks)
+                    {
+                        sizeDemands[ss.SizeName] = 0;
+                    }
+                    if (isTShirt)
+                    {
+                        foreach (var s in new[] { "S", "M", "L", "XL", "XXL", "XXXL" })
+                        {
+                            if (!sizeDemands.ContainsKey(s)) sizeDemands[s] = 0;
+                        }
+                    }
+
+                    foreach (var r in entitledRegs)
+                    {
+                        var sz = r.GiftChoices.FirstOrDefault(gc => gc.GiftItemId == targetGiftId)?.SelectedSize;
+                        if (string.IsNullOrWhiteSpace(sz) && isTShirt)
+                        {
+                            sz = r.TShirtSize;
+                        }
+                        if (string.IsNullOrWhiteSpace(sz))
+                        {
+                            sz = "Unspecified";
+                        }
+                        sizeDemands[sz] = sizeDemands.GetValueOrDefault(sz, 0) + 1;
+                    }
+                }
+                vm.SelectedItemSizeDemands = sizeDemands;
+
+                vm.BatchDemands = entitledRegs
+                    .GroupBy(r => r.AlumniProfile?.PassingYear ?? 0)
+                    .OrderBy(g => g.Key)
+                    .Select(grp => new GiftBatchDemandItem
+                    {
+                        BatchYear = grp.Key,
+                        DemandCount = grp.Count(),
+                        SizeCounts = grp.GroupBy(r => {
+                            var sz = r.GiftChoices.FirstOrDefault(gc => gc.GiftItemId == targetGiftId)?.SelectedSize;
+                            if (string.IsNullOrWhiteSpace(sz) && isTShirt)
+                                sz = r.TShirtSize;
+                            return string.IsNullOrWhiteSpace(sz) ? "Standard" : sz;
+                        }).ToDictionary(x => x.Key, x => x.Count(), StringComparer.OrdinalIgnoreCase)
+                    })
+                    .ToList();
+            }
+
+            return View(vm);
+        }
+
+        public async Task<IActionResult> ExportGiftReportCsv(int? giftItemId)
+        {
+            var allGifts = await _context.GiftItems
+                .Include(g => g.SizeStocks)
+                .Where(g => g.IsActive)
+                .OrderBy(g => g.ItemName)
+                .ToListAsync();
+
+            var approvedRegs = await _context.EventRegistrations
+                .Include(r => r.AlumniProfile)
+                .Include(r => r.RegistrationPackage)
+                    .ThenInclude(p => p!.PackageGiftItems)
+                .Include(r => r.GiftChoices)
+                .Where(r => r.Status == RegistrationStatus.Approved)
+                .ToListAsync();
+
+            var sb = new StringBuilder();
+
+            if (giftItemId.HasValue && giftItemId.Value > 0)
+            {
+                var gift = allGifts.FirstOrDefault(g => g.Id == giftItemId.Value);
+                if (gift != null)
+                {
+                    var isTShirt = gift.ItemName.Contains("T-Shirt", StringComparison.OrdinalIgnoreCase);
+                    var entitled = approvedRegs.Where(r =>
+                        (r.RegistrationPackage != null && r.RegistrationPackage.PackageGiftItems.Any(pg => pg.GiftItemId == gift.Id))
+                        || r.GiftChoices.Any(gc => gc.GiftItemId == gift.Id)
+                        || (isTShirt && !string.IsNullOrEmpty(r.TShirtSize))
+                    ).ToList();
+
+                    sb.AppendLine($"Gift Item: {gift.ItemName} - Size & Batch Breakdown Report");
+                    sb.AppendLine("RegistrationNo,UserCode,AlumnusName,Batch,ContactMobile,Package,SelectedSize,Status");
+
+                    foreach (var r in entitled)
+                    {
+                        var prof = r.AlumniProfile;
+                        var sz = r.GiftChoices.FirstOrDefault(gc => gc.GiftItemId == gift.Id)?.SelectedSize;
+                        if (string.IsNullOrWhiteSpace(sz) && isTShirt) sz = r.TShirtSize;
+
+                        sb.AppendLine($"\"{r.RegistrationNo}\",\"{prof?.UserCode}\",\"{prof?.NameEnglish}\",\"{prof?.PassingYear}\",\"{prof?.ContactNumber}\",\"{r.RegistrationPackage?.PackageName}\",\"{sz ?? "Standard"}\",\"{r.Status}\"");
+                    }
+
+                    return File(Encoding.UTF8.GetBytes(sb.ToString()), "text/csv", $"{gift.ItemName.Replace(" ", "_")}_DistributionReport_{DateTime.UtcNow:yyyyMMdd}.csv");
+                }
+            }
+
+            // All gifts summary export
+            sb.AppendLine("GiftItemId,ItemName,IsSizeSpecific,ProcuredStock,AttendeeDemand,DistributedStock,StockBalance");
+            foreach (var g in allGifts)
+            {
+                var isTShirt = g.ItemName.Contains("T-Shirt", StringComparison.OrdinalIgnoreCase);
+                var count = approvedRegs.Count(r =>
+                    (r.RegistrationPackage != null && r.RegistrationPackage.PackageGiftItems.Any(pg => pg.GiftItemId == g.Id))
+                    || r.GiftChoices.Any(gc => gc.GiftItemId == g.Id)
+                    || (isTShirt && !string.IsNullOrEmpty(r.TShirtSize))
+                );
+
+                sb.AppendLine($"\"{g.Id}\",\"{g.ItemName}\",\"{g.IsSizeSpecific}\",\"{g.TotalStockQuantity}\",\"{count}\",\"{g.DistributedQuantity}\",\"{g.TotalStockQuantity - count}\"");
+            }
+
+            return File(Encoding.UTF8.GetBytes(sb.ToString()), "text/csv", $"AllGifts_ProcurementReport_{DateTime.UtcNow:yyyyMMdd}.csv");
         }
 
         public async Task<IActionResult> FinancialStatement()
