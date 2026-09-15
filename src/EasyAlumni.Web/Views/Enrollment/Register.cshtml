@@ -237,11 +237,11 @@
                 </div>
                 <div class="col-md-4">
                     <label class="form-label fw-semibold">Nick Name <span class="text-danger">*</span></label>
-                    <input asp-for="NickName" class="form-control" placeholder="e.g. Tanvir" required />
+                    <input asp-for="NickName" class="form-control" placeholder="e.g. Aisha" required />
                     <span asp-validation-for="NickName" class="text-danger small"></span>
                 </div>
                 <div class="col-md-4">
-                    <label class="form-label fw-semibold">Passing Year (SSC / HSC) <span class="text-danger">*</span></label>
+                    <label class="form-label fw-semibold">Passing Year (SSC) <span class="text-danger">*</span></label>
                     <select asp-for="PassingYear" class="form-select" id="passingYearSelect" onchange="filterPackagesByPassingYear()" required>
                         <option value="">-- Select Passing Year --</option>
                         @for (int yr = 2026; yr >= 1970; yr--)
@@ -286,6 +286,14 @@
                     <input asp-for="TestimonialFile" class="form-control" type="file" accept=".pdf,.jpg,.jpeg,.png" onchange="validateFileSize(this, 204800, 'testimonialError')" />
                     <span id="testimonialError" class="text-danger small"></span>
                 </div>
+                <div class="col-md-6">
+                    <label class="form-label fw-semibold">Present Address</label>
+                    <textarea asp-for="PresentAddress" class="form-control" rows="2" placeholder="House, Road, Area, District"></textarea>
+                </div>
+                <div class="col-md-6">
+                    <label class="form-label fw-semibold">Permanent Address</label>
+                    <textarea asp-for="PermanentAddress" class="form-control" rows="2" placeholder="Village, Post, Thana, District"></textarea>
+                </div>
             </div>
 
             <!-- 3. Higher Education & Professional Info -->
@@ -317,14 +325,6 @@
                 <div class="col-md-4">
                     <label class="form-label fw-semibold">Office Address / Location</label>
                     <input asp-for="CurrentWorkingAddress" class="form-control" placeholder="e.g. Gulshan, Dhaka" />
-                </div>
-                <div class="col-md-6">
-                    <label class="form-label fw-semibold">Present Address</label>
-                    <textarea asp-for="PresentAddress" class="form-control" rows="2" placeholder="House, Road, Area, District"></textarea>
-                </div>
-                <div class="col-md-6">
-                    <label class="form-label fw-semibold">Permanent Address</label>
-                    <textarea asp-for="PermanentAddress" class="form-control" rows="2" placeholder="Village, Post, Thana, District"></textarea>
                 </div>
             </div>
 

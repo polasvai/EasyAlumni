@@ -44,7 +44,7 @@ namespace EasyAlumni.Web.ViewModels
         public string NickName { get; set; } = string.Empty;
 
         [Required(ErrorMessage = "Passing Year is required")]
-        [Display(Name = "Passing Year (SSC/HSC)")]
+        [Display(Name = "Passing Year (SSC)")]
         [Range(1950, 2030, ErrorMessage = "Please select a valid passing year")]
         public int PassingYear { get; set; } = 2010;
 
