@@ -27,7 +27,6 @@ appsettings.json
 appsettings.*.json
 !appsettings.Example.json
 
-## OS generated
-.DS_Store
-Thumbs.db
-
+## Skills & Export Artifacts
+INSTALL_SKILLS_AND_MCP.md
+skills-export*
