@@ -118,12 +118,15 @@ namespace EasyAlumni.Infrastructure.Services
                     var failUrl = $"{callbackBase}/Payment/JanataPayFail?refid={referenceId}";
                     var cancelUrl = $"{callbackBase}/Payment/JanataPayCancel?refid={referenceId}";
 
+                    // Amount MUST be integer according to JanataPay Integration Guide
+                    long amountInt = (long)Math.Round(amount, MidpointRounding.AwayFromZero);
+
                     var tokenizePayload = new
                     {
                         merchantUid = options.MerchantUid,
                         accessToken = token,
                         referenceId = referenceId,
-                        amount = amount.ToString("F2"),
+                        amount = amountInt.ToString(),
                         currency = "BDT",
                         customerName = string.IsNullOrWhiteSpace(customerName) ? "Alumni Attendee" : customerName.Trim(),
                         customerPhone = string.IsNullOrWhiteSpace(customerPhone) ? "01700000000" : customerPhone.Trim(),
@@ -183,10 +186,18 @@ namespace EasyAlumni.Infrastructure.Services
                     if (code == 200 && !string.IsNullOrEmpty(encData))
                     {
                         var decryptedJson = DecryptPayload(encData);
+                        _logger.LogInformation("JanataPay Tokenize decrypted response: {Json}", decryptedJson);
                         var dataObj = JsonNode.Parse(decryptedJson);
 
                         var trxToken = dataObj?["transactionToken"]?.GetValue<string>();
-                        var checkoutUrl = dataObj?["url"]?.GetValue<string>();
+                        var checkoutUrl = dataObj?["paymentUrl"]?.GetValue<string>() ?? dataObj?["url"]?.GetValue<string>();
+
+                        // If paymentUrl is relative or missing, build it as per guide: https://sandbox-pg.janatapay.com/jbagg/aggregator?token=<transactionToken>
+                        if (string.IsNullOrEmpty(checkoutUrl) && !string.IsNullOrEmpty(trxToken))
+                        {
+                            var baseHost = (options.BaseUrl ?? "https://sandbox-pg.janatapay.com").TrimEnd('/');
+                            checkoutUrl = $"{baseHost}/jbagg/aggregator?token={trxToken}";
+                        }
 
                         return new JanataPayTokenizeResult
                         {
