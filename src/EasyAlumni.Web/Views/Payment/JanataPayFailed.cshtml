@@ -1,0 +1,55 @@
+@{
+    ViewData["Title"] = "Payment Unsuccessful";
+    var errorMsg = ViewBag.ErrorMessage as string ?? "Your transaction could not be completed.";
+    var regNo = ViewBag.RegistrationNo as string;
+}
+
+<div class="bg-dark text-white py-5" style="background: linear-gradient(135deg, #1e1b4b 0%, #831843 100%) !important; padding-top: 120px !important;">
+    <div class="container text-center">
+        <div class="d-inline-block bg-danger text-white p-3 rounded-circle mb-3 shadow">
+            <i class="fas fa-exclamation-triangle fa-3x"></i>
+        </div>
+        <h1 class="fw-bold">Payment Unsuccessful</h1>
+        <p class="lead opacity-90">We could not verify or complete your transaction on the JanataPay gateway.</p>
+    </div>
+</div>
+
+<div class="container py-5">
+    <div class="row justify-content-center">
+        <div class="col-lg-6">
+            <div class="card border-0 shadow-lg rounded-4 overflow-hidden text-center p-4 p-md-5">
+                <div class="mb-4">
+                    <span class="badge bg-danger bg-opacity-10 text-danger px-3 py-2 rounded-pill fs-6 mb-3">
+                        <i class="fas fa-times-circle me-1"></i> Transaction Incomplete
+                    </span>
+                    <h4 class="fw-bold text-dark mb-2">What happened?</h4>
+                    <div class="alert alert-danger text-start mt-3 mb-0">
+                        <i class="fas fa-info-circle me-2"></i> @errorMsg
+                    </div>
+                </div>
+
+                <p class="text-muted mb-4">
+                    If funds were deducted from your bank account or card, please allow 15 minutes for bank reconciliation, or contact the reunion committee with your transaction reference.
+                </p>
+
+                <div class="d-flex flex-column flex-sm-row gap-3 justify-content-center">
+                    @if (!string.IsNullOrEmpty(regNo))
+                    {
+                        <a asp-controller="Payment" asp-action="JanataPayCheckout" asp-route-registrationNo="@regNo" class="btn btn-primary btn-lg rounded-pill fw-bold shadow-sm">
+                            <i class="fas fa-redo me-2"></i> Retry JanataPay
+                        </a>
+                        <a asp-controller="Enrollment" asp-action="Confirmation" asp-route-registrationNo="@regNo" class="btn btn-outline-secondary btn-lg rounded-pill">
+                            <i class="fas fa-receipt me-2"></i> View Registration
+                        </a>
+                    }
+                    else
+                    {
+                        <a asp-controller="Home" asp-action="Index" class="btn btn-primary btn-lg rounded-pill">
+                            <i class="fas fa-home me-2"></i> Return to Homepage
+                        </a>
+                    }
+                </div>
+            </div>
+        </div>
+    </div>
+</div>

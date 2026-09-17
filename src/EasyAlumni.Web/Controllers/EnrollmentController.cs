@@ -143,8 +143,22 @@ namespace EasyAlumni.Web.Controllers
                 {
                     ModelState.AddModelError("RegistrationPackageId", $"The selected package '{selectedPackage.PackageName}' is only for passing years up to {selectedPackage.MaxPassingYear.Value}.");
                 }
+            }
 
-                if (!ModelState.IsValid)
+            // Manual payment modes require TransactionId and SenderNumber
+            if (model.PaymentMode != PaymentMode.JanataPay)
+            {
+                if (string.IsNullOrWhiteSpace(model.TransactionId))
+                {
+                    ModelState.AddModelError("TransactionId", "Transaction ID (TrxID) is required for manual mobile banking.");
+                }
+                if (string.IsNullOrWhiteSpace(model.SenderNumber))
+                {
+                    ModelState.AddModelError("SenderNumber", "Sender Mobile Number is required for manual mobile banking.");
+                }
+            }
+
+            if (!ModelState.IsValid)
                 {
                     model.ReunionEvent = reunionEvent;
                     model.PaymentSettings = await _context.SystemSettings
@@ -167,7 +181,6 @@ namespace EasyAlumni.Web.Controllers
                         .ToListAsync();
                     return View(model);
                 }
-            }
 
             try
             {
@@ -368,8 +381,8 @@ namespace EasyAlumni.Web.Controllers
                 {
                     EventRegistrationId = registration.Id,
                     PaymentMode = model.PaymentMode,
-                    TransactionId = model.TransactionId.Trim(),
-                    SenderNumber = model.SenderNumber.Trim(),
+                    TransactionId = !string.IsNullOrWhiteSpace(model.TransactionId) ? model.TransactionId.Trim() : (model.PaymentMode == PaymentMode.JanataPay ? $"JP-{registration.RegistrationNo}" : string.Empty),
+                    SenderNumber = !string.IsNullOrWhiteSpace(model.SenderNumber) ? model.SenderNumber.Trim() : profile.ContactNumber,
                     Amount = totalFee,
                     SlipAttachmentPath = slipPath,
                     Status = PaymentStatus.Pending,
@@ -395,7 +408,13 @@ namespace EasyAlumni.Web.Controllers
 
                 await _context.SaveChangesAsync();
 
-                // 9. Dispatch Confirmation SMS to Attendee
+                // If JanataPay chosen, immediately redirect to JanataPayCheckout
+                if (model.PaymentMode == PaymentMode.JanataPay)
+                {
+                    return RedirectToAction("JanataPayCheckout", "Payment", new { registrationNo = registration.RegistrationNo });
+                }
+
+                // 9. Dispatch Confirmation SMS to Attendee (Manual Payment flow)
                 var placeholders = new Dictionary<string, string>
                 {
                     ["Name"] = profile.NameEnglish,

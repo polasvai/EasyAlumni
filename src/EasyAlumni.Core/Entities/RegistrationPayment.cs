@@ -38,5 +38,17 @@ namespace EasyAlumni.Core.Entities
 
         [MaxLength(500)]
         public string? AdminRemarks { get; set; }
+
+        [MaxLength(128)]
+        public string? GatewayTransactionToken { get; set; }
+
+        [MaxLength(100)]
+        public string? GatewayReferenceId { get; set; }
+
+        [MaxLength(100)]
+        public string? GatewayFtNumber { get; set; }
+
+        [MaxLength(50)]
+        public string? GatewayStatus { get; set; }
     }
 }

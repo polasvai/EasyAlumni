@@ -16,17 +16,20 @@ namespace EasyAlumni.Web.Controllers
         private readonly ISmsService _smsService;
         private readonly IQrCodeService _qrCodeService;
         private readonly UserManager<ApplicationUser> _userManager;
+        private readonly IJanataPayService _janataPayService;
 
         public AdminController(
             ApplicationDbContext context,
             ISmsService smsService,
             IQrCodeService qrCodeService,
-            UserManager<ApplicationUser> userManager)
+            UserManager<ApplicationUser> userManager,
+            IJanataPayService janataPayService)
         {
             _context = context;
             _smsService = smsService;
             _qrCodeService = qrCodeService;
             _userManager = userManager;
+            _janataPayService = janataPayService;
         }
 
         public async Task<IActionResult> Index()
@@ -258,6 +261,110 @@ namespace EasyAlumni.Web.Controllers
 
             await _context.SaveChangesAsync();
             TempData["Warning"] = $"Payment for {payment.EventRegistration?.RegistrationNo} was rejected.";
+            return RedirectToAction(nameof(PaymentQueue));
+        }
+
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> ReverifyJanataPayment(int paymentId)
+        {
+            var payment = await _context.RegistrationPayments
+                .Include(p => p.EventRegistration)
+                    .ThenInclude(r => r!.AlumniProfile)
+                .Include(p => p.EventRegistration)
+                    .ThenInclude(r => r!.ReunionEvent)
+                .FirstOrDefaultAsync(p => p.Id == paymentId);
+
+            if (payment == null)
+            {
+                TempData["Error"] = "Payment record not found.";
+                return RedirectToAction(nameof(PaymentQueue));
+            }
+
+            if (string.IsNullOrEmpty(payment.GatewayReferenceId))
+            {
+                TempData["Error"] = "This payment has no gateway reference ID recorded.";
+                return RedirectToAction(nameof(PaymentQueue));
+            }
+
+            var verifyResult = await _janataPayService.VerifyPaymentAsync(payment.GatewayReferenceId, payment.GatewayTransactionToken ?? "");
+
+            payment.GatewayStatus = verifyResult.TransactionStatus ?? verifyResult.TransactionStatusCode;
+            payment.GatewayFtNumber = verifyResult.FtNumber;
+
+            if (verifyResult.Success && verifyResult.Amount >= payment.Amount)
+            {
+                var user = await _userManager.GetUserAsync(User);
+                payment.Status = PaymentStatus.Approved;
+                payment.ApprovedByUserId = user?.Id;
+                payment.ApprovedAt = DateTime.UtcNow;
+                if (!string.IsNullOrWhiteSpace(verifyResult.FtNumber))
+                {
+                    payment.TransactionId = verifyResult.FtNumber;
+                }
+
+                if (payment.EventRegistration != null)
+                {
+                    var reg = payment.EventRegistration;
+                    reg.Status = RegistrationStatus.Approved;
+                    reg.PaidAmount = verifyResult.Amount;
+
+                    if (string.IsNullOrEmpty(reg.QrCodeBase64))
+                    {
+                        var signedToken = _qrCodeService.GenerateSignedToken(
+                            reg.RegistrationNo,
+                            reg.Id,
+                            reg.AlumniProfile?.UserCode ?? "ALUMNI");
+
+                        reg.QrCodeToken = signedToken;
+                        reg.QrCodeBase64 = _qrCodeService.GenerateQrCodeBase64(signedToken);
+                    }
+
+                    var incomeHead = await _context.AccountHeads
+                        .FirstOrDefaultAsync(h => h.HeadName.Contains("Registration") && h.Type == AccountHeadType.Income)
+                        ?? await _context.AccountHeads.FirstOrDefaultAsync(h => h.Type == AccountHeadType.Income);
+
+                    if (incomeHead != null)
+                    {
+                        var countVouchers = await _context.CashEntries.CountAsync() + 1;
+                        _context.CashEntries.Add(new CashEntry
+                        {
+                            VoucherNumber = $"V-JP-{DateTime.UtcNow.Year}-{countVouchers:D5}",
+                            EntryDate = DateTime.UtcNow,
+                            AccountHeadId = incomeHead.Id,
+                            Amount = payment.Amount,
+                            PaymentMode = "JanataPay",
+                            Description = $"Reconciled JanataPay Online for {reg.RegistrationNo} ({reg.AlumniProfile?.NameEnglish}) FT: {verifyResult.FtNumber}",
+                            RelatedRegistrationId = reg.Id,
+                            CreatedByUserId = user?.Id
+                        });
+                    }
+
+                    if (reg.AlumniProfile != null && !string.IsNullOrWhiteSpace(reg.AlumniProfile.ContactNumber))
+                    {
+                        var passUrl = $"{Request.Scheme}://{Request.Host}/Pass/ViewPass/{reg.RegistrationNo}";
+                        var placeholders = new Dictionary<string, string>
+                        {
+                            ["Name"] = reg.AlumniProfile.NameEnglish,
+                            ["TicketNo"] = reg.RegistrationNo,
+                            ["Amount"] = payment.Amount.ToString("N0"),
+                            ["EventName"] = reg.ReunionEvent?.EventTitle ?? "Reunion",
+                            ["PassUrl"] = passUrl
+                        };
+
+                        await _smsService.SendTemplateSmsAsync("PaymentSMS", reg.AlumniProfile.ContactNumber, placeholders);
+                    }
+                }
+
+                await _context.SaveChangesAsync();
+                TempData["Success"] = $"Payment for {payment.EventRegistration?.RegistrationNo} was successfully verified and approved with JanataPay! (FT: {verifyResult.FtNumber})";
+            }
+            else
+            {
+                await _context.SaveChangesAsync();
+                TempData["Warning"] = $"Gateway returned status '{verifyResult.TransactionStatus ?? "Incomplete"}' (Code: {verifyResult.TransactionStatusCode}). Not approved.";
+            }
+
             return RedirectToAction(nameof(PaymentQueue));
         }
     }

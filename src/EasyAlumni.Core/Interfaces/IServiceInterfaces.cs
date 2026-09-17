@@ -37,4 +37,20 @@ namespace EasyAlumni.Core.Interfaces
             decimal amount,
             string? slipPath);
     }
+
+    public interface IJanataPayService
+    {
+        Task<EasyAlumni.Core.Models.JanataPayTokenizeResult> InitiatePaymentAsync(
+            int registrationId,
+            string registrationNo,
+            decimal amount,
+            string customerName,
+            string customerPhone,
+            string? customerEmail);
+
+        Task<EasyAlumni.Core.Models.JanataPayVerifyResult> VerifyPaymentAsync(
+            string referenceId,
+            string transactionToken);
+    }
 }
+

@@ -593,10 +593,31 @@
             <!-- 7. Payment Submission -->
             <div class="form-section-title mt-4">
                 <i class="fas fa-credit-card text-warning"></i>
-                <span>7. Payment Submission (Send-Money)</span>
+                <span>7. Payment Option &amp; Submission</span>
             </div>
 
-            <div class="payment-box mb-4">
+            <!-- Online Payment Banner (JanataPay) -->
+            <div class="card border-success border-2 shadow-sm rounded-4 p-4 mb-4" id="janataPayBanner" style="background: linear-gradient(135deg, #f0fdf4 0%, #dcfce7 100%);">
+                <div class="d-flex align-items-center justify-content-between flex-wrap gap-3">
+                    <div class="d-flex align-items-center gap-3">
+                        <div class="bg-success text-white rounded-circle p-3 shadow-sm">
+                            <i class="fas fa-shield-alt fa-2x"></i>
+                        </div>
+                        <div>
+                            <span class="badge bg-success mb-1">Recommended Online Gateway</span>
+                            <h5 class="fw-bold text-dark mb-1">Janata Bank / JanataPay (জনতা পে অনলাইন)</h5>
+                            <p class="small text-muted mb-0">Pay instantly using <strong>Janata Bank Account, Cards (Visa/Mastercard), bKash, Nagad, Rocket, Upay</strong> with instant automated confirmation.</p>
+                        </div>
+                    </div>
+                    <div>
+                        <span class="badge bg-white text-success border border-success px-3 py-2 fs-6 rounded-pill">
+                            <i class="fas fa-bolt text-warning me-1"></i> Instant Pass Activation
+                        </span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="payment-box mb-4" id="manualPaymentInfoBox">
                 <h5 class="fw-bold text-dark mb-3"><i class="fas fa-mobile-alt text-danger me-2"></i> Committee Mobile Banking Numbers:</h5>
                 <p class="small text-muted mb-3">Please send the exact total amount displayed above to any of the numbers below via "Send Money" or "Cash Out", then enter your Sender Number and Transaction ID.</p>
                 <div class="row g-3">
@@ -638,26 +659,27 @@
 
             <div class="row g-3 mb-4">
                 <div class="col-md-4">
-                    <label class="form-label fw-semibold">Payment Method Used <span class="text-danger">*</span></label>
-                    <select asp-for="PaymentMode" class="form-select" required>
-                        <option value="bKashManual">bKash (Send Money)</option>
-                        <option value="NagadManual">Nagad (Send Money)</option>
-                        <option value="RocketManual">Rocket</option>
-                        <option value="BankTransfer">Bank Transfer</option>
+                    <label class="form-label fw-semibold">Payment Method <span class="text-danger">*</span></label>
+                    <select asp-for="PaymentMode" class="form-select form-select-lg" id="paymentModeSelect" onchange="onPaymentModeChanged()" required>
+                        <option value="JanataPay" selected>Janata Bank / JanataPay (Online Gateway)</option>
+                        <option value="bKashManual">bKash (Send Money - Manual)</option>
+                        <option value="NagadManual">Nagad (Send Money - Manual)</option>
+                        <option value="RocketManual">Rocket (Manual)</option>
+                        <option value="BankTransfer">Bank Transfer (Manual)</option>
                         <option value="Cash">Cash Handover to Committee</option>
                     </select>
                 </div>
-                <div class="col-md-4">
+                <div class="col-md-4 manual-pay-field" id="senderNumberCol">
                     <label class="form-label fw-semibold">Sender Mobile Number <span class="text-danger">*</span></label>
-                    <input asp-for="SenderNumber" class="form-control" placeholder="01XXXXXXXXX" type="tel" required />
+                    <input asp-for="SenderNumber" class="form-control form-control-lg" placeholder="01XXXXXXXXX" type="tel" id="senderNumberInput" />
                     <span asp-validation-for="SenderNumber" class="text-danger small"></span>
                 </div>
-                <div class="col-md-4">
+                <div class="col-md-4 manual-pay-field" id="transactionIdCol">
                     <label class="form-label fw-semibold">Transaction ID (TrxID) <span class="text-danger">*</span></label>
-                    <input asp-for="TransactionId" class="form-control text-uppercase" placeholder="e.g. 9J82KL091" required />
+                    <input asp-for="TransactionId" class="form-control form-control-lg text-uppercase" placeholder="e.g. 9J82KL091" id="transactionIdInput" />
                     <span asp-validation-for="TransactionId" class="text-danger small"></span>
                 </div>
-                <div class="col-12">
+                <div class="col-12 manual-pay-field" id="slipAttachmentCol">
                     <label class="form-label fw-semibold">Payment Screenshot / Slip Attachment (Optional, Max 5MB)</label>
                     <input asp-for="SlipAttachmentFile" class="form-control" type="file" accept="image/*,.pdf" />
                     <small class="text-muted">Uploading payment slip ensures instant 1-click verification by accounts team.</small>
@@ -1032,6 +1054,43 @@
             }
         }
 
+        function onPaymentModeChanged() {
+            const modeSelect = document.getElementById('paymentModeSelect');
+            const mode = modeSelect ? modeSelect.value : 'JanataPay';
+            const banner = document.getElementById('janataPayBanner');
+            const manualBox = document.getElementById('manualPaymentInfoBox');
+            const manualFields = document.querySelectorAll('.manual-pay-field');
+            const btnSubmit = document.getElementById('btnSubmit');
+            const senderInput = document.getElementById('senderNumberInput');
+            const trxInput = document.getElementById('transactionIdInput');
+
+            if (mode === 'JanataPay') {
+                if (banner) banner.style.display = 'block';
+                if (manualBox) manualBox.style.display = 'none';
+                manualFields.forEach(el => el.style.display = 'none');
+
+                if (senderInput) senderInput.removeAttribute('required');
+                if (trxInput) trxInput.removeAttribute('required');
+
+                if (btnSubmit) {
+                    btnSubmit.innerHTML = '<i class="fas fa-arrow-right me-2"></i> Proceed to JanataPay Online Payment';
+                    btnSubmit.className = 'btn btn-success btn-lg px-5 py-3 rounded-pill fw-bold shadow-lg';
+                }
+            } else {
+                if (banner) banner.style.display = 'none';
+                if (manualBox) manualBox.style.display = 'block';
+                manualFields.forEach(el => el.style.display = 'block');
+
+                if (senderInput) senderInput.setAttribute('required', 'required');
+                if (trxInput) trxInput.setAttribute('required', 'required');
+
+                if (btnSubmit) {
+                    btnSubmit.innerHTML = '<i class="fas fa-paper-plane me-2"></i> Submit Reunion Registration';
+                    btnSubmit.className = 'btn btn-primary btn-lg px-5 py-3 rounded-pill fw-bold shadow-lg';
+                }
+            }
+        }
+
         document.addEventListener('DOMContentLoaded', () => {
             const input = document.getElementById('selectedPackageIdInput');
             if (input && !input.value && currentPackageId > 0) {
@@ -1040,6 +1099,7 @@
 
             filterPackagesByPassingYear();
             recalculateFee();
+            onPaymentModeChanged();
         });
 
         function previewImage(input, previewId) {

@@ -23,7 +23,8 @@ namespace EasyAlumni.Core.Enums
         BankTransfer = 4,
         Cash = 5,
         bKashOnline = 6,
-        SSLCommerz = 7
+        SSLCommerz = 7,
+        JanataPay = 8
     }
 
     public enum TShirtSize

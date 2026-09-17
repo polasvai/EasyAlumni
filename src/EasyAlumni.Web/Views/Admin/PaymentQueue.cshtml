@@ -81,10 +81,25 @@
                                 <small class="text-muted d-block">@profile?.ContactNumber</small>
                             </td>
                             <td>
-                                <span class="badge bg-info text-dark">@payment.PaymentMode</span>
+                                @if (payment.PaymentMode == EasyAlumni.Core.Enums.PaymentMode.JanataPay)
+                                {
+                                    <span class="badge bg-success text-white"><i class="fas fa-bolt me-1"></i> JanataPay</span>
+                                    @if (!string.IsNullOrEmpty(payment.GatewayStatus))
+                                    {
+                                        <small class="d-block text-muted">@payment.GatewayStatus</small>
+                                    }
+                                }
+                                else
+                                {
+                                    <span class="badge bg-info text-dark">@payment.PaymentMode</span>
+                                }
                             </td>
                             <td>
                                 <code class="fw-bold text-danger fs-6">@payment.TransactionId</code>
+                                @if (!string.IsNullOrEmpty(payment.GatewayFtNumber))
+                                {
+                                    <small class="d-block text-muted">FT: @payment.GatewayFtNumber</small>
+                                }
                             </td>
                             <td>
                                 <strong>@payment.SenderNumber</strong>
@@ -122,7 +137,18 @@
                             <td class="text-end">
                                 @if (payment.Status == EasyAlumni.Core.Enums.PaymentStatus.Pending)
                                 {
-                                    <div class="d-inline-flex gap-1">
+                                    <div class="d-inline-flex gap-1 flex-wrap justify-content-end">
+                                        @if (payment.PaymentMode == EasyAlumni.Core.Enums.PaymentMode.JanataPay && !string.IsNullOrEmpty(payment.GatewayReferenceId))
+                                        {
+                                            <form asp-controller="Admin" asp-action="ReverifyJanataPayment" method="post" class="d-inline">
+                                                @Html.AntiForgeryToken()
+                                                <input type="hidden" name="paymentId" value="@payment.Id" />
+                                                <button type="submit" class="btn btn-sm btn-info text-white rounded-pill px-2 fw-semibold" title="Query JanataPay Gateway for live status">
+                                                    <i class="fas fa-sync-alt me-1"></i> Re-verify
+                                                </button>
+                                            </form>
+                                        }
+
                                         <form asp-controller="Admin" asp-action="ApprovePayment" method="post" class="d-inline"
                                               onsubmit="return confirm('Approve payment for ticket @reg?.RegistrationNo? This will issue the digital pass and dispatch confirmation SMS.')">
                                             @Html.AntiForgeryToken()

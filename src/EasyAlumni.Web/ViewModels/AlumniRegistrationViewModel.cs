@@ -120,15 +120,13 @@ namespace EasyAlumni.Web.ViewModels
         [Display(Name = "Payment Mode")]
         public PaymentMode PaymentMode { get; set; } = PaymentMode.bKashManual;
 
-        [Required(ErrorMessage = "Transaction ID (TrxID) is required")]
         [Display(Name = "Transaction ID (TrxID)")]
         [MaxLength(50)]
-        public string TransactionId { get; set; } = string.Empty;
+        public string? TransactionId { get; set; }
 
-        [Required(ErrorMessage = "Sender Mobile Number is required")]
         [Display(Name = "Sender Mobile Number")]
-        [RegularExpression(@"^(01[3-9]\d{8})$", ErrorMessage = "Please enter a valid 11-digit sender mobile number")]
-        public string SenderNumber { get; set; } = string.Empty;
+        [RegularExpression(@"^(01[3-9]\d{8})?$", ErrorMessage = "Please enter a valid 11-digit sender mobile number")]
+        public string? SenderNumber { get; set; }
 
         [Display(Name = "Payment Slip Screenshot")]
         public IFormFile? SlipAttachmentFile { get; set; }
