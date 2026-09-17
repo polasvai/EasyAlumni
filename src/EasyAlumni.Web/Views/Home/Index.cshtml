@@ -331,40 +331,80 @@
                     <div class="@colClass">
                         <div class="pricing-card @(pkg.IsFeatured ? "featured" : "") h-100 d-flex flex-column justify-content-between">
                             <div>
-                                @if (pkg.IsFeatured)
+                                @if (!string.IsNullOrEmpty(pkg.BadgeText))
                                 {
-                                    <span class="pricing-badge"><i class="fas fa-star me-1"></i> @(string.IsNullOrEmpty(pkg.BadgeText) ? "Most Popular" : pkg.BadgeText)</span>
+                                    <span class="pricing-badge"><i class="fas fa-star me-1"></i> @pkg.BadgeText</span>
+                                }
+                                else if (pkg.IsFeatured)
+                                {
+                                    <span class="pricing-badge"><i class="fas fa-star me-1"></i> Most Popular</span>
                                 }
                                 <h5 class="fw-bold @(pkg.IsFeatured ? "text-primary" : "text-dark") mb-1">@pkg.PackageName</h5>
                                 @if (!string.IsNullOrEmpty(pkg.PackageNameBangla))
                                 {
                                     <div class="small text-muted mb-2">@pkg.PackageNameBangla</div>
                                 }
+
+                                @if (pkg.MinPassingYear.HasValue || pkg.MaxPassingYear.HasValue)
+                                {
+                                    <div class="mb-2">
+                                        @if (pkg.MinPassingYear.HasValue && pkg.MaxPassingYear.HasValue)
+                                        {
+                                            <span class="badge bg-light text-primary border px-2 py-1"><i class="fas fa-calendar-alt me-1"></i> SSC Batches @pkg.MinPassingYear - @pkg.MaxPassingYear</span>
+                                        }
+                                        else if (pkg.MinPassingYear.HasValue)
+                                        {
+                                            <span class="badge bg-light text-primary border px-2 py-1"><i class="fas fa-calendar-alt me-1"></i> SSC Batches @pkg.MinPassingYear+</span>
+                                        }
+                                        else if (pkg.MaxPassingYear.HasValue)
+                                        {
+                                            <span class="badge bg-light text-primary border px-2 py-1"><i class="fas fa-calendar-alt me-1"></i> SSC Batches up to @pkg.MaxPassingYear</span>
+                                        }
+                                    </div>
+                                }
+
                                 <h2 class="fw-bold @(pkg.IsFeatured ? "text-primary" : "text-dark") my-3">৳ @pkg.Fee.ToString("N0")</h2>
                                 @if (!string.IsNullOrEmpty(pkg.Description))
                                 {
-                                    <p class="small text-muted mb-4">@pkg.Description</p>
+                                    <p class="small text-muted mb-3">@pkg.Description</p>
                                 }
+
                                 <ul class="list-unstyled text-start small mb-4">
-                                    @if (pkg.IncludesTShirt)
-                                    {
-                                        <li class="mb-2"><i class="fas fa-check text-success me-2"></i> <strong>Premium Polo T-Shirt</strong></li>
-                                    }
-                                    @if (pkg.IncludesKitBag)
-                                    {
-                                        <li class="mb-2"><i class="fas fa-check text-success me-2"></i> <strong>Executive Backpack &amp; Hamper</strong></li>
-                                    }
-                                    @if (pkg.IncludesFood)
-                                    {
-                                        <li class="mb-2"><i class="fas fa-check text-success me-2"></i> <strong>Full Day Access &amp; Gourmet Meals</strong></li>
-                                    }
-                                    @if (pkg.IncludesRaffle)
-                                    {
-                                        <li class="mb-2"><i class="fas fa-check text-success me-2"></i> <strong>Mega Raffle Draw Coupon</strong></li>
-                                    }
                                     @if (pkg.IncludedGuests > 0)
                                     {
                                         <li class="mb-2 text-primary fw-bold"><i class="fas fa-user-friends me-2"></i> <strong>+@pkg.IncludedGuests Accompanying Guest Included</strong></li>
+                                    }
+                                    @if (pkg.PackageGiftItems != null && pkg.PackageGiftItems.Any())
+                                    {
+                                        @foreach (var pgi in pkg.PackageGiftItems.Where(g => g.GiftItem != null))
+                                        {
+                                            <li class="mb-2">
+                                                <i class="fas fa-gift text-warning me-2"></i> <strong>@pgi.GiftItem!.ItemName</strong>
+                                                @if (pgi.GiftItem.IsSizeSpecific)
+                                                {
+                                                    <span class="badge bg-info-subtle text-info ms-1">Size Option</span>
+                                                }
+                                            </li>
+                                        }
+                                    }
+                                    else
+                                    {
+                                        @if (pkg.IncludesTShirt)
+                                        {
+                                            <li class="mb-2"><i class="fas fa-check text-success me-2"></i> <strong>Polo T-Shirt</strong></li>
+                                        }
+                                        @if (pkg.IncludesKitBag)
+                                        {
+                                            <li class="mb-2"><i class="fas fa-check text-success me-2"></i> <strong>Gift Kit &amp; Hamper</strong></li>
+                                        }
+                                        @if (pkg.IncludesFood)
+                                        {
+                                            <li class="mb-2"><i class="fas fa-check text-success me-2"></i> <strong>Food &amp; Refreshments</strong></li>
+                                        }
+                                        @if (pkg.IncludesRaffle)
+                                        {
+                                            <li class="mb-2"><i class="fas fa-check text-success me-2"></i> <strong>Raffle Draw Entry</strong></li>
+                                        }
                                     }
                                 </ul>
                             </div>
@@ -379,14 +419,29 @@
                 }
             </div>
             
-            <div class="mt-4 text-center">
-                <div class="d-inline-flex flex-wrap justify-content-center gap-4 p-3 bg-light rounded-pill border small">
-                    <span class="text-muted"><i class="fas fa-plus-circle text-success me-1"></i> Optional Add-ons:</span>
-                    <span><strong>Spouse:</strong> ৳@(ev?.SpouseFee.ToString("N0") ?? "800")</span>
-                    <span><strong>Child (&gt;5 yrs):</strong> ৳@(ev?.ChildFee.ToString("N0") ?? "400")</span>
-                    <span><strong>Driver / Attendant:</strong> ৳@(ev?.GuestFee.ToString("N0") ?? "500")</span>
+            @if (Model.GuestCategories != null && Model.GuestCategories.Any())
+            {
+                <div class="mt-4 text-center">
+                    <div class="d-inline-flex flex-wrap justify-content-center gap-4 p-3 bg-light rounded-pill border small">
+                        <span class="text-muted"><i class="fas fa-plus-circle text-success me-1"></i> Optional Guest Add-ons:</span>
+                        @foreach (var gc in Model.GuestCategories)
+                        {
+                            <span><strong>@gc.CategoryName@(string.IsNullOrEmpty(gc.EligibilityRules) ? "" : $" ({gc.EligibilityRules})"):</strong> ৳@gc.Fee.ToString("N0")</span>
+                        }
+                    </div>
                 </div>
-            </div>
+            }
+            else if (ev != null && (ev.SpouseFee > 0 || ev.ChildFee > 0 || ev.GuestFee > 0))
+            {
+                <div class="mt-4 text-center">
+                    <div class="d-inline-flex flex-wrap justify-content-center gap-4 p-3 bg-light rounded-pill border small">
+                        <span class="text-muted"><i class="fas fa-plus-circle text-success me-1"></i> Optional Add-ons:</span>
+                        @if (ev.SpouseFee > 0) { <span><strong>Spouse:</strong> ৳@ev.SpouseFee.ToString("N0")</span> }
+                        @if (ev.ChildFee > 0) { <span><strong>Child:</strong> ৳@ev.ChildFee.ToString("N0")</span> }
+                        @if (ev.GuestFee > 0) { <span><strong>Guest / Attendant:</strong> ৳@ev.GuestFee.ToString("N0")</span> }
+                    </div>
+                </div>
+            }
         }
         else
         {

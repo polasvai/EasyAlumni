@@ -9,6 +9,7 @@ namespace EasyAlumni.Web.ViewModels
         public List<Committee> Committees { get; set; } = new();
         public List<NoticePost> Notices { get; set; } = new();
         public List<RegistrationPackage> Packages { get; set; } = new();
+        public List<GuestCategory> GuestCategories { get; set; } = new();
         public List<GalleryImage> GalleryImages { get; set; } = new();
         public int TotalRegisteredCount { get; set; }
         public int TotalApprovedCount { get; set; }

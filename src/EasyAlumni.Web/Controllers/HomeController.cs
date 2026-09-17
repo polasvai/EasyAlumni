@@ -41,8 +41,15 @@ namespace EasyAlumni.Web.Controllers
                 .CountAsync(r => r.Status == Core.Enums.RegistrationStatus.Approved);
 
             var packages = await _context.RegistrationPackages
-                .Where(p => p.IsActive)
+                .Where(p => p.IsActive && (reunionEvent == null || p.ReunionEventId == reunionEvent.Id))
+                .Include(p => p.PackageGiftItems)
+                    .ThenInclude(pg => pg.GiftItem)
                 .OrderBy(p => p.DisplayOrder)
+                .ToListAsync();
+
+            var guestCategories = await _context.GuestCategories
+                .Where(g => g.IsActive && (reunionEvent == null || g.ReunionEventId == reunionEvent.Id))
+                .OrderBy(g => g.DisplayOrder)
                 .ToListAsync();
 
             var galleryImages = await _context.GalleryImages
@@ -57,6 +64,7 @@ namespace EasyAlumni.Web.Controllers
                 Committees = committees,
                 Notices = notices,
                 Packages = packages,
+                GuestCategories = guestCategories,
                 GalleryImages = galleryImages,
                 TotalRegisteredCount = totalReg,
                 TotalApprovedCount = totalApproved
