@@ -10,7 +10,7 @@
 <div class="d-flex justify-content-between align-items-center flex-wrap gap-3 mb-4">
     <div>
         <h2 class="h4 fw-bold text-dark mb-1">System Settings &amp; Gateway Configuration</h2>
-        <p class="text-muted small mb-0">SMS gateway, Meta WhatsApp, message templates, and landing page CMS</p>
+        <p class="text-muted small mb-0">SMS gateway, Meta WhatsApp, notification templates, and news board</p>
     </div>
     <div>
         <a asp-controller="Admin" asp-action="Index" class="btn btn-outline-secondary rounded-pill px-3">
@@ -41,18 +41,8 @@
             </button>
         </li>
         <li class="nav-item">
-            <a class="nav-link rounded-pill px-4 fw-semibold text-success border border-success" asp-controller="PaymentSettings" asp-action="Index">
-                <i class="fas fa-credit-card me-1"></i> Payment Settings &amp; Gateways <i class="fas fa-external-link-alt ms-1 small"></i>
-            </a>
-        </li>
-        <li class="nav-item">
             <button class="nav-link rounded-pill px-4 fw-semibold" data-bs-toggle="pill" data-bs-target="#templatesTab">
                 <i class="fas fa-comment-dots me-1"></i> Notification Templates
-            </button>
-        </li>
-        <li class="nav-item">
-            <button class="nav-link rounded-pill px-4 fw-semibold" data-bs-toggle="pill" data-bs-target="#cmsTab">
-                <i class="fas fa-desktop me-1"></i> Landing Page CMS
             </button>
         </li>
         <li class="nav-item">
@@ -195,58 +185,6 @@
 
                     <button type="submit" class="btn btn-success rounded-pill px-4">
                         <i class="fas fa-save me-1"></i> Save Templates
-                    </button>
-                </form>
-            </div>
-        </div>
-
-        <!-- 4. Landing Page CMS Tab -->
-        <div class="tab-pane fade" id="cmsTab">
-            <div class="card border-0 shadow-sm rounded-4 p-4">
-                <h5 class="fw-bold text-dark mb-3"><i class="fas fa-desktop text-info me-2"></i> Landing Page Content &amp; Meta Information</h5>
-                <form asp-controller="Settings" asp-action="UpdateAllSettings" method="post">
-                    @Html.AntiForgeryToken()
-                    <div class="row g-3 mb-3">
-                        <div class="col-md-6">
-                            <label class="form-label fw-semibold">Hero Heading (English)</label>
-                            <input type="text" name="settings[LandingHeroTitle]" class="form-control" value="@settingsDict.GetValueOrDefault("LandingHeroTitle")" required />
-                        </div>
-                        <div class="col-md-6">
-                            <label class="form-label fw-semibold">Hero Subtitle (Bangla)</label>
-                            <input type="text" name="settings[LandingHeroSubtitle]" class="form-control" value="@settingsDict.GetValueOrDefault("LandingHeroSubtitle")" required />
-                        </div>
-                    </div>
-
-                    <div class="row g-3 mb-3">
-                        <div class="col-md-6">
-                            <label class="form-label fw-semibold">Event Target Date &amp; Time (For Countdown)</label>
-                            <input type="datetime-local" name="settings[ReunionDate]" class="form-control" value="@settingsDict.GetValueOrDefault("ReunionDate")" required />
-                        </div>
-                        <div class="col-md-6">
-                            <label class="form-label fw-semibold">Event Venue &amp; Location</label>
-                            <input type="text" name="settings[EventVenue]" class="form-control" value="@settingsDict.GetValueOrDefault("EventVenue")" required />
-                        </div>
-                    </div>
-
-                    <div class="alert alert-light border rounded-3 p-3 my-3">
-                        <i class="fas fa-info-circle text-primary me-1"></i>
-                        Manual payment accounts (bKash, Nagad, Rocket, Bank Account) are now managed in <a asp-controller="PaymentSettings" asp-action="Index" class="fw-bold text-success text-decoration-none">Payment Settings &amp; Gateways</a>.
-                    </div>
-
-                    <h5 class="fw-bold text-dark mt-4 mb-3 border-top pt-3"><i class="fas fa-phone-alt text-primary me-2"></i> Help Desk &amp; Contact Information</h5>
-                    <div class="row g-3 mb-4">
-                        <div class="col-md-6">
-                            <label class="form-label fw-semibold">Hotline Numbers</label>
-                            <input type="text" name="settings[ContactHotline]" class="form-control" value="@settingsDict.GetValueOrDefault("ContactHotline")" />
-                        </div>
-                        <div class="col-md-6">
-                            <label class="form-label fw-semibold">Official Inquiry Email</label>
-                            <input type="email" name="settings[ContactEmail]" class="form-control" value="@settingsDict.GetValueOrDefault("ContactEmail")" />
-                        </div>
-                    </div>
-
-                    <button type="submit" class="btn btn-success rounded-pill px-4">
-                        <i class="fas fa-save me-1"></i> Save CMS Settings
                     </button>
                 </form>
             </div>
