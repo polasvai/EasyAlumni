@@ -45,8 +45,32 @@ namespace EasyAlumni.Web.Controllers
             }
 
             var paymentSettings = await _context.SystemSettings
-                .Where(s => s.SettingKey.StartsWith("Manual"))
+                .Where(s => s.SettingKey.StartsWith("Manual") || s.SettingKey.StartsWith("Payment_"))
                 .ToDictionaryAsync(s => s.SettingKey, s => s.SettingValue);
+
+            var enabledPaymentModes = new List<PaymentMode>();
+            if (paymentSettings.GetValueOrDefault("Payment_Enable_JanataPay", "1") == "1") enabledPaymentModes.Add(PaymentMode.JanataPay);
+            if (paymentSettings.GetValueOrDefault("Payment_Enable_bKashManual", "1") == "1") enabledPaymentModes.Add(PaymentMode.bKashManual);
+            if (paymentSettings.GetValueOrDefault("Payment_Enable_NagadManual", "1") == "1") enabledPaymentModes.Add(PaymentMode.NagadManual);
+            if (paymentSettings.GetValueOrDefault("Payment_Enable_RocketManual", "1") == "1") enabledPaymentModes.Add(PaymentMode.RocketManual);
+            if (paymentSettings.GetValueOrDefault("Payment_Enable_BankTransfer", "1") == "1") enabledPaymentModes.Add(PaymentMode.BankTransfer);
+            if (paymentSettings.GetValueOrDefault("Payment_Enable_Cash", "1") == "1") enabledPaymentModes.Add(PaymentMode.Cash);
+
+            if (!enabledPaymentModes.Any())
+            {
+                enabledPaymentModes.Add(PaymentMode.JanataPay);
+            }
+
+            var defaultMethodStr = paymentSettings.GetValueOrDefault("Payment_Default_Method", "JanataPay");
+            PaymentMode selectedPaymentMode = PaymentMode.JanataPay;
+            if (Enum.TryParse<PaymentMode>(defaultMethodStr, out var parsedMode) && enabledPaymentModes.Contains(parsedMode))
+            {
+                selectedPaymentMode = parsedMode;
+            }
+            else
+            {
+                selectedPaymentMode = enabledPaymentModes.First();
+            }
 
             var packages = await _context.RegistrationPackages
                 .Where(p => p.IsActive && p.ReunionEventId == reunionEvent.Id)
@@ -71,6 +95,9 @@ namespace EasyAlumni.Web.Controllers
                 ReunionEventId = reunionEvent.Id,
                 ReunionEvent = reunionEvent,
                 PaymentSettings = paymentSettings,
+                EnabledPaymentModes = enabledPaymentModes,
+                DefaultPaymentMode = defaultMethodStr,
+                PaymentMode = selectedPaymentMode,
                 AvailablePackages = packages,
                 AvailableGuestCategories = guestCategories,
                 AvailableCustomQuestions = customQuestions,
@@ -104,9 +131,22 @@ namespace EasyAlumni.Web.Controllers
             if (!ModelState.IsValid)
             {
                 model.ReunionEvent = reunionEvent;
-                model.PaymentSettings = await _context.SystemSettings
-                    .Where(s => s.SettingKey.StartsWith("Manual"))
+                var paymentSettings = await _context.SystemSettings
+                    .Where(s => s.SettingKey.StartsWith("Manual") || s.SettingKey.StartsWith("Payment_"))
                     .ToDictionaryAsync(s => s.SettingKey, s => s.SettingValue);
+
+                var enabledPaymentModes = new List<PaymentMode>();
+                if (paymentSettings.GetValueOrDefault("Payment_Enable_JanataPay", "1") == "1") enabledPaymentModes.Add(PaymentMode.JanataPay);
+                if (paymentSettings.GetValueOrDefault("Payment_Enable_bKashManual", "1") == "1") enabledPaymentModes.Add(PaymentMode.bKashManual);
+                if (paymentSettings.GetValueOrDefault("Payment_Enable_NagadManual", "1") == "1") enabledPaymentModes.Add(PaymentMode.NagadManual);
+                if (paymentSettings.GetValueOrDefault("Payment_Enable_RocketManual", "1") == "1") enabledPaymentModes.Add(PaymentMode.RocketManual);
+                if (paymentSettings.GetValueOrDefault("Payment_Enable_BankTransfer", "1") == "1") enabledPaymentModes.Add(PaymentMode.BankTransfer);
+                if (paymentSettings.GetValueOrDefault("Payment_Enable_Cash", "1") == "1") enabledPaymentModes.Add(PaymentMode.Cash);
+
+                if (!enabledPaymentModes.Any()) enabledPaymentModes.Add(PaymentMode.JanataPay);
+
+                model.PaymentSettings = paymentSettings;
+                model.EnabledPaymentModes = enabledPaymentModes;
                 model.AvailablePackages = await _context.RegistrationPackages
                     .Where(p => p.IsActive && p.ReunionEventId == model.ReunionEventId)
                     .Include(p => p.PackageGiftItems)

@@ -91,7 +91,16 @@ namespace EasyAlumni.Infrastructure.Data
                 ["JanataPayPublicKey"] = ("MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEAp0/eVwL7WJG5KFnANQrkDLJkodPvDpVvbi9XuIKI5tJKdyXiTq0whTUpXbBk/Z0fpwDXhdkTBNTi0C5fkyTxkUXc1yLHs0BRxSZQ8DphA0eTOJKsVDsCCLOqYhtWKt7CnSpswDzqj4pdnkstKAzDEdKZyViTJv7G6TVKiK1cyJjuvi0be1ZDqSe/japXmInipFwW5elTHcw2hYOKZsSrNgFfSpsc/rJUlzf3fradw6KdiRlWsQZ/nze4NJ8YsNWs4VVbZfxd6YGd/eNmF8Pl0M+OTESD9fXEMlDQBFRBlVPz+lQzVwriHaZ28O0QfPnT0g6QhcMG62m/O2bdL9fvMQIDAQAB", "JanataPay 2048-bit RSA Gateway Public Key (Base64)"),
                 ["JanataPayUseProxy"] = ("1", "Route API requests through Bangladesh SOCKS5 tunnel (1=Yes, 0=No)"),
                 ["JanataPaySocks5Proxy"] = ("socks5://127.0.0.1:1080", "SOCKS5 Proxy URL for Bangladesh IP egress"),
-                ["JanataPayCallbackBaseUrl"] = ("https://alumni.snhghs.edu.bd", "Callback Base URL for redirects after payment")
+                ["JanataPayCallbackBaseUrl"] = ("https://alumni.snhghs.edu.bd", "Callback Base URL for redirects after payment"),
+
+                // Payment Method Activation Toggles & Default Gateway
+                ["Payment_Enable_JanataPay"] = ("1", "Enable Janata Bank / JanataPay Online Gateway (1=Enabled, 0=Disabled)"),
+                ["Payment_Enable_bKashManual"] = ("1", "Enable Manual bKash Send Money option (1=Enabled, 0=Disabled)"),
+                ["Payment_Enable_NagadManual"] = ("1", "Enable Manual Nagad Send Money option (1=Enabled, 0=Disabled)"),
+                ["Payment_Enable_RocketManual"] = ("1", "Enable Manual Rocket option (1=Enabled, 0=Disabled)"),
+                ["Payment_Enable_BankTransfer"] = ("1", "Enable Direct Bank Transfer option (1=Enabled, 0=Disabled)"),
+                ["Payment_Enable_Cash"] = ("1", "Enable Cash Handover to Committee option (1=Enabled, 0=Disabled)"),
+                ["Payment_Default_Method"] = ("JanataPay", "Default preselected payment method on registration form")
             };
 
             foreach (var s in defaultSettings)

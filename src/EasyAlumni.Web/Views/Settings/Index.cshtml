@@ -41,9 +41,9 @@
             </button>
         </li>
         <li class="nav-item">
-            <button class="nav-link rounded-pill px-4 fw-semibold text-success border border-success" data-bs-toggle="pill" data-bs-target="#janataPayTab">
-                <i class="fas fa-university me-1"></i> JanataPay Gateway (জনতা পে)
-            </button>
+            <a class="nav-link rounded-pill px-4 fw-semibold text-success border border-success" asp-controller="PaymentSettings" asp-action="Index">
+                <i class="fas fa-credit-card me-1"></i> Payment Settings &amp; Gateways <i class="fas fa-external-link-alt ms-1 small"></i>
+            </a>
         </li>
         <li class="nav-item">
             <button class="nav-link rounded-pill px-4 fw-semibold" data-bs-toggle="pill" data-bs-target="#templatesTab">
@@ -153,128 +153,18 @@
             </div>
         </div>
 
-        <!-- 2. JanataPay Gateway Tab -->
+        <!-- 2. JanataPay Gateway Tab (Moved to PaymentSettings) -->
         <div class="tab-pane fade" id="janataPayTab">
-            <div class="row g-4">
-                <div class="col-lg-8">
-                    <div class="card border-0 shadow-sm rounded-4 p-4">
-                        <div class="d-flex justify-content-between align-items-center mb-3">
-                            <div>
-                                <h5 class="fw-bold text-dark mb-1"><i class="fas fa-university text-success me-2"></i> JanataPay (Janata Bank) Gateway Settings</h5>
-                                <small class="text-muted">Configure live or sandbox merchant credentials, encryption keys, and network routing.</small>
-                            </div>
-                            <span class="badge bg-success bg-opacity-10 text-success px-3 py-2 rounded-pill">
-                                <i class="fas fa-lock me-1"></i> AES-256-GCM + RSA-OAEP
-                            </span>
-                        </div>
-
-                        <form asp-controller="Settings" asp-action="UpdateAllSettings" method="post">
-                            @Html.AntiForgeryToken()
-
-                            <div class="mb-3">
-                                <label class="form-label fw-semibold">JanataPay API Base URL <span class="text-danger">*</span></label>
-                                <input type="url" name="settings[JanataPayBaseUrl]" class="form-control" 
-                                       value="@settingsDict.GetValueOrDefault("JanataPayBaseUrl", "https://sandbox-pg.janatapay.com")" required />
-                                <small class="text-muted">
-                                    <strong>Sandbox:</strong> <code>https://sandbox-pg.janatapay.com</code> | 
-                                    <strong>Production (Live):</strong> Change to the live production endpoint provided by Janata Bank.
-                                </small>
-                            </div>
-
-                            <div class="row g-3 mb-3">
-                                <div class="col-md-6">
-                                    <label class="form-label fw-semibold">Merchant UID <span class="text-danger">*</span></label>
-                                    <input type="text" name="settings[JanataPayMerchantUid]" class="form-control" 
-                                           value="@settingsDict.GetValueOrDefault("JanataPayMerchantUid")" required />
-                                    <small class="text-muted">Assigned merchant UID (e.g. <code>6521171673</code>)</small>
-                                </div>
-                                <div class="col-md-6">
-                                    <label class="form-label fw-semibold">API Username <span class="text-danger">*</span></label>
-                                    <input type="text" name="settings[JanataPayUsername]" class="form-control" 
-                                           value="@settingsDict.GetValueOrDefault("JanataPayUsername")" required />
-                                    <small class="text-muted">Assigned gateway username (e.g. <code>j8Dx4778daD160</code>)</small>
-                                </div>
-                            </div>
-
-                            <div class="mb-3">
-                                <label class="form-label fw-semibold">API Password <span class="text-danger">*</span></label>
-                                <div class="input-group">
-                                    <input type="password" name="settings[JanataPayPassword]" id="janataPayPasswordInput" class="form-control" 
-                                           value="@settingsDict.GetValueOrDefault("JanataPayPassword")" required />
-                                    <button type="button" class="btn btn-outline-secondary" onclick="togglePasswordVisibility('janataPayPasswordInput', this)">
-                                        <i class="fas fa-eye"></i>
-                                    </button>
-                                </div>
-                                <small class="text-muted">Gateway secret account password.</small>
-                            </div>
-
-                            <div class="mb-3">
-                                <label class="form-label fw-semibold">Gateway RSA 2048-bit Public Key (Base64) <span class="text-danger">*</span></label>
-                                <textarea name="settings[JanataPayPublicKey]" class="form-control font-monospace small" rows="4" required>@settingsDict.GetValueOrDefault("JanataPayPublicKey")</textarea>
-                                <small class="text-muted">
-                                    Paste the 2048-bit RSA SPKI public key provided by Janata Bank. (With or without <code>BEGIN/END PUBLIC KEY</code> headers).
-                                </small>
-                            </div>
-
-                            <h6 class="fw-bold text-dark mt-4 mb-2 border-top pt-3"><i class="fas fa-network-wired text-primary me-2"></i> Firewall &amp; Network Tunneling</h6>
-                            <div class="row g-3 mb-3">
-                                <div class="col-md-4">
-                                    <label class="form-label fw-semibold">Egress Routing Mode</label>
-                                    <select name="settings[JanataPayUseProxy]" class="form-select">
-                                        <option value="1" selected="@(settingsDict.GetValueOrDefault("JanataPayUseProxy", "1") == "1")">Route via BD SOCKS5 Tunnel (Recommended)</option>
-                                        <option value="0" selected="@(settingsDict.GetValueOrDefault("JanataPayUseProxy") == "0")">Direct Egress (Foreign Server IP)</option>
-                                    </select>
-                                    <small class="text-muted">JanataPay sandbox firewall blocks non-Bangladesh IPs.</small>
-                                </div>
-                                <div class="col-md-8">
-                                    <label class="form-label fw-semibold">SOCKS5 Proxy Endpoint</label>
-                                    <input type="text" name="settings[JanataPaySocks5Proxy]" class="form-control" 
-                                           value="@settingsDict.GetValueOrDefault("JanataPaySocks5Proxy", "socks5://127.0.0.1:1080")" />
-                                    <small class="text-muted">Local port connected to Bangladesh connector agent tunnel.</small>
-                                </div>
-                            </div>
-
-                            <div class="mb-4">
-                                <label class="form-label fw-semibold">Callback Base URL</label>
-                                <input type="url" name="settings[JanataPayCallbackBaseUrl]" class="form-control" 
-                                       value="@settingsDict.GetValueOrDefault("JanataPayCallbackBaseUrl", "https://alumni.snhghs.edu.bd")" required />
-                                <small class="text-muted">Base URL where JanataPay will redirect payer after transaction completion.</small>
-                            </div>
-
-                            <div class="d-flex gap-2">
-                                <button type="submit" class="btn btn-success rounded-pill px-4 fw-semibold shadow-sm">
-                                    <i class="fas fa-save me-1"></i> Save JanataPay Settings
-                                </button>
-                            </div>
-                        </form>
-                    </div>
+            <div class="card border-0 shadow-sm rounded-4 p-5 text-center">
+                <div class="mb-3">
+                    <i class="fas fa-credit-card fa-3x text-success"></i>
                 </div>
-
-                <!-- Live Test & Diagnostics Column -->
-                <div class="col-lg-4">
-                    <div class="card border-0 shadow-sm rounded-4 p-4 mb-4 bg-light">
-                        <h6 class="fw-bold text-dark mb-3"><i class="fas fa-vial text-info me-2"></i> Test Gateway Connection</h6>
-                        <p class="small text-muted mb-3">
-                            Verifies the cryptographic handshake (AES-GCM + RSA-OAEP) with JanataPay using current credentials and retrieves a live Bearer JWT.
-                        </p>
-
-                        <form asp-controller="Settings" asp-action="TestJanataPay" method="post">
-                            @Html.AntiForgeryToken()
-                            <button type="submit" class="btn btn-outline-success w-100 rounded-pill fw-semibold">
-                                <i class="fas fa-bolt me-1"></i> Test JanataPay Handshake
-                            </button>
-                        </form>
-                    </div>
-
-                    <div class="card border-0 shadow-sm rounded-4 p-4">
-                        <h6 class="fw-bold text-dark mb-2"><i class="fas fa-info-circle text-primary me-2"></i> Switching to Production</h6>
-                        <ol class="small text-muted ps-3 mb-0">
-                            <li class="mb-2">Change <strong>API Base URL</strong> to the live production URL given by Janata Bank.</li>
-                            <li class="mb-2">Enter your live <strong>Merchant UID</strong>, <strong>Username</strong>, and <strong>Password</strong>.</li>
-                            <li class="mb-2">Replace the <strong>RSA Public Key</strong> with Janata Bank's production key.</li>
-                            <li class="mb-2">Click <strong>Save JanataPay Settings</strong> and run <strong>Test Handshake</strong> to verify.</li>
-                        </ol>
-                    </div>
+                <h4 class="fw-bold text-dark mb-2">Payment Settings &amp; Gateways has moved!</h4>
+                <p class="text-muted mb-4">JanataPay gateway credentials, active payment method toggles, and manual accounts are now centrally managed in the dedicated Payment Settings hub.</p>
+                <div>
+                    <a asp-controller="PaymentSettings" asp-action="Index" class="btn btn-success rounded-pill px-4 fw-bold">
+                        <i class="fas fa-arrow-right me-1"></i> Open Payment Settings Hub
+                    </a>
                 </div>
             </div>
         </div>
@@ -282,37 +172,38 @@
         <!-- 3. Notification Templates Tab -->
         <div class="tab-pane fade" id="templatesTab">
             <div class="card border-0 shadow-sm rounded-4 p-4">
-                <h5 class="fw-bold text-dark mb-3"><i class="fas fa-comment-dots text-primary me-2"></i> SMS &amp; WhatsApp Notification Templates</h5>
-                <p class="text-muted small mb-4">Supported replacement tokens: <code>{Name}</code>, <code>{UserId}</code>, <code>{TicketNo}</code>, <code>{Amount}</code>, <code>{EventName}</code>, <code>{PassUrl}</code>, <code>{Password}</code></p>
-
+                <h5 class="fw-bold text-dark mb-3"><i class="fas fa-comment-dots text-primary me-2"></i> System SMS &amp; WhatsApp Message Templates</h5>
                 <form asp-controller="Settings" asp-action="UpdateAllSettings" method="post">
                     @Html.AntiForgeryToken()
-                    <div class="mb-4">
-                        <label class="form-label fw-semibold text-success">Registration Pending SMS (Sent when alumnus submits form)</label>
-                        <textarea name="settings[PendingPaymentSMS]" class="form-control" rows="2" required>@settingsDict.GetValueOrDefault("PendingPaymentSMS")</textarea>
-                    </div>
-
-                    <div class="mb-4">
-                        <label class="form-label fw-semibold text-primary">Payment Approved SMS (Sent when payment is approved)</label>
-                        <textarea name="settings[PaymentSMS]" class="form-control" rows="2" required>@settingsDict.GetValueOrDefault("PaymentSMS")</textarea>
-                    </div>
-
-                    <div class="mb-4">
-                        <label class="form-label fw-semibold text-dark">Alumni Account Enrollment SMS</label>
+                    <div class="mb-3">
+                        <label class="form-label fw-semibold">Enrollment SMS Template</label>
                         <textarea name="settings[EnrollSMS]" class="form-control" rows="2" required>@settingsDict.GetValueOrDefault("EnrollSMS")</textarea>
+                        <small class="text-muted">Placeholders: <code>{Name}</code>, <code>{UserId}</code>, <code>{Password}</code></small>
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label fw-semibold">Payment Approved SMS Template</label>
+                        <textarea name="settings[PaymentSMS]" class="form-control" rows="2" required>@settingsDict.GetValueOrDefault("PaymentSMS")</textarea>
+                        <small class="text-muted">Placeholders: <code>{Name}</code>, <code>{TicketNo}</code>, <code>{Amount}</code>, <code>{EventName}</code>, <code>{PassUrl}</code></small>
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label fw-semibold">Pending Payment SMS Template</label>
+                        <textarea name="settings[PendingPaymentSMS]" class="form-control" rows="2" required>@settingsDict.GetValueOrDefault("PendingPaymentSMS")</textarea>
+                        <small class="text-muted">Placeholders: <code>{Name}</code>, <code>{TicketNo}</code>, <code>{Amount}</code>, <code>{EventName}</code></small>
                     </div>
 
                     <button type="submit" class="btn btn-success rounded-pill px-4">
-                        <i class="fas fa-save me-1"></i> Save Message Templates
+                        <i class="fas fa-save me-1"></i> Save Templates
                     </button>
                 </form>
             </div>
         </div>
 
-        <!-- 3. Landing Page CMS Tab -->
+        <!-- 4. Landing Page CMS Tab -->
         <div class="tab-pane fade" id="cmsTab">
             <div class="card border-0 shadow-sm rounded-4 p-4">
-                <h5 class="fw-bold text-dark mb-3"><i class="fas fa-desktop text-success me-2"></i> Landing Page Custom Content</h5>
+                <h5 class="fw-bold text-dark mb-3"><i class="fas fa-desktop text-info me-2"></i> Landing Page Content &amp; Meta Information</h5>
                 <form asp-controller="Settings" asp-action="UpdateAllSettings" method="post">
                     @Html.AntiForgeryToken()
                     <div class="row g-3 mb-3">
@@ -337,20 +228,9 @@
                         </div>
                     </div>
 
-                    <h5 class="fw-bold text-dark mt-4 mb-3 border-top pt-3"><i class="fas fa-money-bill text-danger me-2"></i> Manual Mobile Banking Account Numbers</h5>
-                    <div class="row g-3 mb-3">
-                        <div class="col-md-4">
-                            <label class="form-label fw-semibold">bKash Account Number</label>
-                            <input type="text" name="settings[ManualBkashNumber]" class="form-control" value="@settingsDict.GetValueOrDefault("ManualBkashNumber")" />
-                        </div>
-                        <div class="col-md-4">
-                            <label class="form-label fw-semibold">Nagad Account Number</label>
-                            <input type="text" name="settings[ManualNagadNumber]" class="form-control" value="@settingsDict.GetValueOrDefault("ManualNagadNumber")" />
-                        </div>
-                        <div class="col-md-4">
-                            <label class="form-label fw-semibold">Rocket Account Number</label>
-                            <input type="text" name="settings[ManualRocketNumber]" class="form-control" value="@settingsDict.GetValueOrDefault("ManualRocketNumber")" />
-                        </div>
+                    <div class="alert alert-light border rounded-3 p-3 my-3">
+                        <i class="fas fa-info-circle text-primary me-1"></i>
+                        Manual payment accounts (bKash, Nagad, Rocket, Bank Account) are now managed in <a asp-controller="PaymentSettings" asp-action="Index" class="fw-bold text-success text-decoration-none">Payment Settings &amp; Gateways</a>.
                     </div>
 
                     <h5 class="fw-bold text-dark mt-4 mb-3 border-top pt-3"><i class="fas fa-phone-alt text-primary me-2"></i> Help Desk &amp; Contact Information</h5>

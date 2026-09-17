@@ -618,42 +618,60 @@
             </div>
 
             <div class="payment-box mb-4" id="manualPaymentInfoBox">
-                <h5 class="fw-bold text-dark mb-3"><i class="fas fa-mobile-alt text-danger me-2"></i> Committee Mobile Banking Numbers:</h5>
+                <h5 class="fw-bold text-dark mb-3"><i class="fas fa-mobile-alt text-danger me-2"></i> Committee Payment Accounts:</h5>
                 <p class="small text-muted mb-3">Please send the exact total amount displayed above to any of the numbers below via "Send Money" or "Cash Out", then enter your Sender Number and Transaction ID.</p>
                 <div class="row g-3">
-                    <div class="col-md-4">
-                        <div class="p-3 bg-white rounded-3 border d-flex justify-content-between align-items-center">
-                            <div>
-                                <span class="badge bg-danger mb-1">bKash</span>
-                                <div class="fw-bold text-dark" id="bkashNum">@(Model.PaymentSettings.GetValueOrDefault("ManualBkashNumber", "01700000000"))</div>
+                    @if (Model.EnabledPaymentModes.Contains(EasyAlumni.Core.Enums.PaymentMode.bKashManual))
+                    {
+                        <div class="col-md-4">
+                            <div class="p-3 bg-white rounded-3 border d-flex justify-content-between align-items-center">
+                                <div>
+                                    <span class="badge bg-danger mb-1">bKash</span>
+                                    <div class="fw-bold text-dark" id="bkashNum">@(Model.PaymentSettings.GetValueOrDefault("ManualBkashNumber", "01700000000"))</div>
+                                </div>
+                                <button type="button" class="btn btn-sm btn-outline-secondary copy-btn" onclick="copyText('bkashNum')">
+                                    <i class="fas fa-copy"></i>
+                                </button>
                             </div>
-                            <button type="button" class="btn btn-sm btn-outline-secondary copy-btn" onclick="copyText('bkashNum')">
-                                <i class="fas fa-copy"></i>
-                            </button>
                         </div>
-                    </div>
-                    <div class="col-md-4">
-                        <div class="p-3 bg-white rounded-3 border d-flex justify-content-between align-items-center">
-                            <div>
-                                <span class="badge bg-warning text-dark mb-1">Nagad</span>
-                                <div class="fw-bold text-dark" id="nagadNum">@(Model.PaymentSettings.GetValueOrDefault("ManualNagadNumber", "01800000000"))</div>
+                    }
+                    @if (Model.EnabledPaymentModes.Contains(EasyAlumni.Core.Enums.PaymentMode.NagadManual))
+                    {
+                        <div class="col-md-4">
+                            <div class="p-3 bg-white rounded-3 border d-flex justify-content-between align-items-center">
+                                <div>
+                                    <span class="badge bg-warning text-dark mb-1">Nagad</span>
+                                    <div class="fw-bold text-dark" id="nagadNum">@(Model.PaymentSettings.GetValueOrDefault("ManualNagadNumber", "01800000000"))</div>
+                                </div>
+                                <button type="button" class="btn btn-sm btn-outline-secondary copy-btn" onclick="copyText('nagadNum')">
+                                    <i class="fas fa-copy"></i>
+                                </button>
                             </div>
-                            <button type="button" class="btn btn-sm btn-outline-secondary copy-btn" onclick="copyText('nagadNum')">
-                                <i class="fas fa-copy"></i>
-                            </button>
                         </div>
-                    </div>
-                    <div class="col-md-4">
-                        <div class="p-3 bg-white rounded-3 border d-flex justify-content-between align-items-center">
-                            <div>
-                                <span class="badge bg-primary mb-1">Rocket</span>
-                                <div class="fw-bold text-dark" id="rocketNum">@(Model.PaymentSettings.GetValueOrDefault("ManualRocketNumber", "01900000000-8"))</div>
+                    }
+                    @if (Model.EnabledPaymentModes.Contains(EasyAlumni.Core.Enums.PaymentMode.RocketManual))
+                    {
+                        <div class="col-md-4">
+                            <div class="p-3 bg-white rounded-3 border d-flex justify-content-between align-items-center">
+                                <div>
+                                    <span class="badge bg-primary mb-1">Rocket</span>
+                                    <div class="fw-bold text-dark" id="rocketNum">@(Model.PaymentSettings.GetValueOrDefault("ManualRocketNumber", "01900000000-8"))</div>
+                                </div>
+                                <button type="button" class="btn btn-sm btn-outline-secondary copy-btn" onclick="copyText('rocketNum')">
+                                    <i class="fas fa-copy"></i>
+                                </button>
                             </div>
-                            <button type="button" class="btn btn-sm btn-outline-secondary copy-btn" onclick="copyText('rocketNum')">
-                                <i class="fas fa-copy"></i>
-                            </button>
                         </div>
-                    </div>
+                    }
+                    @if (Model.EnabledPaymentModes.Contains(EasyAlumni.Core.Enums.PaymentMode.BankTransfer) && !string.IsNullOrEmpty(Model.PaymentSettings.GetValueOrDefault("PaymentBankDetails")))
+                    {
+                        <div class="col-12" id="bankDetailsBox">
+                            <div class="p-3 bg-white rounded-3 border">
+                                <span class="badge bg-secondary mb-1">Bank Deposit Account</span>
+                                <div class="fw-bold text-dark font-monospace small">@Model.PaymentSettings.GetValueOrDefault("PaymentBankDetails")</div>
+                            </div>
+                        </div>
+                    }
                 </div>
             </div>
 
@@ -661,26 +679,44 @@
                 <div class="col-md-4">
                     <label class="form-label fw-semibold">Payment Method <span class="text-danger">*</span></label>
                     <select asp-for="PaymentMode" class="form-select form-select-lg" id="paymentModeSelect" onchange="onPaymentModeChanged()" required>
-                        <option value="JanataPay" selected>Janata Bank / JanataPay (Online Gateway)</option>
-                        <option value="bKashManual">bKash (Send Money - Manual)</option>
-                        <option value="NagadManual">Nagad (Send Money - Manual)</option>
-                        <option value="RocketManual">Rocket (Manual)</option>
-                        <option value="BankTransfer">Bank Transfer (Manual)</option>
-                        <option value="Cash">Cash Handover to Committee</option>
+                        @if (Model.EnabledPaymentModes.Contains(EasyAlumni.Core.Enums.PaymentMode.JanataPay))
+                        {
+                            <option value="JanataPay">Janata Bank / JanataPay (Online Gateway)</option>
+                        }
+                        @if (Model.EnabledPaymentModes.Contains(EasyAlumni.Core.Enums.PaymentMode.bKashManual))
+                        {
+                            <option value="bKashManual">bKash (Send Money - Manual)</option>
+                        }
+                        @if (Model.EnabledPaymentModes.Contains(EasyAlumni.Core.Enums.PaymentMode.NagadManual))
+                        {
+                            <option value="NagadManual">Nagad (Send Money - Manual)</option>
+                        }
+                        @if (Model.EnabledPaymentModes.Contains(EasyAlumni.Core.Enums.PaymentMode.RocketManual))
+                        {
+                            <option value="RocketManual">Rocket (Manual)</option>
+                        }
+                        @if (Model.EnabledPaymentModes.Contains(EasyAlumni.Core.Enums.PaymentMode.BankTransfer))
+                        {
+                            <option value="BankTransfer">Bank Transfer (Manual Deposit)</option>
+                        }
+                        @if (Model.EnabledPaymentModes.Contains(EasyAlumni.Core.Enums.PaymentMode.Cash))
+                        {
+                            <option value="Cash">Cash Handover to Committee</option>
+                        }
                     </select>
                 </div>
                 <div class="col-md-4 manual-pay-field" id="senderNumberCol">
-                    <label class="form-label fw-semibold">Sender Mobile Number <span class="text-danger">*</span></label>
+                    <label class="form-label fw-semibold">Sender Mobile / Account Number <span class="text-danger">*</span></label>
                     <input asp-for="SenderNumber" class="form-control form-control-lg" placeholder="01XXXXXXXXX" type="tel" id="senderNumberInput" />
                     <span asp-validation-for="SenderNumber" class="text-danger small"></span>
                 </div>
                 <div class="col-md-4 manual-pay-field" id="transactionIdCol">
-                    <label class="form-label fw-semibold">Transaction ID (TrxID) <span class="text-danger">*</span></label>
+                    <label class="form-label fw-semibold">Transaction ID / Slip No <span class="text-danger">*</span></label>
                     <input asp-for="TransactionId" class="form-control form-control-lg text-uppercase" placeholder="e.g. 9J82KL091" id="transactionIdInput" />
                     <span asp-validation-for="TransactionId" class="text-danger small"></span>
                 </div>
                 <div class="col-12 manual-pay-field" id="slipAttachmentCol">
-                    <label class="form-label fw-semibold">Payment Screenshot / Slip Attachment (Optional, Max 5MB)</label>
+                    <label class="form-label fw-semibold">Payment Screenshot / Deposit Slip (Optional, Max 5MB)</label>
                     <input asp-for="SlipAttachmentFile" class="form-control" type="file" accept="image/*,.pdf" />
                     <small class="text-muted">Uploading payment slip ensures instant 1-click verification by accounts team.</small>
                 </div>

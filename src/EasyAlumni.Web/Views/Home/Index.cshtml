@@ -161,6 +161,9 @@
             <a asp-controller="Enrollment" asp-action="Register" class="btn btn-lg btn-danger px-4 py-3 rounded-pill fw-bold shadow-lg">
                 <i class="fas fa-user-plus me-2"></i> Register for Reunion
             </a>
+            <button type="button" class="btn btn-lg btn-warning text-dark px-4 py-3 rounded-pill fw-bold shadow-lg" data-bs-toggle="modal" data-bs-target="#downloadPassModal">
+                <i class="fas fa-id-card me-2"></i> Download ID Card
+            </button>
             <a href="/#about" class="btn btn-lg btn-outline-light px-4 py-3 rounded-pill fw-bold">
                 <i class="fas fa-info-circle me-2"></i> Event Details
             </a>
@@ -676,6 +679,56 @@
         </div>
     </div>
 </section>
+
+<!-- Download Pass Modal -->
+<div class="modal fade" id="downloadPassModal" tabindex="-1" aria-labelledby="downloadPassModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content rounded-4 border-0 shadow-lg overflow-hidden">
+            <div class="modal-header bg-dark text-white border-0 py-3" style="background: linear-gradient(135deg, #0f172a 0%, #004d38 100%) !important;">
+                <h5 class="modal-title fw-bold" id="downloadPassModalLabel">
+                    <i class="fas fa-id-badge text-warning me-2"></i> Download Digital Entry Pass / ID Card
+                </h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <form asp-controller="Pass" asp-action="FindPass" method="post">
+                @Html.AntiForgeryToken()
+                <div class="modal-body p-4">
+                    <p class="text-muted small mb-4">
+                        Enter your registered mobile number and transaction ID or registration number to print or save your official Digital Entry Pass.
+                    </p>
+
+                    <div class="mb-3">
+                        <label class="form-label fw-semibold text-dark">
+                            Registered Mobile Number <span class="text-danger">*</span>
+                        </label>
+                        <div class="input-group">
+                            <span class="input-group-text bg-light"><i class="fas fa-phone text-success"></i></span>
+                            <input type="tel" name="phoneNumber" class="form-control" placeholder="01XXXXXXXXX" required />
+                        </div>
+                        <small class="text-muted">11-digit mobile number used during registration.</small>
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label fw-semibold text-dark">
+                            Transaction ID (TrxID) or Ticket No (Optional)
+                        </label>
+                        <div class="input-group">
+                            <span class="input-group-text bg-light"><i class="fas fa-receipt text-primary"></i></span>
+                            <input type="text" name="identifier" class="form-control text-uppercase" placeholder="e.g. 9J82KL091 or REG-..." />
+                        </div>
+                        <small class="text-muted">bKash/Nagad TrxID, Bank FT number, or Registration Number.</small>
+                    </div>
+                </div>
+                <div class="modal-footer bg-light border-0 px-4 py-3">
+                    <button type="button" class="btn btn-outline-secondary rounded-pill px-3" data-bs-dismiss="modal">Cancel</button>
+                    <button type="submit" class="btn btn-success rounded-pill px-4 fw-bold shadow-sm">
+                        <i class="fas fa-download me-1"></i> Retrieve &amp; Print Pass
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
 
 @section Scripts {
     <script>

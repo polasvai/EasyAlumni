@@ -1,0 +1,374 @@
+@model List<EasyAlumni.Core.Entities.SystemSetting>
+@{
+    ViewData["Title"] = "Payment Settings & Gateways";
+    Layout = "_AdminLayout";
+    var sDict = Model.ToDictionary(s => s.SettingKey, s => s.SettingValue);
+
+    bool isJanataPayEnabled = sDict.GetValueOrDefault("Payment_Enable_JanataPay", "1") == "1";
+    bool isBkashManualEnabled = sDict.GetValueOrDefault("Payment_Enable_bKashManual", "1") == "1";
+    bool isNagadManualEnabled = sDict.GetValueOrDefault("Payment_Enable_NagadManual", "1") == "1";
+    bool isRocketManualEnabled = sDict.GetValueOrDefault("Payment_Enable_RocketManual", "1") == "1";
+    bool isBankTransferEnabled = sDict.GetValueOrDefault("Payment_Enable_BankTransfer", "1") == "1";
+    bool isCashEnabled = sDict.GetValueOrDefault("Payment_Enable_Cash", "1") == "1";
+    string defaultMethod = sDict.GetValueOrDefault("Payment_Default_Method", "JanataPay");
+}
+
+<div class="d-flex justify-content-between align-items-center flex-wrap gap-3 mb-4">
+    <div>
+        <h2 class="h4 fw-bold text-dark mb-1"><i class="fas fa-credit-card text-success me-2"></i> Payment Settings &amp; Gateways</h2>
+        <p class="text-muted small mb-0">Manage active payment channels, live credentials, JanataPay gateway, and manual banking channels</p>
+    </div>
+    <div class="d-flex gap-2">
+        <a asp-controller="Settings" asp-action="Index" class="btn btn-outline-secondary rounded-pill px-3">
+            <i class="fas fa-cog me-1"></i> System Settings
+        </a>
+        <a asp-controller="Admin" asp-action="Index" class="btn btn-outline-dark rounded-pill px-3">
+            Dashboard
+        </a>
+    </div>
+</div>
+
+@if (TempData["Success"] != null)
+{
+    <div class="alert alert-success alert-dismissible fade show rounded-3 shadow-sm" role="alert">
+        <i class="fas fa-check-circle me-2"></i> @TempData["Success"]
+        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+    </div>
+}
+@if (TempData["Error"] != null)
+{
+    <div class="alert alert-danger alert-dismissible fade show rounded-3 shadow-sm" role="alert">
+        <i class="fas fa-exclamation-triangle me-2"></i> @TempData["Error"]
+        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+    </div>
+}
+
+<form asp-controller="PaymentSettings" asp-action="UpdatePaymentSettings" method="post">
+    @Html.AntiForgeryToken()
+
+    <!-- Section 1: Active Payment Options & Gateway Toggles -->
+    <div class="card border-0 shadow-sm rounded-4 mb-4 overflow-hidden">
+        <div class="card-header bg-white border-bottom p-4">
+            <div class="d-flex justify-content-between align-items-center flex-wrap gap-2">
+                <div>
+                    <h5 class="fw-bold text-dark mb-1">
+                        <i class="fas fa-toggle-on text-primary me-2"></i> Active Payment Methods &amp; Gateway Selection
+                    </h5>
+                    <p class="text-muted small mb-0">Choose which payment options will appear dynamically on the public registration form.</p>
+                </div>
+                <div>
+                    <span class="badge bg-primary bg-opacity-10 text-primary px-3 py-2 rounded-pill">
+                        <i class="fas fa-sliders-h me-1"></i> Real-time Toggle
+                    </span>
+                </div>
+            </div>
+        </div>
+
+        <div class="card-body p-4">
+            <div class="row g-3 mb-4">
+                <!-- JanataPay Toggle -->
+                <div class="col-md-6 col-lg-4">
+                    <div class="p-3 border rounded-3 bg-light h-100 d-flex flex-column justify-content-between">
+                        <div>
+                            <div class="d-flex justify-content-between align-items-center mb-2">
+                                <span class="badge bg-success">Online Gateway</span>
+                                <div class="form-check form-switch m-0">
+                                    <input type="hidden" name="settings[Payment_Enable_JanataPay]" value="0" />
+                                    <input class="form-check-input" type="checkbox" role="switch" id="toggleJanataPay"
+                                           name="settings[Payment_Enable_JanataPay]" value="1" @(isJanataPayEnabled ? "checked" : "") />
+                                </div>
+                            </div>
+                            <h6 class="fw-bold text-dark mb-1">JanataPay (Janata Bank)</h6>
+                            <p class="small text-muted mb-0">Automated online checkout: Cards, Janata Bank A/C, bKash, Nagad, Rocket, Upay.</p>
+                        </div>
+                        <small class="text-success fw-semibold mt-2"><i class="fas fa-bolt me-1"></i> Instant automated pass generation</small>
+                    </div>
+                </div>
+
+                <!-- bKash Manual Toggle -->
+                <div class="col-md-6 col-lg-4">
+                    <div class="p-3 border rounded-3 bg-light h-100 d-flex flex-column justify-content-between">
+                        <div>
+                            <div class="d-flex justify-content-between align-items-center mb-2">
+                                <span class="badge bg-danger">Manual Mobile</span>
+                                <div class="form-check form-switch m-0">
+                                    <input type="hidden" name="settings[Payment_Enable_bKashManual]" value="0" />
+                                    <input class="form-check-input" type="checkbox" role="switch" id="toggleBkash"
+                                           name="settings[Payment_Enable_bKashManual]" value="1" @(isBkashManualEnabled ? "checked" : "") />
+                                </div>
+                            </div>
+                            <h6 class="fw-bold text-dark mb-1">bKash (Send Money)</h6>
+                            <p class="small text-muted mb-0">Alumni sends money manually and inputs TrxID &amp; sender number.</p>
+                        </div>
+                        <small class="text-muted mt-2">Requires admin payment verification</small>
+                    </div>
+                </div>
+
+                <!-- Nagad Manual Toggle -->
+                <div class="col-md-6 col-lg-4">
+                    <div class="p-3 border rounded-3 bg-light h-100 d-flex flex-column justify-content-between">
+                        <div>
+                            <div class="d-flex justify-content-between align-items-center mb-2">
+                                <span class="badge bg-warning text-dark">Manual Mobile</span>
+                                <div class="form-check form-switch m-0">
+                                    <input type="hidden" name="settings[Payment_Enable_NagadManual]" value="0" />
+                                    <input class="form-check-input" type="checkbox" role="switch" id="toggleNagad"
+                                           name="settings[Payment_Enable_NagadManual]" value="1" @(isNagadManualEnabled ? "checked" : "") />
+                                </div>
+                            </div>
+                            <h6 class="fw-bold text-dark mb-1">Nagad (Send Money)</h6>
+                            <p class="small text-muted mb-0">Alumni sends money manually and inputs Nagad TrxID &amp; sender number.</p>
+                        </div>
+                        <small class="text-muted mt-2">Requires admin payment verification</small>
+                    </div>
+                </div>
+
+                <!-- Rocket Manual Toggle -->
+                <div class="col-md-6 col-lg-4">
+                    <div class="p-3 border rounded-3 bg-light h-100 d-flex flex-column justify-content-between">
+                        <div>
+                            <div class="d-flex justify-content-between align-items-center mb-2">
+                                <span class="badge bg-primary">Manual Mobile</span>
+                                <div class="form-check form-switch m-0">
+                                    <input type="hidden" name="settings[Payment_Enable_RocketManual]" value="0" />
+                                    <input class="form-check-input" type="checkbox" role="switch" id="toggleRocket"
+                                           name="settings[Payment_Enable_RocketManual]" value="1" @(isRocketManualEnabled ? "checked" : "") />
+                                </div>
+                            </div>
+                            <h6 class="fw-bold text-dark mb-1">Rocket (Manual)</h6>
+                            <p class="small text-muted mb-0">Dutch-Bangla Rocket mobile banking manual transfer.</p>
+                        </div>
+                        <small class="text-muted mt-2">Requires admin payment verification</small>
+                    </div>
+                </div>
+
+                <!-- Bank Transfer Toggle -->
+                <div class="col-md-6 col-lg-4">
+                    <div class="p-3 border rounded-3 bg-light h-100 d-flex flex-column justify-content-between">
+                        <div>
+                            <div class="d-flex justify-content-between align-items-center mb-2">
+                                <span class="badge bg-secondary">Direct Bank</span>
+                                <div class="form-check form-switch m-0">
+                                    <input type="hidden" name="settings[Payment_Enable_BankTransfer]" value="0" />
+                                    <input class="form-check-input" type="checkbox" role="switch" id="toggleBank"
+                                           name="settings[Payment_Enable_BankTransfer]" value="1" @(isBankTransferEnabled ? "checked" : "") />
+                                </div>
+                            </div>
+                            <h6 class="fw-bold text-dark mb-1">Direct Bank Account Deposit</h6>
+                            <p class="small text-muted mb-0">Direct deposit or EFT to school/reunion bank account with deposit slip upload.</p>
+                        </div>
+                        <small class="text-muted mt-2">Requires admin payment verification</small>
+                    </div>
+                </div>
+
+                <!-- Cash Handover Toggle -->
+                <div class="col-md-6 col-lg-4">
+                    <div class="p-3 border rounded-3 bg-light h-100 d-flex flex-column justify-content-between">
+                        <div>
+                            <div class="d-flex justify-content-between align-items-center mb-2">
+                                <span class="badge bg-dark">In-Person Cash</span>
+                                <div class="form-check form-switch m-0">
+                                    <input type="hidden" name="settings[Payment_Enable_Cash]" value="0" />
+                                    <input class="form-check-input" type="checkbox" role="switch" id="toggleCash"
+                                           name="settings[Payment_Enable_Cash]" value="1" @(isCashEnabled ? "checked" : "") />
+                                </div>
+                            </div>
+                            <h6 class="fw-bold text-dark mb-1">Cash Handover</h6>
+                            <p class="small text-muted mb-0">Direct cash payment to designated batch representative or school committee.</p>
+                        </div>
+                        <small class="text-muted mt-2">Requires manual reconciliation</small>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Default Payment Method Selection -->
+            <div class="p-3 bg-white rounded-3 border">
+                <div class="row align-items-center">
+                    <div class="col-md-4">
+                        <label class="form-label fw-bold text-dark mb-0">
+                            <i class="fas fa-check-double text-success me-1"></i> Default Selected Payment Method
+                        </label>
+                        <small class="text-muted d-block">Preselected by default on registration page</small>
+                    </div>
+                    <div class="col-md-5">
+                        <select name="settings[Payment_Default_Method]" class="form-select">
+                            <option value="JanataPay" selected="@(defaultMethod == "JanataPay")">Janata Bank / JanataPay (Online Gateway)</option>
+                            <option value="bKashManual" selected="@(defaultMethod == "bKashManual")">bKash (Send Money - Manual)</option>
+                            <option value="NagadManual" selected="@(defaultMethod == "NagadManual")">Nagad (Send Money - Manual)</option>
+                            <option value="RocketManual" selected="@(defaultMethod == "RocketManual")">Rocket (Manual)</option>
+                            <option value="BankTransfer" selected="@(defaultMethod == "BankTransfer")">Direct Bank Transfer</option>
+                            <option value="Cash" selected="@(defaultMethod == "Cash")">Cash Handover</option>
+                        </select>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Section 2: JanataPay Gateway Settings & Live Credentials -->
+    <div class="card border-0 shadow-sm rounded-4 mb-4 overflow-hidden">
+        <div class="card-header bg-white border-bottom p-4 d-flex justify-content-between align-items-center flex-wrap gap-2">
+            <div>
+                <h5 class="fw-bold text-dark mb-1">
+                    <i class="fas fa-university text-success me-2"></i> Janata Bank / JanataPay Gateway Credentials
+                </h5>
+                <p class="text-muted small mb-0">Update API endpoints, Merchant credentials, RSA encryption key, and SOCKS5 egress proxy</p>
+            </div>
+            <span class="badge bg-success bg-opacity-10 text-success px-3 py-2 rounded-pill">
+                <i class="fas fa-shield-alt me-1"></i> AES-256-GCM + RSA-OAEP
+            </span>
+        </div>
+
+        <div class="card-body p-4">
+            <div class="mb-3">
+                <label class="form-label fw-semibold">JanataPay API Base URL <span class="text-danger">*</span></label>
+                <input type="url" name="settings[JanataPayBaseUrl]" class="form-control" 
+                       value="@sDict.GetValueOrDefault("JanataPayBaseUrl", "https://sandbox-pg.janatapay.com")" required />
+                <small class="text-muted">
+                    <strong>Sandbox:</strong> <code>https://sandbox-pg.janatapay.com</code> | 
+                    <strong>Live / Production:</strong> Switch to live URL provided by Janata Bank when transitioning to live environment.
+                </small>
+            </div>
+
+            <div class="row g-3 mb-3">
+                <div class="col-md-6">
+                    <label class="form-label fw-semibold">Merchant UID <span class="text-danger">*</span></label>
+                    <input type="text" name="settings[JanataPayMerchantUid]" class="form-control" 
+                           value="@sDict.GetValueOrDefault("JanataPayMerchantUid")" required />
+                    <small class="text-muted">Assigned merchant UID (e.g. <code>6521171673</code>)</small>
+                </div>
+                <div class="col-md-6">
+                    <label class="form-label fw-semibold">API Username <span class="text-danger">*</span></label>
+                    <input type="text" name="settings[JanataPayUsername]" class="form-control" 
+                           value="@sDict.GetValueOrDefault("JanataPayUsername")" required />
+                    <small class="text-muted">Assigned gateway username (e.g. <code>j8Dx4778daD160</code>)</small>
+                </div>
+            </div>
+
+            <div class="mb-3">
+                <label class="form-label fw-semibold">API Password <span class="text-danger">*</span></label>
+                <div class="input-group">
+                    <input type="password" name="settings[JanataPayPassword]" id="janataPayPasswordInput" class="form-control" 
+                           value="@sDict.GetValueOrDefault("JanataPayPassword")" required />
+                    <button type="button" class="btn btn-outline-secondary" onclick="togglePasswordVisibility('janataPayPasswordInput', this)">
+                        <i class="fas fa-eye"></i>
+                    </button>
+                </div>
+                <small class="text-muted">Gateway secret account password.</small>
+            </div>
+
+            <div class="mb-3">
+                <label class="form-label fw-semibold">Gateway RSA 2048-bit Public Key (Base64) <span class="text-danger">*</span></label>
+                <textarea name="settings[JanataPayPublicKey]" class="form-control font-monospace small" rows="4" required>@sDict.GetValueOrDefault("JanataPayPublicKey")</textarea>
+                <small class="text-muted">
+                    Paste the 2048-bit RSA SPKI public key provided by Janata Bank.
+                </small>
+            </div>
+
+            <h6 class="fw-bold text-dark mt-4 mb-2 border-top pt-3"><i class="fas fa-network-wired text-primary me-2"></i> Network Egress &amp; Tunneling</h6>
+            <div class="row g-3 mb-3">
+                <div class="col-md-4">
+                    <label class="form-label fw-semibold">Egress Routing Mode</label>
+                    <select name="settings[JanataPayUseProxy]" class="form-select">
+                        <option value="1" selected="@(sDict.GetValueOrDefault("JanataPayUseProxy", "1") == "1")">Route via BD SOCKS5 Tunnel (Recommended for Foreign Server)</option>
+                        <option value="0" selected="@(sDict.GetValueOrDefault("JanataPayUseProxy") == "0")">Direct Egress (Server IP)</option>
+                    </select>
+                    <small class="text-muted">JanataPay blocks non-Bangladesh IP addresses.</small>
+                </div>
+                <div class="col-md-8">
+                    <label class="form-label fw-semibold">SOCKS5 Proxy Endpoint</label>
+                    <input type="text" name="settings[JanataPaySocks5Proxy]" class="form-control" 
+                           value="@sDict.GetValueOrDefault("JanataPaySocks5Proxy", "socks5://127.0.0.1:1080")" />
+                    <small class="text-muted">Local port connected to Bangladesh connector tunnel.</small>
+                </div>
+            </div>
+
+            <div class="mb-3">
+                <label class="form-label fw-semibold">Callback Base URL</label>
+                <input type="url" name="settings[JanataPayCallbackBaseUrl]" class="form-control" 
+                       value="@sDict.GetValueOrDefault("JanataPayCallbackBaseUrl", "https://alumni.snhghs.edu.bd")" required />
+                <small class="text-muted">Base domain URL where JanataPay will redirect payer after checkout.</small>
+            </div>
+        </div>
+    </div>
+
+    <!-- Section 3: Manual Mobile Banking & Bank Accounts -->
+    <div class="card border-0 shadow-sm rounded-4 mb-4 overflow-hidden">
+        <div class="card-header bg-white border-bottom p-4">
+            <h5 class="fw-bold text-dark mb-1">
+                <i class="fas fa-mobile-alt text-danger me-2"></i> Manual Mobile Banking &amp; Bank Accounts
+            </h5>
+            <p class="text-muted small mb-0">Shown to alumni when they choose manual payment options on the registration form.</p>
+        </div>
+
+        <div class="card-body p-4">
+            <div class="row g-3 mb-3">
+                <div class="col-md-4">
+                    <label class="form-label fw-semibold">bKash Account Number</label>
+                    <input type="text" name="settings[ManualBkashNumber]" class="form-control" 
+                           value="@sDict.GetValueOrDefault("ManualBkashNumber", "01700000000 (Personal/Merchant)")" />
+                </div>
+                <div class="col-md-4">
+                    <label class="form-label fw-semibold">Nagad Account Number</label>
+                    <input type="text" name="settings[ManualNagadNumber]" class="form-control" 
+                           value="@sDict.GetValueOrDefault("ManualNagadNumber", "01800000000 (Personal/Merchant)")" />
+                </div>
+                <div class="col-md-4">
+                    <label class="form-label fw-semibold">Rocket Account Number</label>
+                    <input type="text" name="settings[ManualRocketNumber]" class="form-control" 
+                           value="@sDict.GetValueOrDefault("ManualRocketNumber", "01900000000-8")" />
+                </div>
+            </div>
+
+            <div class="mb-3">
+                <label class="form-label fw-semibold">Bank Account Details (For Bank Transfer)</label>
+                <textarea name="settings[PaymentBankDetails]" class="form-control" rows="2">@sDict.GetValueOrDefault("PaymentBankDetails", "Islami Bank Bangladesh Ltd, Rajshahi Branch, A/C: 2050123456789012, Routing: 12581000")</textarea>
+                <small class="text-muted">Include Bank Name, Branch, Account Name, Account Number, and Routing Number.</small>
+            </div>
+        </div>
+    </div>
+
+    <!-- Save Button Floating Footer -->
+    <div class="d-flex justify-content-between align-items-center p-3 bg-white rounded-4 border shadow-sm mb-4">
+        <div>
+            <span class="text-muted small">Changes take effect immediately across public registration forms.</span>
+        </div>
+        <button type="submit" class="btn btn-success btn-lg rounded-pill px-5 fw-bold shadow">
+            <i class="fas fa-save me-2"></i> Save All Payment Settings
+        </button>
+    </div>
+</form>
+
+<!-- Test Connection Card -->
+<div class="card border-0 shadow-sm rounded-4 p-4 mb-4">
+    <div class="d-flex justify-content-between align-items-center flex-wrap gap-3">
+        <div>
+            <h5 class="fw-bold text-dark mb-1"><i class="fas fa-vial text-warning me-2"></i> Test Gateway Handshake</h5>
+            <p class="small text-muted mb-0">Perform a live authentication handshake with JanataPay API (<code>/jbagg/api/auth</code>) using saved settings.</p>
+        </div>
+        <form asp-controller="PaymentSettings" asp-action="TestJanataPayHandshake" method="post" class="m-0">
+            @Html.AntiForgeryToken()
+            <button type="submit" class="btn btn-outline-success rounded-pill px-4 fw-bold">
+                <i class="fas fa-network-wired me-1"></i> Test JanataPay Handshake Now
+            </button>
+        </form>
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        function togglePasswordVisibility(inputId, btn) {
+            const input = document.getElementById(inputId);
+            const icon = btn.querySelector('i');
+            if (input.type === 'password') {
+                input.type = 'text';
+                icon.classList.remove('fa-eye');
+                icon.classList.add('fa-eye-slash');
+            } else {
+                input.type = 'password';
+                icon.classList.remove('fa-eye-slash');
+                icon.classList.add('fa-eye');
+            }
+        }
+    </script>
+}

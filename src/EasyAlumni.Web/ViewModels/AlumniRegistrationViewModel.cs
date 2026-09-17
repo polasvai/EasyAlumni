@@ -12,6 +12,8 @@ namespace EasyAlumni.Web.ViewModels
         public ReunionEvent? ReunionEvent { get; set; }
 
         public Dictionary<string, string> PaymentSettings { get; set; } = new();
+        public List<PaymentMode> EnabledPaymentModes { get; set; } = new();
+        public string DefaultPaymentMode { get; set; } = "JanataPay";
 
         // Package Selection
         [Display(Name = "Selected Registration Package")]

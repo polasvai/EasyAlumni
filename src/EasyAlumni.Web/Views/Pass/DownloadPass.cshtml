@@ -1,0 +1,80 @@
+@{
+    ViewData["Title"] = "Download Digital Pass / ID Card";
+    Layout = "_Layout";
+}
+
+<div class="py-5" style="background: linear-gradient(135deg, #0f172a 0%, #004d38 100%) !important; padding-top: 130px !important;">
+    <div class="container text-center text-white">
+        <div class="d-inline-block bg-warning text-dark p-3 rounded-circle mb-3 shadow">
+            <i class="fas fa-id-card-alt fa-3x"></i>
+        </div>
+        <h1 class="fw-bold">Download Reunion ID Card / Digital Pass</h1>
+        <p class="lead opacity-90">পুনর্মিলনী ডিজিটাল এন্ট্রি পাস ও আইডি কার্ড ডাউনলোড করুন</p>
+    </div>
+</div>
+
+<div class="container py-5">
+    <div class="row justify-content-center">
+        <div class="col-lg-6 col-md-8">
+            <div class="card border-0 shadow-lg rounded-4 p-4 p-md-5">
+                <h4 class="fw-bold text-dark text-center mb-2">
+                    <i class="fas fa-search text-success me-2"></i> Find Your Digital Pass
+                </h4>
+                <p class="text-muted text-center small mb-4">
+                    Enter the mobile number you used during registration along with your Transaction ID (TrxID) or Ticket Registration Number.
+                </p>
+
+                @if (TempData["PassLookupError"] != null)
+                {
+                    <div class="alert alert-danger rounded-3 shadow-sm alert-dismissible fade show" role="alert">
+                        <i class="fas fa-exclamation-circle me-2"></i> @TempData["PassLookupError"]
+                        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                    </div>
+                }
+
+                @if (TempData["PassLookupWarning"] != null)
+                {
+                    <div class="alert alert-warning rounded-3 shadow-sm alert-dismissible fade show text-dark" role="alert">
+                        <i class="fas fa-clock me-2 text-warning"></i> @TempData["PassLookupWarning"]
+                        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                    </div>
+                }
+
+                <form asp-controller="Pass" asp-action="FindPass" method="post">
+                    @Html.AntiForgeryToken()
+
+                    <div class="mb-3">
+                        <label class="form-label fw-bold text-dark">
+                            Registered Mobile Number <span class="text-danger">*</span>
+                        </label>
+                        <div class="input-group input-group-lg">
+                            <span class="input-group-text bg-light"><i class="fas fa-phone text-success"></i></span>
+                            <input type="tel" name="phoneNumber" class="form-control" placeholder="01XXXXXXXXX" required />
+                        </div>
+                        <small class="text-muted">The 11-digit mobile number provided during alumni enrollment.</small>
+                    </div>
+
+                    <div class="mb-4">
+                        <label class="form-label fw-bold text-dark">
+                            Transaction ID (TrxID) or Ticket No (Optional)
+                        </label>
+                        <div class="input-group input-group-lg">
+                            <span class="input-group-text bg-light"><i class="fas fa-receipt text-primary"></i></span>
+                            <input type="text" name="identifier" class="form-control text-uppercase" placeholder="e.g. 9J82KL091 or REG-2026-..." />
+                        </div>
+                        <small class="text-muted">Enter bKash/Nagad TrxID, Janata Bank FT Number, or Ticket Registration No.</small>
+                    </div>
+
+                    <div class="d-grid gap-2">
+                        <button type="submit" class="btn btn-success btn-lg rounded-pill fw-bold shadow py-3">
+                            <i class="fas fa-id-badge me-2"></i> Find &amp; View Digital Pass
+                        </button>
+                        <a href="/" class="btn btn-outline-secondary rounded-pill py-2 mt-2">
+                            <i class="fas fa-home me-1"></i> Back to Homepage
+                        </a>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
