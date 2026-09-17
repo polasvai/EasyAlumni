@@ -76,6 +76,40 @@ using (var scope = app.Services.CreateScope())
         // Apply migrations automatically if any pending
         context.Database.Migrate();
 
+        if (args.Contains("--reset-registrations"))
+        {
+            var logger = services.GetRequiredService<ILogger<Program>>();
+            logger.LogWarning("Resetting all registration, payment, guest, question, and alumni profile data...");
+
+            // Delete in foreign-key dependency order
+            context.RegistrationQuestionResponses.RemoveRange(context.RegistrationQuestionResponses);
+            context.RegistrationGiftChoices.RemoveRange(context.RegistrationGiftChoices);
+            context.RegistrationGuests.RemoveRange(context.RegistrationGuests);
+            context.GiftDistributions.RemoveRange(context.GiftDistributions);
+            context.RegistrationPayments.RemoveRange(context.RegistrationPayments);
+            context.EventRegistrations.RemoveRange(context.EventRegistrations);
+            context.AlumniProfiles.RemoveRange(context.AlumniProfiles);
+
+            // Reset gift item allocated quantities
+            var giftItems = context.GiftItems.ToList();
+            foreach (var g in giftItems)
+            {
+                g.AllocatedQuantity = 0;
+                g.DistributedQuantity = 0;
+            }
+
+            var sizeStocks = context.GiftItemSizeStocks.ToList();
+            foreach (var s in sizeStocks)
+            {
+                s.AllocatedStock = 0;
+                s.DistributedStock = 0;
+            }
+
+            context.SaveChanges();
+            Console.WriteLine("All registration and alumni profile data cleared successfully.");
+            return;
+        }
+
         // Seed data
         DbInitializer.SeedAsync(context, userManager, roleManager).GetAwaiter().GetResult();
     }

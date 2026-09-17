@@ -13,10 +13,41 @@
         <h2 class="h4 fw-bold text-dark mb-1">Registered Alumni Directory</h2>
         <p class="text-muted small mb-0">Complete list of registered attendees, guest headcounts, and pass records</p>
     </div>
-    <div>
+    <div class="d-flex gap-2">
+        <button type="button" class="btn btn-outline-danger rounded-pill px-3" data-bs-toggle="modal" data-bs-target="#clearAllModal">
+            <i class="fas fa-trash-alt me-1"></i> Clear All Registrations
+        </button>
         <a asp-controller="Admin" asp-action="Index" class="btn btn-outline-secondary rounded-pill px-3">
             Dashboard
         </a>
+    </div>
+</div>
+
+<!-- Clear All Modal -->
+<div class="modal fade" id="clearAllModal" tabindex="-1">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content rounded-4 border-0 shadow">
+            <div class="modal-header border-0 pb-0">
+                <h5 class="modal-title fw-bold text-danger"><i class="fas fa-exclamation-triangle me-2"></i> Confirm Reset Registrations</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body text-center py-4">
+                <div class="p-3 bg-danger bg-opacity-10 text-danger rounded-circle d-inline-block mb-3">
+                    <i class="fas fa-trash-alt fa-2x"></i>
+                </div>
+                <h6 class="fw-bold text-dark mb-2">Delete ALL Registered Alumni Data?</h6>
+                <p class="text-muted small mb-0">This will permanently erase all alumni profiles, registrations, payments, guests, and allocated gift item counts so you can test registration from scratch.</p>
+            </div>
+            <div class="modal-footer border-0 pt-0 justify-content-center">
+                <button type="button" class="btn btn-light rounded-pill px-4" data-bs-dismiss="modal">Cancel</button>
+                <form asp-controller="Admin" asp-action="ClearAllRegistrations" method="post" class="m-0">
+                    @Html.AntiForgeryToken()
+                    <button type="submit" class="btn btn-danger rounded-pill px-4 fw-bold">
+                        Yes, Delete All Data
+                    </button>
+                </form>
+            </div>
+        </div>
     </div>
 </div>
     <!-- Filter Card -->

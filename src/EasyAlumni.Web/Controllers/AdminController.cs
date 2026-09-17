@@ -17,19 +17,22 @@ namespace EasyAlumni.Web.Controllers
         private readonly IQrCodeService _qrCodeService;
         private readonly UserManager<ApplicationUser> _userManager;
         private readonly IJanataPayService _janataPayService;
+        private readonly ILogger<AdminController> _logger;
 
         public AdminController(
             ApplicationDbContext context,
             ISmsService smsService,
             IQrCodeService qrCodeService,
             UserManager<ApplicationUser> userManager,
-            IJanataPayService janataPayService)
+            IJanataPayService janataPayService,
+            ILogger<AdminController> logger)
         {
             _context = context;
             _smsService = smsService;
             _qrCodeService = qrCodeService;
             _userManager = userManager;
             _janataPayService = janataPayService;
+            _logger = logger;
         }
 
         public async Task<IActionResult> Index()
@@ -366,6 +369,49 @@ namespace EasyAlumni.Web.Controllers
             }
 
             return RedirectToAction(nameof(PaymentQueue));
+        }
+
+        [HttpPost]
+        [Authorize(Roles = "SuperAdmin,Admin")]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> ClearAllRegistrations()
+        {
+            try
+            {
+                // Delete in cascade / foreign-key order
+                _context.RegistrationQuestionResponses.RemoveRange(_context.RegistrationQuestionResponses);
+                _context.RegistrationGiftChoices.RemoveRange(_context.RegistrationGiftChoices);
+                _context.RegistrationGuests.RemoveRange(_context.RegistrationGuests);
+                _context.GiftDistributions.RemoveRange(_context.GiftDistributions);
+                _context.CashEntries.RemoveRange(_context.CashEntries.Where(c => c.RelatedRegistrationId != null));
+                _context.RegistrationPayments.RemoveRange(_context.RegistrationPayments);
+                _context.EventRegistrations.RemoveRange(_context.EventRegistrations);
+                _context.AlumniProfiles.RemoveRange(_context.AlumniProfiles);
+
+                var giftItems = await _context.GiftItems.ToListAsync();
+                foreach (var g in giftItems)
+                {
+                    g.AllocatedQuantity = 0;
+                    g.DistributedQuantity = 0;
+                }
+
+                var sizeStocks = await _context.GiftItemSizeStocks.ToListAsync();
+                foreach (var s in sizeStocks)
+                {
+                    s.AllocatedStock = 0;
+                    s.DistributedStock = 0;
+                }
+
+                await _context.SaveChangesAsync();
+                TempData["Success"] = "All registration and attendee data have been successfully deleted.";
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Failed to clear registration data.");
+                TempData["Error"] = $"Failed to clear registrations: {ex.Message}";
+            }
+
+            return RedirectToAction(nameof(Index));
         }
     }
 }
