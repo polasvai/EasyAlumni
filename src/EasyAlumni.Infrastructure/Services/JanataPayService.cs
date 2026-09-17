@@ -311,6 +311,8 @@ namespace EasyAlumni.Infrastructure.Services
                         };
                     }
 
+                    _logger.LogInformation("JanataPay Verify raw response: StatusCode={StatusCode}, Body={Body}", response.StatusCode, responseBody);
+
                     var root = JsonNode.Parse(responseBody);
                     var code = root?["statusCode"]?.GetValue<int>() ?? 0;
                     var encData = root?["data"]?.GetValue<string>();
@@ -318,17 +320,21 @@ namespace EasyAlumni.Infrastructure.Services
                     if (code == 200 && !string.IsNullOrEmpty(encData))
                     {
                         var decryptedJson = DecryptPayload(encData);
+                        _logger.LogInformation("JanataPay Verify decrypted response for {RefId}: {Json}", referenceId, decryptedJson);
                         var dataObj = JsonNode.Parse(decryptedJson);
 
-                        var trxStatus = dataObj?["transactionStatus"]?.GetValue<string>();
-                        var trxStatusCode = dataObj?["transactionStatusCode"]?.GetValue<string>();
-                        var ftNumber = dataObj?["ftNumber"]?.GetValue<string>();
-                        var refId = dataObj?["referenceId"]?.GetValue<string>() ?? referenceId;
-                        var amountStr = dataObj?["amount"]?.ToString();
+                        // If response wraps data under a nested 'data' node: { "statusCode": 200, "data": { ... } }
+                        var payloadObj = dataObj?["data"] ?? dataObj;
+
+                        var trxStatus = payloadObj?["transactionStatus"]?.GetValue<string>();
+                        var trxStatusCode = payloadObj?["transactionStatusCode"]?.GetValue<string>();
+                        var ftNumber = payloadObj?["ftNumber"]?.GetValue<string>();
+                        var refId = payloadObj?["referenceId"]?.GetValue<string>() ?? referenceId;
+                        var amountStr = payloadObj?["amount"]?.ToString();
                         decimal.TryParse(amountStr, out var amt);
-                        var currency = dataObj?["currency"]?.GetValue<string>();
-                        var paymentMethod = dataObj?["paymentMethod"]?.GetValue<string>();
-                        var dateStr = dataObj?["transactionDate"]?.GetValue<string>();
+                        var currency = payloadObj?["currency"]?.GetValue<string>();
+                        var paymentMethod = payloadObj?["paymentGateway"]?.GetValue<string>() ?? payloadObj?["paymentMethod"]?.GetValue<string>();
+                        var dateStr = payloadObj?["transactionDate"]?.GetValue<string>();
 
                         // 1003 is JanataPay Success status code
                         bool isApproved = (trxStatusCode == "1003");

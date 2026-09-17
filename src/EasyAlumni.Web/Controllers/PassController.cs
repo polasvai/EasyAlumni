@@ -29,6 +29,13 @@ namespace EasyAlumni.Web.Controllers
             var reg = await _context.EventRegistrations
                 .Include(r => r.AlumniProfile)
                 .Include(r => r.ReunionEvent)
+                .Include(r => r.RegistrationPackage!)
+                    .ThenInclude(p => p.PackageGiftItems)
+                        .ThenInclude(pg => pg.GiftItem)
+                .Include(r => r.GiftChoices)
+                    .ThenInclude(gc => gc.GiftItem)
+                .Include(r => r.Guests)
+                    .ThenInclude(g => g.GuestCategory)
                 .Include(r => r.Payments)
                 .FirstOrDefaultAsync(r => r.RegistrationNo == id.Trim() || (regId.HasValue && r.Id == regId.Value));
 
