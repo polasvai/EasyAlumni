@@ -374,15 +374,21 @@ namespace EasyAlumni.Infrastructure.Services
 
         private async Task<(string? Token, int ExpiresIn)> AuthenticateGatewayAsync(JanataPayOptions options, HttpClient httpClient)
         {
+            var aesKey = new byte[32];
+            System.Security.Cryptography.RandomNumberGenerator.Fill(aesKey);
+            var aesKeyBase64 = Convert.ToBase64String(aesKey);
+
             var authPayload = new
             {
-                username = options.Username,
-                password = options.Password,
-                merchantUid = options.MerchantUid
+                merchantUid = options.MerchantUid,
+                merchantUsername = options.Username,
+                merchantPassword = options.Password,
+                aesKey = aesKeyBase64
             };
 
             var payloadJson = JsonSerializer.Serialize(authPayload);
-            var (aesKey, encryptedData) = EncryptPayloadWithNewKey(payloadJson);
+            var encryptedData = EncryptWithAesGcm(payloadJson, aesKey);
+            _sessionAesKey = aesKey; // update active session key
             var rsaEncryptedKey = EncryptAesKeyWithRsa(aesKey, options.PublicKey);
 
             var merchantUidBase64 = Convert.ToBase64String(Encoding.UTF8.GetBytes(options.MerchantUid));
