@@ -121,6 +121,7 @@ namespace EasyAlumni.Infrastructure.Services
                     var tokenizePayload = new
                     {
                         merchantUid = options.MerchantUid,
+                        accessToken = token,
                         referenceId = referenceId,
                         amount = amount.ToString("F2"),
                         currency = "BDT",
@@ -138,6 +139,7 @@ namespace EasyAlumni.Infrastructure.Services
 
                     var requestObj = new
                     {
+                        merchantUid = options.MerchantUid,
                         data = encryptedData,
                         accessToken = token
                     };
@@ -252,6 +254,7 @@ namespace EasyAlumni.Infrastructure.Services
                     var verifyPayload = new
                     {
                         merchantUid = options.MerchantUid,
+                        accessToken = token,
                         referenceId = referenceId,
                         transactionToken = transactionToken
                     };
@@ -261,6 +264,7 @@ namespace EasyAlumni.Infrastructure.Services
 
                     var requestObj = new
                     {
+                        merchantUid = options.MerchantUid,
                         data = encryptedData,
                         accessToken = token
                     };
