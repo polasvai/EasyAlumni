@@ -33,34 +33,70 @@ namespace EasyAlumni.Web.Controllers
 
         [HttpPost]
         [ValidateAntiForgeryToken]
-        public async Task<IActionResult> UpdatePaymentSettings(Dictionary<string, string> settings)
+        public async Task<IActionResult> UpdatePaymentSettings()
         {
-            if (settings != null)
-            {
-                foreach (var s in settings)
-                {
-                    var existing = await _context.SystemSettings.FirstOrDefaultAsync(x => x.SettingKey == s.Key);
-                    if (existing != null)
-                    {
-                        existing.SettingValue = s.Value ?? "";
-                        existing.UpdatedAt = DateTime.UtcNow;
-                    }
-                    else
-                    {
-                        _context.SystemSettings.Add(new SystemSetting
-                        {
-                            SettingKey = s.Key,
-                            SettingValue = s.Value ?? "",
-                            Description = "Payment Configuration",
-                            IsSecret = s.Key.Contains("Password") || s.Key.Contains("Key") || s.Key.Contains("Token"),
-                            UpdatedAt = DateTime.UtcNow
-                        });
-                    }
-                }
+            // Extract settings prefix settings[...] directly from Request.Form
+            var form = Request.Form;
+            var settingsDict = new Dictionary<string, string>();
 
-                await _context.SaveChangesAsync();
-                TempData["Success"] = "Payment settings and method toggles updated successfully.";
+            foreach (var key in form.Keys)
+            {
+                if (key.StartsWith("settings[") && key.EndsWith("]"))
+                {
+                    var settingKey = key.Substring(9, key.Length - 10);
+                    var values = form[key];
+                    // If multiple values exist (e.g. hidden "0" and checkbox "1"), the checked value "1" is the last element
+                    var effectiveValue = values.Count > 1 ? values[values.Count - 1] : values.ToString();
+                    settingsDict[settingKey] = effectiveValue ?? "";
+                }
             }
+
+            // Explicitly handle standard payment toggles to guarantee state even if unchecked
+            var toggleKeys = new[]
+            {
+                "Payment_Enable_JanataPay",
+                "Payment_Enable_bKashManual",
+                "Payment_Enable_NagadManual",
+                "Payment_Enable_RocketManual",
+                "Payment_Enable_BankTransfer",
+                "Payment_Enable_Cash"
+            };
+
+            foreach (var tKey in toggleKeys)
+            {
+                var formKey = $"settings[{tKey}]";
+                if (form.ContainsKey(formKey))
+                {
+                    var values = form[formKey];
+                    // Check if '1' is present anywhere in submitted values for this toggle
+                    bool isChecked = values.Any(v => v == "1");
+                    settingsDict[tKey] = isChecked ? "1" : "0";
+                }
+            }
+
+            foreach (var kvp in settingsDict)
+            {
+                var existing = await _context.SystemSettings.FirstOrDefaultAsync(x => x.SettingKey == kvp.Key);
+                if (existing != null)
+                {
+                    existing.SettingValue = kvp.Value;
+                    existing.UpdatedAt = DateTime.UtcNow;
+                }
+                else
+                {
+                    _context.SystemSettings.Add(new SystemSetting
+                    {
+                        SettingKey = kvp.Key,
+                        SettingValue = kvp.Value,
+                        Description = "Payment Configuration",
+                        IsSecret = kvp.Key.Contains("Password") || kvp.Key.Contains("Key") || kvp.Key.Contains("Token"),
+                        UpdatedAt = DateTime.UtcNow
+                    });
+                }
+            }
+
+            await _context.SaveChangesAsync();
+            TempData["Success"] = "Payment settings and method toggles updated successfully.";
 
             return RedirectToAction(nameof(Index));
         }
