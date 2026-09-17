@@ -90,116 +90,144 @@ namespace EasyAlumni.Infrastructure.Services
             var options = await GetEffectiveOptionsAsync();
             using var httpClient = CreateHttpClient(options);
 
-            try
+            for (int attempt = 0; attempt < 2; attempt++)
             {
-                var token = await GetAccessTokenAsync(options, httpClient);
-                if (string.IsNullOrEmpty(token))
+                try
                 {
+                    var token = await GetAccessTokenAsync(options, httpClient, forceRefresh: attempt > 0);
+                    if (string.IsNullOrEmpty(token))
+                    {
+                        return new JanataPayTokenizeResult
+                        {
+                            Success = false,
+                            ErrorMessage = "Failed to obtain gateway authorization token."
+                        };
+                    }
+
+                    // Reference ID format: EA-REGNO-TIMESTAMP (Must be <= 25 chars)
+                    var cleanReg = registrationNo.Replace("-", "");
+                    var ts = DateTimeOffset.UtcNow.ToUnixTimeSeconds() % 1000000;
+                    var referenceId = $"EA{cleanReg}{ts}";
+                    if (referenceId.Length > 25)
+                    {
+                        referenceId = referenceId[..25];
+                    }
+
+                    var callbackBase = (options.CallbackBaseUrl ?? "https://alumni.snhghs.edu.bd").TrimEnd('/');
+                    var successUrl = $"{callbackBase}/Payment/JanataPaySuccess?refid={referenceId}";
+                    var failUrl = $"{callbackBase}/Payment/JanataPayFail?refid={referenceId}";
+                    var cancelUrl = $"{callbackBase}/Payment/JanataPayCancel?refid={referenceId}";
+
+                    var tokenizePayload = new
+                    {
+                        merchantUid = options.MerchantUid,
+                        referenceId = referenceId,
+                        amount = amount.ToString("F2"),
+                        currency = "BDT",
+                        customerName = string.IsNullOrWhiteSpace(customerName) ? "Alumni Attendee" : customerName.Trim(),
+                        customerPhone = string.IsNullOrWhiteSpace(customerPhone) ? "01700000000" : customerPhone.Trim(),
+                        customerEmail = string.IsNullOrWhiteSpace(customerEmail) ? "info@alumni.snhghs.edu.bd" : customerEmail.Trim(),
+                        description = $"Alumni Reunion Registration Fee {registrationNo}",
+                        successUrl = successUrl,
+                        failUrl = failUrl,
+                        cancelUrl = cancelUrl
+                    };
+
+                    var payloadJson = JsonSerializer.Serialize(tokenizePayload);
+                    var encryptedData = EncryptPayload(payloadJson);
+
+                    var requestObj = new
+                    {
+                        data = encryptedData,
+                        accessToken = token
+                    };
+
+                    var requestJson = JsonSerializer.Serialize(requestObj);
+                    using var requestContent = new StringContent(requestJson, Encoding.UTF8, "application/json");
+
+                    using var requestMessage = new HttpRequestMessage(HttpMethod.Post, "jbagg/api/transaction/tokenize")
+                    {
+                        Content = requestContent
+                    };
+                    requestMessage.Headers.Add("Authorization", $"Bearer {token}");
+
+                    var response = await httpClient.SendAsync(requestMessage);
+                    var responseBody = await response.Content.ReadAsStringAsync();
+
+                    if (!response.IsSuccessStatusCode)
+                    {
+                        _logger.LogError("JanataPay Tokenize HTTP Error: {StatusCode}, Body: {Body}", response.StatusCode, responseBody);
+
+                        // If token expired or unauthorized, clear cache and retry once
+                        if (attempt == 0 && (response.StatusCode == HttpStatusCode.Unauthorized || responseBody.Contains("JWT expired") || responseBody.Contains("expired")))
+                        {
+                            _logger.LogWarning("JanataPay token expired during tokenize. Invalidating cache and retrying with fresh token...");
+                            InvalidateToken();
+                            continue;
+                        }
+
+                        return new JanataPayTokenizeResult
+                        {
+                            Success = false,
+                            StatusCode = (int)response.StatusCode,
+                            ErrorMessage = $"Payment gateway returned error HTTP {(int)response.StatusCode}: {responseBody}"
+                        };
+                    }
+
+                    var root = JsonNode.Parse(responseBody);
+                    var code = root?["statusCode"]?.GetValue<int>() ?? 0;
+                    var encData = root?["data"]?.GetValue<string>();
+
+                    if (code == 200 && !string.IsNullOrEmpty(encData))
+                    {
+                        var decryptedJson = DecryptPayload(encData);
+                        var dataObj = JsonNode.Parse(decryptedJson);
+
+                        var trxToken = dataObj?["transactionToken"]?.GetValue<string>();
+                        var checkoutUrl = dataObj?["url"]?.GetValue<string>();
+
+                        return new JanataPayTokenizeResult
+                        {
+                            Success = true,
+                            StatusCode = code,
+                            ReferenceId = referenceId,
+                            TransactionToken = trxToken,
+                            CheckoutUrl = checkoutUrl
+                        };
+                    }
+
+                    // Check for JWT expired inside 200/500 JSON payload
+                    var statusMsg = root?["statusMessage"]?.GetValue<string>() ?? root?["message"]?.GetValue<string>() ?? "";
+                    if (attempt == 0 && (statusMsg.Contains("JWT expired") || statusMsg.Contains("expired")))
+                    {
+                        _logger.LogWarning("JanataPay returned token expired inside payload: {StatusMsg}. Retrying...", statusMsg);
+                        InvalidateToken();
+                        continue;
+                    }
+
                     return new JanataPayTokenizeResult
                     {
                         Success = false,
-                        ErrorMessage = "Failed to obtain gateway authorization token."
-                    };
-                }
-
-                // Reference ID format: EA-REGNO-TIMESTAMP (Must be <= 25 chars)
-                var cleanReg = registrationNo.Replace("-", "");
-                var ts = DateTimeOffset.UtcNow.ToUnixTimeSeconds() % 1000000;
-                var referenceId = $"EA{cleanReg}{ts}";
-                if (referenceId.Length > 25)
-                {
-                    referenceId = referenceId[..25];
-                }
-
-                var callbackBase = (options.CallbackBaseUrl ?? "https://alumni.snhghs.edu.bd").TrimEnd('/');
-                var successUrl = $"{callbackBase}/Payment/JanataPaySuccess?refid={referenceId}";
-                var failUrl = $"{callbackBase}/Payment/JanataPayFail?refid={referenceId}";
-                var cancelUrl = $"{callbackBase}/Payment/JanataPayCancel?refid={referenceId}";
-
-                var tokenizePayload = new
-                {
-                    referenceId = referenceId,
-                    amount = amount.ToString("F2"),
-                    currency = "BDT",
-                    customerName = string.IsNullOrWhiteSpace(customerName) ? "Alumni Attendee" : customerName.Trim(),
-                    customerPhone = string.IsNullOrWhiteSpace(customerPhone) ? "01700000000" : customerPhone.Trim(),
-                    customerEmail = string.IsNullOrWhiteSpace(customerEmail) ? "info@alumni.snhghs.edu.bd" : customerEmail.Trim(),
-                    description = $"Alumni Reunion Registration Fee {registrationNo}",
-                    successUrl = successUrl,
-                    failUrl = failUrl,
-                    cancelUrl = cancelUrl
-                };
-
-                var payloadJson = JsonSerializer.Serialize(tokenizePayload);
-                var encryptedData = EncryptPayload(payloadJson);
-
-                var requestObj = new
-                {
-                    data = encryptedData,
-                    accessToken = token
-                };
-
-                var requestJson = JsonSerializer.Serialize(requestObj);
-                using var requestContent = new StringContent(requestJson, Encoding.UTF8, "application/json");
-
-                using var requestMessage = new HttpRequestMessage(HttpMethod.Post, "jbagg/api/transaction/tokenize")
-                {
-                    Content = requestContent
-                };
-                requestMessage.Headers.Add("Authorization", $"Bearer {token}");
-
-                var response = await httpClient.SendAsync(requestMessage);
-                var responseBody = await response.Content.ReadAsStringAsync();
-
-                if (!response.IsSuccessStatusCode)
-                {
-                    _logger.LogError("JanataPay Tokenize HTTP Error: {StatusCode}, Body: {Body}", response.StatusCode, responseBody);
-                    return new JanataPayTokenizeResult
-                    {
-                        Success = false,
-                        StatusCode = (int)response.StatusCode,
-                        ErrorMessage = $"Payment gateway returned error HTTP {(int)response.StatusCode}: {responseBody}"
-                    };
-                }
-
-                var root = JsonNode.Parse(responseBody);
-                var code = root?["statusCode"]?.GetValue<int>() ?? 0;
-                var encData = root?["data"]?.GetValue<string>();
-
-                if (code == 200 && !string.IsNullOrEmpty(encData))
-                {
-                    var decryptedJson = DecryptPayload(encData);
-                    var dataObj = JsonNode.Parse(decryptedJson);
-
-                    var trxToken = dataObj?["transactionToken"]?.GetValue<string>();
-                    var checkoutUrl = dataObj?["url"]?.GetValue<string>();
-
-                    return new JanataPayTokenizeResult
-                    {
-                        Success = true,
                         StatusCode = code,
-                        ReferenceId = referenceId,
-                        TransactionToken = trxToken,
-                        CheckoutUrl = checkoutUrl
+                        ErrorMessage = !string.IsNullOrWhiteSpace(statusMsg) ? statusMsg : "Failed to initialize payment session."
                     };
                 }
+                catch (Exception ex)
+                {
+                    _logger.LogError(ex, "Exception during JanataPay InitiatePaymentAsync for {RegNo}", registrationNo);
+                    return new JanataPayTokenizeResult
+                    {
+                        Success = false,
+                        ErrorMessage = ex.Message
+                    };
+                }
+            }
 
-                return new JanataPayTokenizeResult
-                {
-                    Success = false,
-                    StatusCode = code,
-                    ErrorMessage = root?["message"]?.GetValue<string>() ?? "Failed to initialize payment session."
-                };
-            }
-            catch (Exception ex)
+            return new JanataPayTokenizeResult
             {
-                _logger.LogError(ex, "Exception during JanataPay InitiatePaymentAsync for {RegNo}", registrationNo);
-                return new JanataPayTokenizeResult
-                {
-                    Success = false,
-                    ErrorMessage = ex.Message
-                };
-            }
+                Success = false,
+                ErrorMessage = "Payment initialization failed after retry."
+            };
         }
 
         public async Task<JanataPayVerifyResult> VerifyPaymentAsync(string referenceId, string transactionToken)
@@ -207,110 +235,136 @@ namespace EasyAlumni.Infrastructure.Services
             var options = await GetEffectiveOptionsAsync();
             using var httpClient = CreateHttpClient(options);
 
-            try
+            for (int attempt = 0; attempt < 2; attempt++)
             {
-                var token = await GetAccessTokenAsync(options, httpClient);
-                if (string.IsNullOrEmpty(token))
+                try
                 {
+                    var token = await GetAccessTokenAsync(options, httpClient, forceRefresh: attempt > 0);
+                    if (string.IsNullOrEmpty(token))
+                    {
+                        return new JanataPayVerifyResult
+                        {
+                            Success = false,
+                            ErrorMessage = "Failed to obtain gateway authorization token for verification."
+                        };
+                    }
+
+                    var verifyPayload = new
+                    {
+                        merchantUid = options.MerchantUid,
+                        referenceId = referenceId,
+                        transactionToken = transactionToken
+                    };
+
+                    var payloadJson = JsonSerializer.Serialize(verifyPayload);
+                    var encryptedData = EncryptPayload(payloadJson);
+
+                    var requestObj = new
+                    {
+                        data = encryptedData,
+                        accessToken = token
+                    };
+
+                    var requestJson = JsonSerializer.Serialize(requestObj);
+                    using var requestContent = new StringContent(requestJson, Encoding.UTF8, "application/json");
+
+                    using var requestMessage = new HttpRequestMessage(HttpMethod.Post, "jbagg/api/transaction/verify")
+                    {
+                        Content = requestContent
+                    };
+                    requestMessage.Headers.Add("Authorization", $"Bearer {token}");
+
+                    var response = await httpClient.SendAsync(requestMessage);
+                    var responseBody = await response.Content.ReadAsStringAsync();
+
+                    if (!response.IsSuccessStatusCode)
+                    {
+                        _logger.LogError("JanataPay Verify HTTP Error: {StatusCode}, Body: {Body}", response.StatusCode, responseBody);
+
+                        if (attempt == 0 && (response.StatusCode == HttpStatusCode.Unauthorized || responseBody.Contains("JWT expired") || responseBody.Contains("expired")))
+                        {
+                            _logger.LogWarning("JanataPay token expired during verify. Retrying with fresh token...");
+                            InvalidateToken();
+                            continue;
+                        }
+
+                        return new JanataPayVerifyResult
+                        {
+                            Success = false,
+                            StatusCode = (int)response.StatusCode,
+                            ErrorMessage = $"JanataPay verify failed: HTTP {(int)response.StatusCode}"
+                        };
+                    }
+
+                    var root = JsonNode.Parse(responseBody);
+                    var code = root?["statusCode"]?.GetValue<int>() ?? 0;
+                    var encData = root?["data"]?.GetValue<string>();
+
+                    if (code == 200 && !string.IsNullOrEmpty(encData))
+                    {
+                        var decryptedJson = DecryptPayload(encData);
+                        var dataObj = JsonNode.Parse(decryptedJson);
+
+                        var trxStatus = dataObj?["transactionStatus"]?.GetValue<string>();
+                        var trxStatusCode = dataObj?["transactionStatusCode"]?.GetValue<string>();
+                        var ftNumber = dataObj?["ftNumber"]?.GetValue<string>();
+                        var refId = dataObj?["referenceId"]?.GetValue<string>() ?? referenceId;
+                        var amountStr = dataObj?["amount"]?.ToString();
+                        decimal.TryParse(amountStr, out var amt);
+                        var currency = dataObj?["currency"]?.GetValue<string>();
+                        var paymentMethod = dataObj?["paymentMethod"]?.GetValue<string>();
+                        var dateStr = dataObj?["transactionDate"]?.GetValue<string>();
+
+                        // 1003 is JanataPay Success status code
+                        bool isApproved = (trxStatusCode == "1003");
+
+                        return new JanataPayVerifyResult
+                        {
+                            Success = isApproved,
+                            StatusCode = code,
+                            TransactionStatusCode = trxStatusCode,
+                            TransactionStatus = trxStatus,
+                            ReferenceId = refId,
+                            FtNumber = ftNumber,
+                            Amount = amt,
+                            Currency = currency,
+                            PaymentMethod = paymentMethod,
+                            TransactionDate = dateStr,
+                            RawResponseJson = decryptedJson
+                        };
+                    }
+
+                    var statusMsg = root?["statusMessage"]?.GetValue<string>() ?? root?["message"]?.GetValue<string>() ?? "";
+                    if (attempt == 0 && (statusMsg.Contains("JWT expired") || statusMsg.Contains("expired")))
+                    {
+                        _logger.LogWarning("JanataPay returned token expired inside verify payload: {StatusMsg}. Retrying...", statusMsg);
+                        InvalidateToken();
+                        continue;
+                    }
+
                     return new JanataPayVerifyResult
                     {
                         Success = false,
-                        ErrorMessage = "Failed to obtain gateway authorization token for verification."
-                    };
-                }
-
-                var verifyPayload = new
-                {
-                    referenceId = referenceId,
-                    transactionToken = transactionToken
-                };
-
-                var payloadJson = JsonSerializer.Serialize(verifyPayload);
-                var encryptedData = EncryptPayload(payloadJson);
-
-                var requestObj = new
-                {
-                    data = encryptedData,
-                    accessToken = token
-                };
-
-                var requestJson = JsonSerializer.Serialize(requestObj);
-                using var requestContent = new StringContent(requestJson, Encoding.UTF8, "application/json");
-
-                using var requestMessage = new HttpRequestMessage(HttpMethod.Post, "jbagg/api/transaction/verify")
-                {
-                    Content = requestContent
-                };
-                requestMessage.Headers.Add("Authorization", $"Bearer {token}");
-
-                var response = await httpClient.SendAsync(requestMessage);
-                var responseBody = await response.Content.ReadAsStringAsync();
-
-                if (!response.IsSuccessStatusCode)
-                {
-                    _logger.LogError("JanataPay Verify HTTP Error: {StatusCode}, Body: {Body}", response.StatusCode, responseBody);
-                    return new JanataPayVerifyResult
-                    {
-                        Success = false,
-                        StatusCode = (int)response.StatusCode,
-                        ErrorMessage = $"JanataPay verify failed: HTTP {(int)response.StatusCode}"
-                    };
-                }
-
-                var root = JsonNode.Parse(responseBody);
-                var code = root?["statusCode"]?.GetValue<int>() ?? 0;
-                var encData = root?["data"]?.GetValue<string>();
-
-                if (code == 200 && !string.IsNullOrEmpty(encData))
-                {
-                    var decryptedJson = DecryptPayload(encData);
-                    var dataObj = JsonNode.Parse(decryptedJson);
-
-                    var trxStatus = dataObj?["transactionStatus"]?.GetValue<string>();
-                    var trxStatusCode = dataObj?["transactionStatusCode"]?.GetValue<string>();
-                    var ftNumber = dataObj?["ftNumber"]?.GetValue<string>();
-                    var refId = dataObj?["referenceId"]?.GetValue<string>() ?? referenceId;
-                    var amountStr = dataObj?["amount"]?.ToString();
-                    decimal.TryParse(amountStr, out var amt);
-                    var currency = dataObj?["currency"]?.GetValue<string>();
-                    var paymentMethod = dataObj?["paymentMethod"]?.GetValue<string>();
-                    var dateStr = dataObj?["transactionDate"]?.GetValue<string>();
-
-                    // 1003 is JanataPay Success status code
-                    bool isApproved = (trxStatusCode == "1003");
-
-                    return new JanataPayVerifyResult
-                    {
-                        Success = isApproved,
                         StatusCode = code,
-                        TransactionStatusCode = trxStatusCode,
-                        TransactionStatus = trxStatus,
-                        ReferenceId = refId,
-                        FtNumber = ftNumber,
-                        Amount = amt,
-                        Currency = currency,
-                        PaymentMethod = paymentMethod,
-                        TransactionDate = dateStr,
-                        RawResponseJson = decryptedJson
+                        ErrorMessage = !string.IsNullOrWhiteSpace(statusMsg) ? statusMsg : "Verification returned invalid payload."
                     };
                 }
+                catch (Exception ex)
+                {
+                    _logger.LogError(ex, "Exception during JanataPay VerifyPaymentAsync for {RefId}", referenceId);
+                    return new JanataPayVerifyResult
+                    {
+                        Success = false,
+                        ErrorMessage = ex.Message
+                    };
+                }
+            }
 
-                return new JanataPayVerifyResult
-                {
-                    Success = false,
-                    StatusCode = code,
-                    ErrorMessage = root?["message"]?.GetValue<string>() ?? "Verification returned invalid payload."
-                };
-            }
-            catch (Exception ex)
+            return new JanataPayVerifyResult
             {
-                _logger.LogError(ex, "Exception during JanataPay VerifyPaymentAsync for {RefId}", referenceId);
-                return new JanataPayVerifyResult
-                {
-                    Success = false,
-                    ErrorMessage = ex.Message
-                };
-            }
+                Success = false,
+                ErrorMessage = "Payment verification failed after retry."
+            };
         }
 
         public async Task<(bool Success, string Message, string? AccessToken)> TestConnectionAsync()
@@ -321,14 +375,15 @@ namespace EasyAlumni.Infrastructure.Services
             try
             {
                 // Force fresh authentication
-                var (token, expiresIn) = await AuthenticateGatewayAsync(options, httpClient);
+                InvalidateToken();
+                var (token, expiresAt) = await AuthenticateGatewayAsync(options, httpClient);
                 if (!string.IsNullOrEmpty(token))
                 {
                     _cachedAccessToken = token;
-                    var validSeconds = Math.Max(60, expiresIn - 300);
-                    _tokenExpiresAt = DateTime.UtcNow.AddSeconds(validSeconds);
+                    _tokenExpiresAt = expiresAt;
 
-                    return (true, $"Authentication successful! Received Bearer JWT Token (expires in {expiresIn}s).", token);
+                    var remainingSec = Math.Max(0, (int)(expiresAt - DateTime.UtcNow).TotalSeconds);
+                    return (true, $"Authentication successful! Received Bearer JWT Token (expires in {remainingSec}s at {expiresAt:HH:mm:ss} UTC).", token);
                 }
 
                 return (false, "Authentication failed with the configured credentials. Please check Merchant UID, Username, Password, and RSA Public Key.", null);
@@ -340,9 +395,15 @@ namespace EasyAlumni.Infrastructure.Services
             }
         }
 
-        private async Task<string?> GetAccessTokenAsync(JanataPayOptions options, HttpClient httpClient)
+        private static void InvalidateToken()
         {
-            if (!string.IsNullOrEmpty(_cachedAccessToken) && DateTime.UtcNow < _tokenExpiresAt)
+            _cachedAccessToken = null;
+            _tokenExpiresAt = DateTime.MinValue;
+        }
+
+        private async Task<string?> GetAccessTokenAsync(JanataPayOptions options, HttpClient httpClient, bool forceRefresh = false)
+        {
+            if (!forceRefresh && !string.IsNullOrEmpty(_cachedAccessToken) && DateTime.UtcNow < _tokenExpiresAt)
             {
                 return _cachedAccessToken;
             }
@@ -350,17 +411,16 @@ namespace EasyAlumni.Infrastructure.Services
             await _tokenLock.WaitAsync();
             try
             {
-                if (!string.IsNullOrEmpty(_cachedAccessToken) && DateTime.UtcNow < _tokenExpiresAt)
+                if (!forceRefresh && !string.IsNullOrEmpty(_cachedAccessToken) && DateTime.UtcNow < _tokenExpiresAt)
                 {
                     return _cachedAccessToken;
                 }
 
-                var (token, expiresIn) = await AuthenticateGatewayAsync(options, httpClient);
+                var (token, expiresAt) = await AuthenticateGatewayAsync(options, httpClient);
                 if (!string.IsNullOrEmpty(token))
                 {
                     _cachedAccessToken = token;
-                    var validSeconds = Math.Max(60, expiresIn - 300);
-                    _tokenExpiresAt = DateTime.UtcNow.AddSeconds(validSeconds);
+                    _tokenExpiresAt = expiresAt;
                     return token;
                 }
 
@@ -372,10 +432,10 @@ namespace EasyAlumni.Infrastructure.Services
             }
         }
 
-        private async Task<(string? Token, int ExpiresIn)> AuthenticateGatewayAsync(JanataPayOptions options, HttpClient httpClient)
+        private async Task<(string? Token, DateTime ExpiresAt)> AuthenticateGatewayAsync(JanataPayOptions options, HttpClient httpClient)
         {
             var aesKey = new byte[32];
-            System.Security.Cryptography.RandomNumberGenerator.Fill(aesKey);
+            RandomNumberGenerator.Fill(aesKey);
             var aesKeyBase64 = Convert.ToBase64String(aesKey);
 
             var authPayload = new
@@ -410,7 +470,7 @@ namespace EasyAlumni.Infrastructure.Services
             if (!response.IsSuccessStatusCode)
             {
                 _logger.LogError("JanataPay Auth HTTP Error: {StatusCode}, Body: {Body}", response.StatusCode, responseBody);
-                return (null, 0);
+                return (null, DateTime.MinValue);
             }
 
             var root = JsonNode.Parse(responseBody);
@@ -423,13 +483,58 @@ namespace EasyAlumni.Infrastructure.Services
                 var dataObj = JsonNode.Parse(decryptedJson);
 
                 var token = dataObj?["accessToken"]?.GetValue<string>();
-                var expiresIn = dataObj?["expiresIn"]?.GetValue<int>() ?? 3600;
+                var expiresIn = dataObj?["expiresIn"]?.GetValue<int>() ?? 300;
 
-                return (token, expiresIn);
+                // Calculate expiry from JWT claim if available, with safety buffer
+                var expiresAt = ParseJwtExpiry(token, expiresIn);
+
+                _logger.LogInformation("JanataPay Auth successful. Token expires at {ExpiresAt} UTC.", expiresAt);
+                return (token, expiresAt);
             }
 
             _logger.LogError("JanataPay Auth returned non-200 code: {Body}", responseBody);
-            return (null, 0);
+            return (null, DateTime.MinValue);
+        }
+
+        private DateTime ParseJwtExpiry(string? jwt, int defaultExpiresInSec)
+        {
+            if (!string.IsNullOrWhiteSpace(jwt))
+            {
+                try
+                {
+                    var parts = jwt.Split('.');
+                    if (parts.Length >= 2)
+                    {
+                        var b64 = parts[1].Replace('-', '+').Replace('_', '/');
+                        switch (b64.Length % 4)
+                        {
+                            case 2: b64 += "=="; break;
+                            case 3: b64 += "="; break;
+                        }
+                        var jsonBytes = Convert.FromBase64String(b64);
+                        var claims = JsonNode.Parse(jsonBytes);
+                        if (claims?["exp"] != null)
+                        {
+                            var expUnix = claims["exp"]!.GetValue<long>();
+                            var expUtc = DateTimeOffset.FromUnixTimeSeconds(expUnix).UtcDateTime;
+                            // Deduct 15 seconds buffer to prevent edge-of-expiry rejections
+                            var buffered = expUtc.AddSeconds(-15);
+                            if (buffered > DateTime.UtcNow)
+                            {
+                                return buffered;
+                            }
+                        }
+                    }
+                }
+                catch (Exception ex)
+                {
+                    _logger.LogWarning(ex, "Failed to parse JWT exp claim, falling back to expiresIn");
+                }
+            }
+
+            // Fallback to expiresIn with 30s buffer
+            var safetySeconds = Math.Max(30, defaultExpiresInSec - 30);
+            return DateTime.UtcNow.AddSeconds(safetySeconds);
         }
 
         #region Cryptography Helpers
