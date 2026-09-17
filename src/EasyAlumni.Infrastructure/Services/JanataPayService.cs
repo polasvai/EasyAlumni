@@ -5,6 +5,8 @@ using System.Text.Json;
 using System.Text.Json.Nodes;
 using EasyAlumni.Core.Interfaces;
 using EasyAlumni.Core.Models;
+using EasyAlumni.Infrastructure.Data;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 
@@ -12,9 +14,9 @@ namespace EasyAlumni.Infrastructure.Services
 {
     public class JanataPayService : IJanataPayService
     {
-        private readonly JanataPayOptions _options;
+        private readonly ApplicationDbContext _context;
+        private readonly JanataPayOptions _defaultOptions;
         private readonly ILogger<JanataPayService> _logger;
-        private readonly HttpClient _httpClient;
 
         // Cached token state
         private static string? _cachedAccessToken;
@@ -22,22 +24,57 @@ namespace EasyAlumni.Infrastructure.Services
         private static readonly SemaphoreSlim _tokenLock = new(1, 1);
 
         public JanataPayService(
-            IOptions<JanataPayOptions> options,
+            ApplicationDbContext context,
+            IOptions<JanataPayOptions> defaultOptions,
             ILogger<JanataPayService> logger)
         {
-            _options = options.Value;
+            _context = context;
+            _defaultOptions = defaultOptions.Value;
             _logger = logger;
+        }
 
-            SocketsHttpHandler handler = new();
-            if (_options.UseProxy && !string.IsNullOrWhiteSpace(_options.Socks5Proxy))
+        private async Task<JanataPayOptions> GetEffectiveOptionsAsync()
+        {
+            try
             {
-                handler.Proxy = new WebProxy(_options.Socks5Proxy);
+                var settings = await _context.SystemSettings
+                    .Where(s => s.SettingKey.StartsWith("JanataPay"))
+                    .ToDictionaryAsync(s => s.SettingKey, s => s.SettingValue);
+
+                var options = new JanataPayOptions
+                {
+                    BaseUrl = settings.TryGetValue("JanataPayBaseUrl", out var bUrl) && !string.IsNullOrWhiteSpace(bUrl) ? bUrl : _defaultOptions.BaseUrl,
+                    MerchantUid = settings.TryGetValue("JanataPayMerchantUid", out var mUid) && !string.IsNullOrWhiteSpace(mUid) ? mUid : _defaultOptions.MerchantUid,
+                    Username = settings.TryGetValue("JanataPayUsername", out var uName) && !string.IsNullOrWhiteSpace(uName) ? uName : _defaultOptions.Username,
+                    Password = settings.TryGetValue("JanataPayPassword", out var pwd) && !string.IsNullOrWhiteSpace(pwd) ? pwd : _defaultOptions.Password,
+                    PublicKey = settings.TryGetValue("JanataPayPublicKey", out var pKey) && !string.IsNullOrWhiteSpace(pKey) ? pKey : _defaultOptions.PublicKey,
+                    Socks5Proxy = settings.TryGetValue("JanataPaySocks5Proxy", out var sProxy) ? sProxy : _defaultOptions.Socks5Proxy,
+                    UseProxy = settings.TryGetValue("JanataPayUseProxy", out var uProxy) ? uProxy == "1" : _defaultOptions.UseProxy,
+                    CallbackBaseUrl = settings.TryGetValue("JanataPayCallbackBaseUrl", out var cUrl) && !string.IsNullOrWhiteSpace(cUrl) ? cUrl : _defaultOptions.CallbackBaseUrl
+                };
+
+                return options;
+            }
+            catch (Exception ex)
+            {
+                _logger.LogWarning(ex, "Failed to load JanataPay options from database, using appsettings fallback.");
+                return _defaultOptions;
+            }
+        }
+
+        private HttpClient CreateHttpClient(JanataPayOptions options)
+        {
+            SocketsHttpHandler handler = new();
+            if (options.UseProxy && !string.IsNullOrWhiteSpace(options.Socks5Proxy))
+            {
+                handler.Proxy = new WebProxy(options.Socks5Proxy);
                 handler.UseProxy = true;
             }
 
-            _httpClient = new HttpClient(handler)
+            var baseUrl = string.IsNullOrWhiteSpace(options.BaseUrl) ? "https://sandbox-pg.janatapay.com/" : options.BaseUrl.TrimEnd('/') + "/";
+            return new HttpClient(handler)
             {
-                BaseAddress = new Uri(_options.BaseUrl.TrimEnd('/') + "/"),
+                BaseAddress = new Uri(baseUrl),
                 Timeout = TimeSpan.FromSeconds(30)
             };
         }
@@ -50,9 +87,12 @@ namespace EasyAlumni.Infrastructure.Services
             string customerPhone,
             string? customerEmail)
         {
+            var options = await GetEffectiveOptionsAsync();
+            using var httpClient = CreateHttpClient(options);
+
             try
             {
-                var token = await GetAccessTokenAsync();
+                var token = await GetAccessTokenAsync(options, httpClient);
                 if (string.IsNullOrEmpty(token))
                 {
                     return new JanataPayTokenizeResult
@@ -62,8 +102,7 @@ namespace EasyAlumni.Infrastructure.Services
                     };
                 }
 
-                // Reference ID format: EA-REGNO-TIMESTAMP (Must be <= 30 chars)
-                // Example: EA-2026-0001-174123
+                // Reference ID format: EA-REGNO-TIMESTAMP (Must be <= 25 chars)
                 var cleanReg = registrationNo.Replace("-", "");
                 var ts = DateTimeOffset.UtcNow.ToUnixTimeSeconds() % 1000000;
                 var referenceId = $"EA{cleanReg}{ts}";
@@ -72,7 +111,7 @@ namespace EasyAlumni.Infrastructure.Services
                     referenceId = referenceId[..25];
                 }
 
-                var callbackBase = _options.CallbackBaseUrl.TrimEnd('/');
+                var callbackBase = (options.CallbackBaseUrl ?? "https://alumni.snhghs.edu.bd").TrimEnd('/');
                 var successUrl = $"{callbackBase}/Payment/JanataPaySuccess?refid={referenceId}";
                 var failUrl = $"{callbackBase}/Payment/JanataPayFail?refid={referenceId}";
                 var cancelUrl = $"{callbackBase}/Payment/JanataPayCancel?refid={referenceId}";
@@ -109,7 +148,7 @@ namespace EasyAlumni.Infrastructure.Services
                 };
                 requestMessage.Headers.Add("Authorization", $"Bearer {token}");
 
-                var response = await _httpClient.SendAsync(requestMessage);
+                var response = await httpClient.SendAsync(requestMessage);
                 var responseBody = await response.Content.ReadAsStringAsync();
 
                 if (!response.IsSuccessStatusCode)
@@ -165,9 +204,12 @@ namespace EasyAlumni.Infrastructure.Services
 
         public async Task<JanataPayVerifyResult> VerifyPaymentAsync(string referenceId, string transactionToken)
         {
+            var options = await GetEffectiveOptionsAsync();
+            using var httpClient = CreateHttpClient(options);
+
             try
             {
-                var token = await GetAccessTokenAsync();
+                var token = await GetAccessTokenAsync(options, httpClient);
                 if (string.IsNullOrEmpty(token))
                 {
                     return new JanataPayVerifyResult
@@ -201,7 +243,7 @@ namespace EasyAlumni.Infrastructure.Services
                 };
                 requestMessage.Headers.Add("Authorization", $"Bearer {token}");
 
-                var response = await _httpClient.SendAsync(requestMessage);
+                var response = await httpClient.SendAsync(requestMessage);
                 var responseBody = await response.Content.ReadAsStringAsync();
 
                 if (!response.IsSuccessStatusCode)
@@ -271,7 +313,34 @@ namespace EasyAlumni.Infrastructure.Services
             }
         }
 
-        private async Task<string?> GetAccessTokenAsync()
+        public async Task<(bool Success, string Message, string? AccessToken)> TestConnectionAsync()
+        {
+            var options = await GetEffectiveOptionsAsync();
+            using var httpClient = CreateHttpClient(options);
+
+            try
+            {
+                // Force fresh authentication
+                var (token, expiresIn) = await AuthenticateGatewayAsync(options, httpClient);
+                if (!string.IsNullOrEmpty(token))
+                {
+                    _cachedAccessToken = token;
+                    var validSeconds = Math.Max(60, expiresIn - 300);
+                    _tokenExpiresAt = DateTime.UtcNow.AddSeconds(validSeconds);
+
+                    return (true, $"Authentication successful! Received Bearer JWT Token (expires in {expiresIn}s).", token);
+                }
+
+                return (false, "Authentication failed with the configured credentials. Please check Merchant UID, Username, Password, and RSA Public Key.", null);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Exception during JanataPay TestConnectionAsync");
+                return (false, $"Connection error: {ex.Message}", null);
+            }
+        }
+
+        private async Task<string?> GetAccessTokenAsync(JanataPayOptions options, HttpClient httpClient)
         {
             if (!string.IsNullOrEmpty(_cachedAccessToken) && DateTime.UtcNow < _tokenExpiresAt)
             {
@@ -286,11 +355,10 @@ namespace EasyAlumni.Infrastructure.Services
                     return _cachedAccessToken;
                 }
 
-                var (token, expiresIn) = await AuthenticateGatewayAsync();
+                var (token, expiresIn) = await AuthenticateGatewayAsync(options, httpClient);
                 if (!string.IsNullOrEmpty(token))
                 {
                     _cachedAccessToken = token;
-                    // Expire 5 minutes early for clock skew safety
                     var validSeconds = Math.Max(60, expiresIn - 300);
                     _tokenExpiresAt = DateTime.UtcNow.AddSeconds(validSeconds);
                     return token;
@@ -304,20 +372,20 @@ namespace EasyAlumni.Infrastructure.Services
             }
         }
 
-        private async Task<(string? Token, int ExpiresIn)> AuthenticateGatewayAsync()
+        private async Task<(string? Token, int ExpiresIn)> AuthenticateGatewayAsync(JanataPayOptions options, HttpClient httpClient)
         {
             var authPayload = new
             {
-                username = _options.Username,
-                password = _options.Password,
-                merchantUid = _options.MerchantUid
+                username = options.Username,
+                password = options.Password,
+                merchantUid = options.MerchantUid
             };
 
             var payloadJson = JsonSerializer.Serialize(authPayload);
             var (aesKey, encryptedData) = EncryptPayloadWithNewKey(payloadJson);
-            var rsaEncryptedKey = EncryptAesKeyWithRsa(aesKey);
+            var rsaEncryptedKey = EncryptAesKeyWithRsa(aesKey, options.PublicKey);
 
-            var merchantUidBase64 = Convert.ToBase64String(Encoding.UTF8.GetBytes(_options.MerchantUid));
+            var merchantUidBase64 = Convert.ToBase64String(Encoding.UTF8.GetBytes(options.MerchantUid));
             var rsaKeyBase64 = Convert.ToBase64String(rsaEncryptedKey);
 
             var requestObj = new
@@ -330,7 +398,7 @@ namespace EasyAlumni.Infrastructure.Services
             var requestJson = JsonSerializer.Serialize(requestObj);
             using var content = new StringContent(requestJson, Encoding.UTF8, "application/json");
 
-            var response = await _httpClient.PostAsync("jbagg/api/auth", content);
+            var response = await httpClient.PostAsync("jbagg/api/auth", content);
             var responseBody = await response.Content.ReadAsStringAsync();
 
             if (!response.IsSuccessStatusCode)
@@ -360,7 +428,6 @@ namespace EasyAlumni.Infrastructure.Services
 
         #region Cryptography Helpers
 
-        // Active AES session key for tokenized calls
         private static byte[]? _sessionAesKey;
 
         private string EncryptPayload(string plaintext)
@@ -388,7 +455,7 @@ namespace EasyAlumni.Infrastructure.Services
         {
             var key = new byte[32];
             RandomNumberGenerator.Fill(key);
-            _sessionAesKey = key; // update session key
+            _sessionAesKey = key;
             var cipher = EncryptWithAesGcm(plaintext, key);
             return (key, cipher);
         }
@@ -401,16 +468,15 @@ namespace EasyAlumni.Infrastructure.Services
         private static string EncryptWithAesGcm(string plaintext, byte[] key)
         {
             var plainBytes = Encoding.UTF8.GetBytes(plaintext);
-            var iv = new byte[12]; // 12-byte standard GCM nonce
+            var iv = new byte[12];
             RandomNumberGenerator.Fill(iv);
 
             var cipherBytes = new byte[plainBytes.Length];
-            var tag = new byte[16]; // 16-byte authentication tag
+            var tag = new byte[16];
 
             using var aesGcm = new AesGcm(key, 16);
             aesGcm.Encrypt(iv, plainBytes, cipherBytes, tag);
 
-            // Structure: IV (12) + CipherText (N) + Tag (16)
             var combined = new byte[iv.Length + cipherBytes.Length + tag.Length];
             Buffer.BlockCopy(iv, 0, combined, 0, iv.Length);
             Buffer.BlockCopy(cipherBytes, 0, combined, iv.Length, cipherBytes.Length);
@@ -443,13 +509,13 @@ namespace EasyAlumni.Infrastructure.Services
             return Encoding.UTF8.GetString(plainBytes);
         }
 
-        private byte[] EncryptAesKeyWithRsa(byte[] aesKey)
+        private byte[] EncryptAesKeyWithRsa(byte[] aesKey, string publicKeyPemOrBase64)
         {
             var aesKeyBase64 = Convert.ToBase64String(aesKey);
             var aesKeyBytes = Encoding.UTF8.GetBytes(aesKeyBase64);
 
             using var rsa = RSA.Create();
-            var cleanKey = _options.PublicKey
+            var cleanKey = (publicKeyPemOrBase64 ?? "")
                 .Replace("-----BEGIN PUBLIC KEY-----", "")
                 .Replace("-----END PUBLIC KEY-----", "")
                 .Replace("\r", "")
@@ -459,7 +525,6 @@ namespace EasyAlumni.Infrastructure.Services
             var keyBytes = Convert.FromBase64String(cleanKey);
             rsa.ImportSubjectPublicKeyInfo(keyBytes, out _);
 
-            // RSA-OAEP with SHA-256
             return rsa.Encrypt(aesKeyBytes, RSAEncryptionPadding.OaepSHA256);
         }
 

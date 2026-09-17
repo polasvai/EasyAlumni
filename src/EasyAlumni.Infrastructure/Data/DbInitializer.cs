@@ -79,10 +79,19 @@ namespace EasyAlumni.Infrastructure.Data
                 ["FooterAboutText"] = ("The ultimate event and alumni community management platform. Connecting alumni, celebrating lifelong friendships, and organizing grand reunions seamlessly.", "Brief narrative under logo in footer"),
                 ["FooterFacebookUrl"] = ("https://facebook.com", "Facebook page or group link"),
                 ["FooterYoutubeUrl"] = ("https://youtube.com", "YouTube channel link"),
-                ["FooterWhatsappUrl"] = ("https://wa.me/8801711000000", "WhatsApp contact or community link"),
                 ["FooterCopyright"] = ("© 2026 EasyAlumni Association. All rights reserved.", "Copyright line in footer"),
                 ["FooterTagline"] = ("Designed for School, College & University Grand Reunions", "Bottom tagline in footer"),
-                ["FooterMadeWith"] = ("Made with ❤️", "Sub-badge text under footer about story")
+                ["FooterMadeWith"] = ("Made with ❤️", "Sub-badge text under footer about story"),
+
+                // JanataPay Online Gateway Configuration
+                ["JanataPayBaseUrl"] = ("https://sandbox-pg.janatapay.com", "JanataPay API Base URL (e.g. sandbox or live)"),
+                ["JanataPayMerchantUid"] = ("6521171673", "JanataPay Merchant UID assigned by Janata Bank"),
+                ["JanataPayUsername"] = ("j8Dx4778daD160", "JanataPay API Username"),
+                ["JanataPayPassword"] = ("ksD7dNf58X", "JanataPay API Password"),
+                ["JanataPayPublicKey"] = ("MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEAp0/eVwL7WJG5KFnANQrkDLJkodPvDpVvbi9XuIKI5tJKdyXiTq0whTUpXbBk/Z0fpwDXhdkTBNTi0C5fkyTxkUXc1yLHs0BRxSZQ8DphA0eTOJKsVDsCCLOqYhtWKt7CnSpswDzqj4pdnkstKAzDEdKZyViTJv7G6TVKiK1cyJjuvi0be1ZDqSe/japXmInipFwW5elTHcw2hYOKZsSrNgFfSpsc/rJUlzf3fradw6KdiRlWsQZ/nze4NJ8YsNWs4VVbZfxd6YGd/eNmF8Pl0M+OTESD9fXEMlDQBFRBlVPz+lQzVwriHaZ28O0QfPnT0g6QhcMG62m/O2bdL9fvMQIDAQAB", "JanataPay 2048-bit RSA Gateway Public Key (Base64)"),
+                ["JanataPayUseProxy"] = ("1", "Route API requests through Bangladesh SOCKS5 tunnel (1=Yes, 0=No)"),
+                ["JanataPaySocks5Proxy"] = ("socks5://127.0.0.1:1080", "SOCKS5 Proxy URL for Bangladesh IP egress"),
+                ["JanataPayCallbackBaseUrl"] = ("https://alumni.snhghs.edu.bd", "Callback Base URL for redirects after payment")
             };
 
             foreach (var s in defaultSettings)

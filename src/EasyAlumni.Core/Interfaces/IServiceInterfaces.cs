@@ -51,6 +51,8 @@ namespace EasyAlumni.Core.Interfaces
         Task<EasyAlumni.Core.Models.JanataPayVerifyResult> VerifyPaymentAsync(
             string referenceId,
             string transactionToken);
+
+        Task<(bool Success, string Message, string? AccessToken)> TestConnectionAsync();
     }
 }
 

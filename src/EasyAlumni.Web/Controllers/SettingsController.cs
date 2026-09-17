@@ -13,15 +13,18 @@ namespace EasyAlumni.Web.Controllers
         private readonly ApplicationDbContext _context;
         private readonly ISmsService _smsService;
         private readonly IFileStorageService _fileStorage;
+        private readonly IJanataPayService _janataPayService;
 
         public SettingsController(
             ApplicationDbContext context,
             ISmsService smsService,
-            IFileStorageService fileStorage)
+            IFileStorageService fileStorage,
+            IJanataPayService janataPayService)
         {
             _context = context;
             _smsService = smsService;
             _fileStorage = fileStorage;
+            _janataPayService = janataPayService;
         }
 
         public async Task<IActionResult> Index()
@@ -61,10 +64,38 @@ namespace EasyAlumni.Web.Controllers
                     existing.SettingValue = s.Value ?? "";
                     existing.UpdatedAt = DateTime.UtcNow;
                 }
+                else
+                {
+                    _context.SystemSettings.Add(new SystemSetting
+                    {
+                        SettingKey = s.Key,
+                        SettingValue = s.Value ?? "",
+                        Description = "Custom System Configuration",
+                        IsSecret = s.Key.Contains("Password") || s.Key.Contains("Key") || s.Key.Contains("Token"),
+                        UpdatedAt = DateTime.UtcNow
+                    });
+                }
             }
 
             await _context.SaveChangesAsync();
             TempData["Success"] = "System settings updated successfully.";
+            return RedirectToAction(nameof(Index));
+        }
+
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> TestJanataPay()
+        {
+            var (success, message, token) = await _janataPayService.TestConnectionAsync();
+            if (success)
+            {
+                TempData["Success"] = $"JanataPay Connection Successful: {message}";
+            }
+            else
+            {
+                TempData["Error"] = $"JanataPay Connection Failed: {message}";
+            }
+
             return RedirectToAction(nameof(Index));
         }
 
