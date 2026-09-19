@@ -3,16 +3,20 @@
     var ev = Model.Event;
     var heroTitle = Model.Settings.GetValueOrDefault("LandingHeroTitle", ev?.EventTitle ?? "Grand Alumni Reunion 2026");
     ViewData["Title"] = heroTitle;
-    var heroSubtitle = Model.Settings.GetValueOrDefault("LandingHeroSubtitle", ev?.TitleBangla ?? "শহীদ নাজমুল হক বালিকা উচ্চ বিদ্যালয় প্রাক্তন ছাত্রী পুনর্মিলনী উৎসব");
+    var heroSubtitle = Model.Settings.GetValueOrDefault("LandingHeroSubtitle", ev?.TitleBangla ?? "শহীদ নজমুল হক বালিকা উচ্চ বিদ্যালয় প্রাক্তন ছাত্রী পুনর্মিলনী উৎসব");
     var heroTagline = Model.Settings.GetValueOrDefault("LandingHeroTagline", "A grand reunion of cherished memories, heartfelt reunions, and boundless nostalgia. Welcome home, dear alumni!");
-    var heroBg = Model.Settings.GetValueOrDefault("LandingHeroBgImage", "https://images.unsplash.com/photo-1523580494863-6f3031224c94?auto=format&fit=crop&w=1920&q=80");
+    var heroBg = Model.Settings.GetValueOrDefault("LandingHeroBgImage",
+"https://images.unsplash.com/photo-1523580494863-6f3031224c94?auto=format&fit=crop&w=1920&q=80");
     var aboutTitle = Model.Settings.GetValueOrDefault("AboutTitle", "About the Grand Reunion");
     var aboutSubtitle = Model.Settings.GetValueOrDefault("AboutSubtitle", "A historic day where old classmates, mentors, and friends reunite under one grand roof.");
-    var aboutStory = Model.Settings.GetValueOrDefault("AboutStory", ev?.Description ?? "শহীদ নাজমুল হক বালিকা উচ্চ বিদ্যালয় সুদীর্ঘ কাল ধরে নারী শিক্ষা ও ব্যক্তিত্ব বিকাশে অনন্য ভূমিকা রেখে আসছে। আমাদের প্রিয় ক্যাম্পাসে কাটানো সোনালী দিনগুলো আমাদের জীবনের শ্রেষ্ঠ স্মৃতি। এই জমকালো পুনর্মিলনী উৎসবটি সেই মধুর স্মৃতি রোমন্থন, প্রিয় সহপাঠী ও শ্রদ্ধেয় শিক্ষকদের সাথে মিলিত হবার এক মহতী মিলনমেলা।");
-    var aboutImg = Model.Settings.GetValueOrDefault("AboutImageUrl", "https://images.unsplash.com/photo-1511578314322-379afb476865?auto=format&fit=crop&w=800&q=80");
-    var eventDateStr = Model.Settings.GetValueOrDefault("ReunionDate", ev?.EventDate.ToString("yyyy-MM-ddTHH:mm:ss") ?? "2026-12-25T09:00:00");
+    var aboutStory = Model.Settings.GetValueOrDefault("AboutStory", ev?.Description ?? "শহীদ নজমুল হক বালিকা উচ্চ বিদ্যালয় সুদীর্ঘ কাল ধরে নারী শিক্ষা ও ব্যক্তিত্ব বিকাশে অনন্য ভূমিকা রেখে আসছে। আমাদের প্রিয় ক্যাম্পাসে কাটানো সোনালী দিনগুলো আমাদের জীবনের শ্রেষ্ঠ স্মৃতি। এই জমকালো পুনর্মিলনী উৎসবটি সেই মধুর স্মৃতি রোমন্থন, প্রিয় সহপাঠী ও শ্রদ্ধেয় শিক্ষকদের সাথে মিলিত হবার এক মহতী মিলনমেলা।");
+    var aboutImg = Model.Settings.GetValueOrDefault("AboutImageUrl",
+"https://images.unsplash.com/photo-1511578314322-379afb476865?auto=format&fit=crop&w=800&q=80");
+    var eventDateStr = Model.Settings.GetValueOrDefault("ReunionDate", ev?.EventDate.ToString("yyyy-MM-ddTHH:mm:ss") ??
+"2026-12-25T09:00:00");
     var venue = Model.Settings.GetValueOrDefault("EventVenue", ev?.VenueName ?? "বিদ্যালয় প্রাঙ্গণ ও মিলনায়তন");
-    var mapUrl = Model.Settings.GetValueOrDefault("GoogleMapEmbedUrl", "https://maps.google.com/maps?q=Shahid+Nazmul+Huq+Girls+High+School+Rajshahi&hl=en&z=16&output=embed");
+    var mapUrl = Model.Settings.GetValueOrDefault("GoogleMapEmbedUrl",
+"https://maps.google.com/maps?q=Shahid+Nazmul+Huq+Girls+High+School+Rajshahi&hl=en&z=16&output=embed");
 }
 
 @section Styles {
@@ -20,7 +24,7 @@
         .hero-section {
             min-height: 92vh;
             background: linear-gradient(135deg, rgba(15, 23, 42, 0.92), rgba(0, 77, 56, 0.88)),
-                        url('@heroBg') center/cover no-repeat fixed;
+                url('@heroBg') center/cover no-repeat fixed;
             display: flex;
             align-items: center;
             color: #fff;
@@ -77,14 +81,14 @@
             border: none;
             border-radius: 20px;
             transition: all 0.3s ease;
-            box-shadow: 0 10px 30px rgba(0,0,0,0.06);
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.06);
             overflow: hidden;
             background: #fff;
         }
 
         .card-custom:hover {
             transform: translateY(-6px);
-            box-shadow: 0 18px 40px rgba(0,0,0,0.12);
+            box-shadow: 0 18px 40px rgba(0, 0, 0, 0.12);
         }
 
         .schedule-time {
@@ -128,7 +132,8 @@
 <!-- Hero Section -->
 <section class="hero-section" id="home">
     <div class="container text-center">
-        <div class="d-inline-block px-3 py-1 mb-3 rounded-pill" style="background: rgba(245, 158, 11, 0.2); border: 1px solid var(--accent); color: var(--accent); font-weight: 600;">
+        <div class="d-inline-block px-3 py-1 mb-3 rounded-pill"
+             style="background: rgba(245, 158, 11, 0.2); border: 1px solid var(--accent); color: var(--accent); font-weight: 600;">
             <i class="fas fa-calendar-check me-2"></i> Celebrating Lifelong Bonds &amp; Brotherhood
         </div>
         <h1 class="display-3 fw-bold mb-2">@heroTitle</h1>
@@ -158,10 +163,12 @@
         </div>
 
         <div class="mt-4 d-flex justify-content-center gap-3 flex-wrap">
-            <a asp-controller="Enrollment" asp-action="Register" class="btn btn-lg btn-danger px-4 py-3 rounded-pill fw-bold shadow-lg">
+            <a asp-controller="Enrollment" asp-action="Register"
+               class="btn btn-lg btn-danger px-4 py-3 rounded-pill fw-bold shadow-lg">
                 <i class="fas fa-user-plus me-2"></i> Register for Reunion
             </a>
-            <button type="button" class="btn btn-lg btn-warning text-dark px-4 py-3 rounded-pill fw-bold shadow-lg" data-bs-toggle="modal" data-bs-target="#downloadPassModal">
+            <button type="button" class="btn btn-lg btn-warning text-dark px-4 py-3 rounded-pill fw-bold shadow-lg"
+                    data-bs-toggle="modal" data-bs-target="#downloadPassModal">
                 <i class="fas fa-id-card me-2"></i> Download ID Card
             </button>
             <a href="/#about" class="btn btn-lg btn-outline-light px-4 py-3 rounded-pill fw-bold">
@@ -170,8 +177,9 @@
         </div>
 
         <div class="mt-5 text-light opacity-80 small">
-            <i class="fas fa-map-marker-alt text-warning me-1"></i> Venue: <strong>@venue</strong> &nbsp;|&nbsp; 
-            <i class="fas fa-users text-info me-1"></i> Already <strong>@Model.TotalRegisteredCount Alumni</strong> Enrolled!
+            <i class="fas fa-map-marker-alt text-warning me-1"></i> Venue: <strong>@venue</strong> &nbsp;|&nbsp;
+            <i class="fas fa-users text-info me-1"></i> Already <strong>@Model.TotalRegisteredCount Alumni</strong>
+            Enrolled!
         </div>
     </div>
 </section>
@@ -186,7 +194,8 @@
                 @foreach (var notice in Model.Notices)
                 {
                     <span class="me-5 fw-semibold">
-                        <a asp-controller="Home" asp-action="Notice" asp-route-id="@notice.Id" class="text-dark text-decoration-none">
+                        <a asp-controller="Home" asp-action="Notice" asp-route-id="@notice.Id"
+                           class="text-dark text-decoration-none">
                             <i class="fas fa-angle-right me-1"></i> @notice.Title
                         </a>
                     </span>
@@ -205,7 +214,9 @@
         </div>
         <div class="row align-items-center g-5">
             <div class="col-lg-6">
-                <img src="@aboutImg" alt="@aboutTitle" class="img-fluid rounded-4 shadow-lg" style="width: 100%; max-height: 420px; object-fit: cover;" onerror="this.onerror=null; this.src='/images/placeholder.svg';">
+                <img src="@aboutImg" alt="@aboutTitle" class="img-fluid rounded-4 shadow-lg"
+                     style="width: 100%; max-height: 420px; object-fit: cover;"
+                     onerror="this.onerror=null; this.src='/images/placeholder.svg';">
             </div>
             <div class="col-lg-6">
                 <h3 class="fw-bold text-dark mb-3">Rekindle Memories That Shaped Us</h3>
@@ -215,549 +226,613 @@
                 <div class="row g-3 mt-2">
                     <div class="col-sm-6">
                         <div class="p-3 bg-light rounded-3 border-start border-4 border-success">
-                            <h5 class="fw-bold mb-1"><i class="fas fa-gift text-success me-2"></i> Commemorative Kit</h5>
+                            <h5 class="fw-bold mb-1"><i class="fas fa-gift text-success me-2"></i> Commemorative Kit
+                            </h5>
                             <small class="text-muted">Premium Polo T-shirt, gift hamper, backpack, and souvenir.</small>
                         </div>
                     </div>
                     <div class="col-sm-6">
                         <div class="p-3 bg-light rounded-3 border-start border-4 border-danger">
                             <h5 class="fw-bold mb-1"><i class="fas fa-utensils text-danger me-2"></i> Grand Feast</h5>
-                            <small class="text-muted">Delicious breakfast, traditional lunch buffet, snacks &amp; dinner.</small>
+                            <small class="text-muted">Delicious breakfast, traditional lunch buffet, snacks &amp;
+                                dinner.</small>
+                            </div>
                         </div>
-                    </div>
-                    <div class="col-sm-6">
-                        <div class="p-3 bg-light rounded-3 border-start border-4 border-primary">
-                            <h5 class="fw-bold mb-1"><i class="fas fa-music text-primary me-2"></i> Cultural Gala</h5>
-                            <small class="text-muted">Celebrity band concert, nostalgic skits, and raffle prizes.</small>
-                        </div>
-                    </div>
-                    <div class="col-sm-6">
-                        <div class="p-3 bg-light rounded-3 border-start border-4 border-warning">
-                            <h5 class="fw-bold mb-1"><i class="fas fa-chalkboard-teacher text-warning me-2"></i> Felicitation</h5>
-                            <small class="text-muted">Honoring respected teachers and retired staff.</small>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div>
-    </div>
-</section>
-
-<!-- Event Schedule Timeline -->
-<section class="section-padding bg-light" id="schedule">
-    <div class="container">
-        <div class="text-center">
-            <h2 class="section-title">Program Schedule</h2>
-            <p class="section-subtitle">A power-packed itinerary planned meticulously from morning till evening.</p>
-        </div>
-        <div class="row justify-content-center">
-            <div class="col-lg-8">
-                <div class="card card-custom p-4">
-                    <ul class="list-group list-group-flush">
-                        <li class="list-group-item d-flex align-items-center py-3">
-                            <span class="schedule-time"><i class="fas fa-clock text-warning me-1"></i> 08:30 AM</span>
-                            <div>
-                                <h6 class="mb-0 fw-bold">Arrival &amp; Reception Desk</h6>
-                                <small class="text-muted">Digital pass scanning, breakfast box, and gift kit handover.</small>
+                        <div class="col-sm-6">
+                            <div class="p-3 bg-light rounded-3 border-start border-4 border-primary">
+                                <h5 class="fw-bold mb-1"><i class="fas fa-music text-primary me-2"></i> Cultural Gala</h5>
+                                <small class="text-muted">Celebrity band concert, nostalgic skits, and raffle
+                                    prizes.</small>
+                                </div>
                             </div>
-                        </li>
-                        <li class="list-group-item d-flex align-items-center py-3">
-                            <span class="schedule-time"><i class="fas fa-clock text-warning me-1"></i> 10:00 AM</span>
-                            <div>
-                                <h6 class="mb-0 fw-bold">Grand Alumni Color Rally</h6>
-                                <small class="text-muted">Campus procession with band, balloons, and batch banners.</small>
-                            </div>
-                        </li>
-                        <li class="list-group-item d-flex align-items-center py-3">
-                            <span class="schedule-time"><i class="fas fa-clock text-warning me-1"></i> 11:30 AM</span>
-                            <div>
-                                <h6 class="mb-0 fw-bold">Inauguration &amp; Teacher Felicitation</h6>
-                                <small class="text-muted">Honoring respected teachers and memorial tribute to departed souls.</small>
-                            </div>
-                        </li>
-                        <li class="list-group-item d-flex align-items-center py-3">
-                            <span class="schedule-time"><i class="fas fa-clock text-warning me-1"></i> 01:30 PM</span>
-                            <div>
-                                <h6 class="mb-0 fw-bold">Traditional Grand Feast (Buffet Lunch)</h6>
-                                <small class="text-muted">Multi-course buffet lunch for all attendees, spouses, and children.</small>
-                            </div>
-                        </li>
-                        <li class="list-group-item d-flex align-items-center py-3">
-                            <span class="schedule-time"><i class="fas fa-clock text-warning me-1"></i> 03:00 PM</span>
-                            <div>
-                                <h6 class="mb-0 fw-bold">Batch Nostalgia &amp; Open Floor</h6>
-                                <small class="text-muted">Storytelling, batch photos, and campus fun activities.</small>
-                            </div>
-                        </li>
-                        <li class="list-group-item d-flex align-items-center py-3">
-                            <span class="schedule-time"><i class="fas fa-clock text-warning me-1"></i> 05:00 PM</span>
-                            <div>
-                                <h6 class="mb-0 fw-bold">Mega Cultural Night &amp; Live Band</h6>
-                                <small class="text-muted">Electrifying music performances by renowned guest musicians.</small>
-                            </div>
-                        </li>
-                        <li class="list-group-item d-flex align-items-center py-3">
-                            <span class="schedule-time"><i class="fas fa-clock text-warning me-1"></i> 08:00 PM</span>
-                            <div>
-                                <h6 class="mb-0 fw-bold">Mega Raffle Draw &amp; Farewell</h6>
-                                <small class="text-muted">Exciting raffle prizes (Motorbike, Laptop, Smartphones) and group photos.</small>
-                            </div>
-                        </li>
-                    </ul>
-                </div>
-            </div>
-        </div>
-    </div>
-</section>
-
-<!-- Pricing Packages & Fees -->
-<!-- Pricing Packages & Fees -->
-<section class="section-padding" id="fees">
-    <div class="container">
-        <div class="text-center">
-            <h2 class="section-title">Registration Packages &amp; Fees</h2>
-            <p class="section-subtitle">Choose your registration package. All tiers include event access, dinner, and celebration.</p>
-        </div>
-        
-        @if (Model.Packages != null && Model.Packages.Any())
-        {
-            <div class="row g-4 justify-content-center">
-                @foreach (var pkg in Model.Packages)
-                {
-                    var colClass = Model.Packages.Count switch
-                    {
-                        1 => "col-lg-6 col-md-8",
-                        2 => "col-lg-5 col-md-6",
-                        3 => "col-lg-4 col-md-6",
-                        _ => "col-lg-3 col-md-6"
-                    };
-                    <div class="@colClass">
-                        <div class="pricing-card @(pkg.IsFeatured ? "featured" : "") h-100 d-flex flex-column justify-content-between">
-                            <div>
-                                @if (!string.IsNullOrEmpty(pkg.BadgeText))
-                                {
-                                    <span class="pricing-badge"><i class="fas fa-star me-1"></i> @pkg.BadgeText</span>
-                                }
-                                else if (pkg.IsFeatured)
-                                {
-                                    <span class="pricing-badge"><i class="fas fa-star me-1"></i> Most Popular</span>
-                                }
-                                <h5 class="fw-bold @(pkg.IsFeatured ? "text-primary" : "text-dark") mb-1">@pkg.PackageName</h5>
-                                @if (!string.IsNullOrEmpty(pkg.PackageNameBangla))
-                                {
-                                    <div class="small text-muted mb-2">@pkg.PackageNameBangla</div>
-                                }
-
-                                @if (pkg.MinPassingYear.HasValue || pkg.MaxPassingYear.HasValue)
-                                {
-                                    <div class="mb-2">
-                                        @if (pkg.MinPassingYear.HasValue && pkg.MaxPassingYear.HasValue)
-                                        {
-                                            <span class="badge bg-light text-primary border px-2 py-1"><i class="fas fa-calendar-alt me-1"></i> SSC Batches @pkg.MinPassingYear - @pkg.MaxPassingYear</span>
-                                        }
-                                        else if (pkg.MinPassingYear.HasValue)
-                                        {
-                                            <span class="badge bg-light text-primary border px-2 py-1"><i class="fas fa-calendar-alt me-1"></i> SSC Batches @pkg.MinPassingYear+</span>
-                                        }
-                                        else if (pkg.MaxPassingYear.HasValue)
-                                        {
-                                            <span class="badge bg-light text-primary border px-2 py-1"><i class="fas fa-calendar-alt me-1"></i> SSC Batches up to @pkg.MaxPassingYear</span>
-                                        }
+                            <div class="col-sm-6">
+                                <div class="p-3 bg-light rounded-3 border-start border-4 border-warning">
+                                    <h5 class="fw-bold mb-1"><i class="fas fa-chalkboard-teacher text-warning me-2"></i>
+                                        Felicitation</h5>
+                                        <small class="text-muted">Honoring respected teachers and retired staff.</small>
                                     </div>
-                                }
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </section>
 
-                                <h2 class="fw-bold @(pkg.IsFeatured ? "text-primary" : "text-dark") my-3">৳ @pkg.Fee.ToString("N0")</h2>
-                                @if (!string.IsNullOrEmpty(pkg.Description))
-                                {
-                                    <p class="small text-muted mb-3">@pkg.Description</p>
-                                }
-
-                                <ul class="list-unstyled text-start small mb-4">
-                                    @if (pkg.IncludedGuests > 0)
-                                    {
-                                        <li class="mb-2 text-primary fw-bold"><i class="fas fa-user-friends me-2"></i> <strong>+@pkg.IncludedGuests Accompanying Guest Included</strong></li>
-                                    }
-                                    @if (pkg.PackageGiftItems != null && pkg.PackageGiftItems.Any())
-                                    {
-                                        @foreach (var pgi in pkg.PackageGiftItems.Where(g => g.GiftItem != null))
-                                        {
-                                            <li class="mb-2">
-                                                <i class="fas fa-gift text-warning me-2"></i> <strong>@pgi.GiftItem!.ItemName</strong>
-                                                @if (pgi.GiftItem.IsSizeSpecific)
-                                                {
-                                                    <span class="badge bg-info-subtle text-info ms-1">Size Option</span>
-                                                }
+            <!-- Event Schedule Timeline -->
+            <section class="section-padding bg-light" id="schedule">
+                <div class="container">
+                    <div class="text-center">
+                        <h2 class="section-title">Program Schedule</h2>
+                        <p class="section-subtitle">A power-packed itinerary planned meticulously from morning till evening.</p>
+                    </div>
+                    <div class="row justify-content-center">
+                        <div class="col-lg-8">
+                            <div class="card card-custom p-4">
+                                <ul class="list-group list-group-flush">
+                                    <li class="list-group-item d-flex align-items-center py-3">
+                                        <span class="schedule-time"><i class="fas fa-clock text-warning me-1"></i> 08:30 AM</span>
+                                        <div>
+                                            <h6 class="mb-0 fw-bold">Arrival &amp; Reception Desk</h6>
+                                            <small class="text-muted">Digital pass scanning, breakfast box, and gift kit
+                                                handover.</small>
+                                            </div>
+                                        </li>
+                                        <li class="list-group-item d-flex align-items-center py-3">
+                                            <span class="schedule-time"><i class="fas fa-clock text-warning me-1"></i> 10:00 AM</span>
+                                            <div>
+                                                <h6 class="mb-0 fw-bold">Grand Alumni Color Rally</h6>
+                                                <small class="text-muted">Campus procession with band, balloons, and batch
+                                                    banners.</small>
+                                                </div>
                                             </li>
-                                        }
-                                    }
-                                    else
-                                    {
-                                        @if (pkg.IncludesTShirt)
-                                        {
-                                            <li class="mb-2"><i class="fas fa-check text-success me-2"></i> <strong>Polo T-Shirt</strong></li>
-                                        }
-                                        @if (pkg.IncludesKitBag)
-                                        {
-                                            <li class="mb-2"><i class="fas fa-check text-success me-2"></i> <strong>Gift Kit &amp; Hamper</strong></li>
-                                        }
-                                        @if (pkg.IncludesFood)
-                                        {
-                                            <li class="mb-2"><i class="fas fa-check text-success me-2"></i> <strong>Food &amp; Refreshments</strong></li>
-                                        }
-                                        @if (pkg.IncludesRaffle)
-                                        {
-                                            <li class="mb-2"><i class="fas fa-check text-success me-2"></i> <strong>Raffle Draw Entry</strong></li>
-                                        }
-                                    }
-                                </ul>
-                            </div>
-                            <div class="pt-3">
-                                <a asp-controller="Enrollment" asp-action="Register" asp-route-packageId="@pkg.Id" 
-                                   class="btn @(pkg.IsFeatured ? "btn-primary" : "btn-outline-primary") rounded-pill w-100 py-2 fw-bold">
-                                    Register Now
-                                </a>
-                            </div>
-                        </div>
-                    </div>
-                }
-            </div>
+                                            <li class="list-group-item d-flex align-items-center py-3">
+                                                <span class="schedule-time"><i class="fas fa-clock text-warning me-1"></i> 11:30 AM</span>
+                                                <div>
+                                                    <h6 class="mb-0 fw-bold">Inauguration &amp; Teacher Felicitation</h6>
+                                                    <small class="text-muted">Honoring respected teachers and memorial tribute to departed
+                                                        souls.</small>
+                                                    </div>
+                                                </li>
+                                                <li class="list-group-item d-flex align-items-center py-3">
+                                                    <span class="schedule-time"><i class="fas fa-clock text-warning me-1"></i> 01:30 PM</span>
+                                                    <div>
+                                                        <h6 class="mb-0 fw-bold">Traditional Grand Feast (Buffet Lunch)</h6>
+                                                        <small class="text-muted">Multi-course buffet lunch for all attendees, spouses, and
+                                                            children.</small>
+                                                        </div>
+                                                    </li>
+                                                    <li class="list-group-item d-flex align-items-center py-3">
+                                                        <span class="schedule-time"><i class="fas fa-clock text-warning me-1"></i> 03:00 PM</span>
+                                                        <div>
+                                                            <h6 class="mb-0 fw-bold">Batch Nostalgia &amp; Open Floor</h6>
+                                                            <small class="text-muted">Storytelling, batch photos, and campus fun activities.</small>
+                                                        </div>
+                                                    </li>
+                                                    <li class="list-group-item d-flex align-items-center py-3">
+                                                        <span class="schedule-time"><i class="fas fa-clock text-warning me-1"></i> 05:00 PM</span>
+                                                        <div>
+                                                            <h6 class="mb-0 fw-bold">Mega Cultural Night &amp; Live Band</h6>
+                                                            <small class="text-muted">Electrifying music performances by renowned guest
+                                                                musicians.</small>
+                                                            </div>
+                                                        </li>
+                                                        <li class="list-group-item d-flex align-items-center py-3">
+                                                            <span class="schedule-time"><i class="fas fa-clock text-warning me-1"></i> 08:00 PM</span>
+                                                            <div>
+                                                                <h6 class="mb-0 fw-bold">Mega Raffle Draw &amp; Farewell</h6>
+                                                                <small class="text-muted">Exciting raffle prizes (Motorbike, Laptop, Smartphones) and
+                                                                    group photos.</small>
+                                                                </div>
+                                                            </li>
+                                                        </ul>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </section>
+
+                                    <!-- Pricing Packages & Fees -->
+                                    <!-- Pricing Packages & Fees -->
+                                    <section class="section-padding" id="fees">
+                                        <div class="container">
+                                            <div class="text-center">
+                                                <h2 class="section-title">Registration Packages &amp; Fees</h2>
+                                                <p class="section-subtitle">Choose your registration package. All tiers include event access, dinner, and
+                                                    celebration.</p>
+                                                </div>
+        
+                                                @if (Model.Packages != null && Model.Packages.Any())
+                                                {
+                                                    <div class="row g-4 justify-content-center">
+                                                        @foreach (var pkg in Model.Packages)
+                                                        {
+                                                            var colClass = Model.Packages.Count switch
+                                                            {
+                                                                1 => "col-lg-6 col-md-8",
+                                                                2 => "col-lg-5 col-md-6",
+                                                                3 => "col-lg-4 col-md-6",
+                                                                _ => "col-lg-3 col-md-6"
+                                                            };
+                                                            <div class="@colClass">
+                                                                <div
+                                                                    class="pricing-card @(pkg.IsFeatured ? "featured" : "") h-100 d-flex flex-column justify-content-between">
+                                                                    <div>
+                                                                        @if (!string.IsNullOrEmpty(pkg.BadgeText))
+                                                                        {
+                                                                            <span class="pricing-badge"><i class="fas fa-star me-1"></i> @pkg.BadgeText</span>
+                                                                        }
+                                                                        else if (pkg.IsFeatured)
+                                                                        {
+                                                                            <span class="pricing-badge"><i class="fas fa-star me-1"></i> Most Popular</span>
+                                                                        }
+                                                                        <h5 class="fw-bold @(pkg.IsFeatured ? "text-primary" : "text-dark") mb-1">@pkg.PackageName</h5>
+                                                                        @if (!string.IsNullOrEmpty(pkg.PackageNameBangla))
+                                                                        {
+                                                                            <div class="small text-muted mb-2">@pkg.PackageNameBangla</div>
+                                                                        }
+
+                                                                        @if (pkg.MinPassingYear.HasValue || pkg.MaxPassingYear.HasValue)
+                                                                        {
+                                                                            <div class="mb-2">
+                                                                                @if (pkg.MinPassingYear.HasValue && pkg.MaxPassingYear.HasValue)
+                                                                                {
+                                                                                    <span class="badge bg-light text-primary border px-2 py-1"><i
+                                                                                        class="fas fa-calendar-alt me-1"></i> SSC Batches @pkg.MinPassingYear -
+                                                                                        @pkg.MaxPassingYear</span>
+                                                                                    }
+                                        else if (pkg.MinPassingYear.HasValue)
+                                                                                    {
+                                                                                        <span class="badge bg-light text-primary border px-2 py-1"><i
+                                                                                            class="fas fa-calendar-alt me-1"></i> SSC Batches @pkg.MinPassingYear+</span>
+                                                                                        }
+                                        else if (pkg.MaxPassingYear.HasValue)
+                                                                                        {
+                                                                                            <span class="badge bg-light text-primary border px-2 py-1"><i
+                                                                                                class="fas fa-calendar-alt me-1"></i> SSC Batches up to @pkg.MaxPassingYear</span>
+                                                                                            }
+                                                                                        </div>
+                                                                                    }
+
+                                                                                    <h2 class="fw-bold @(pkg.IsFeatured ? "text-primary" : "text-dark") my-3">৳
+                                                                                        @pkg.Fee.ToString("N0")</h2>
+                                                                                        @if (!string.IsNullOrEmpty(pkg.Description))
+                                                                                        {
+                                                                                            <p class="small text-muted mb-3">@pkg.Description</p>
+                                                                                        }
+
+                                                                                        <ul class="list-unstyled text-start small mb-4">
+                                                                                            @if (pkg.IncludedGuests > 0)
+                                                                                            {
+                                                                                                <li class="mb-2 text-primary fw-bold"><i class="fas fa-user-friends me-2"></i>
+                                                                                                    <strong>+@pkg.IncludedGuests Accompanying Guest Included</strong></li>
+                                                                                                }
+                                                                                                @if (pkg.PackageGiftItems != null && pkg.PackageGiftItems.Any())
+                                                                                                {
+                                                                                                    @foreach (var pgi in pkg.PackageGiftItems.Where(g => g.GiftItem != null))
+                                                                                                    {
+                                                                                                        <li class="mb-2">
+                                                                                                            <i class="fas fa-gift text-warning me-2"></i> <strong>@pgi.GiftItem!.ItemName</strong>
+                                                                                                            @if (pgi.GiftItem.IsSizeSpecific)
+                                                                                                            {
+                                                                                                                <span class="badge bg-info-subtle text-info ms-1">Size Option</span>
+                                                                                                            }
+                                                                                                        </li>
+                                                                                                    }
+                                                                                                }
+                                                                                                else
+                                                                                                {
+                                                                                                    @if (pkg.IncludesTShirt)
+                                                                                                    {
+                                                                                                        <li class="mb-2"><i class="fas fa-check text-success me-2"></i> <strong>Polo
+                                                                                                            T-Shirt</strong></li>
+                                                                                                        }
+                                                                                                        @if (pkg.IncludesKitBag)
+                                                                                                        {
+                                                                                                            <li class="mb-2"><i class="fas fa-check text-success me-2"></i> <strong>Gift Kit &amp;
+                                                                                                                Hamper</strong></li>
+                                                                                                            }
+                                                                                                            @if (pkg.IncludesFood)
+                                                                                                            {
+                                                                                                                <li class="mb-2"><i class="fas fa-check text-success me-2"></i> <strong>Food &amp;
+                                                                                                                    Refreshments</strong></li>
+                                                                                                                }
+                                                                                                                @if (pkg.IncludesRaffle)
+                                                                                                                {
+                                                                                                                    <li class="mb-2"><i class="fas fa-check text-success me-2"></i> <strong>Raffle Draw
+                                                                                                                        Entry</strong></li>
+                                                                                                                    }
+                                                                                                                }
+                                                                                                            </ul>
+                                                                                                        </div>
+                                                                                                        <div class="pt-3">
+                                                                                                            <a asp-controller="Enrollment" asp-action="Register" asp-route-packageId="@pkg.Id"
+                                                                                                               class="btn @(pkg.IsFeatured ? "btn-primary" : "btn-outline-primary") rounded-pill w-100 py-2 fw-bold">
+                                                                                                                Register Now
+                                                                                                            </a>
+                                                                                                        </div>
+                                                                                                    </div>
+                                                                                                </div>
+                                                                                            }
+                                                                                        </div>
             
-            @if (Model.GuestCategories != null && Model.GuestCategories.Any())
-            {
-                <div class="mt-4 text-center">
-                    <div class="d-inline-flex flex-wrap justify-content-center gap-4 p-3 bg-light rounded-pill border small">
-                        <span class="text-muted"><i class="fas fa-plus-circle text-success me-1"></i> Optional Guest Add-ons:</span>
-                        @foreach (var gc in Model.GuestCategories)
-                        {
-                            <span><strong>@gc.CategoryName@(string.IsNullOrEmpty(gc.EligibilityRules) ? "" : $" ({gc.EligibilityRules})"):</strong> ৳@gc.Fee.ToString("N0")</span>
-                        }
-                    </div>
-                </div>
-            }
+                                                                                        @if (Model.GuestCategories != null && Model.GuestCategories.Any())
+                                                                                        {
+                                                                                            <div class="mt-4 text-center">
+                                                                                                <div class="d-inline-flex flex-wrap justify-content-center gap-4 p-3 bg-light rounded-pill border small">
+                                                                                                    <span class="text-muted"><i class="fas fa-plus-circle text-success me-1"></i> Optional Guest
+                                                                                                        Add-ons:</span>
+                                                                                                        @foreach (var gc in Model.GuestCategories)
+                                                                                                        {
+                                                                                                            <span><strong>@gc.CategoryName@(string.IsNullOrEmpty(gc.EligibilityRules) ? "" : $" ({gc.EligibilityRules})"):</strong> ৳@gc.Fee.ToString("N0")</span>
+                                                                                                        }
+                                                                                                    </div>
+                                                                                                </div>
+                                                                                            }
             else if (ev != null && (ev.SpouseFee > 0 || ev.ChildFee > 0 || ev.GuestFee > 0))
-            {
-                <div class="mt-4 text-center">
-                    <div class="d-inline-flex flex-wrap justify-content-center gap-4 p-3 bg-light rounded-pill border small">
-                        <span class="text-muted"><i class="fas fa-plus-circle text-success me-1"></i> Optional Add-ons:</span>
-                        @if (ev.SpouseFee > 0) { <span><strong>Spouse:</strong> ৳@ev.SpouseFee.ToString("N0")</span> }
-                        @if (ev.ChildFee > 0) { <span><strong>Child:</strong> ৳@ev.ChildFee.ToString("N0")</span> }
-                        @if (ev.GuestFee > 0) { <span><strong>Guest / Attendant:</strong> ৳@ev.GuestFee.ToString("N0")</span> }
-                    </div>
-                </div>
-            }
-        }
-        else
-        {
-            <div class="row g-4 justify-content-center">
-                <div class="col-lg-4 col-md-6">
-                    <div class="pricing-card featured">
-                        <span class="pricing-badge"><i class="fas fa-star me-1"></i> Primary Ticket</span>
-                        <h5 class="fw-bold text-primary">Single Alumni</h5>
-                        <h2 class="fw-bold text-primary my-3">৳ @(ev?.BaseAlumniFee.ToString("N0") ?? "1,500")</h2>
-                        <p class="small text-muted mb-4">Complete alumni entitlement package</p>
-                        <a asp-controller="Enrollment" asp-action="Register" class="btn btn-primary rounded-pill w-100 py-2 fw-bold">
-                            Register Now
-                        </a>
-                    </div>
-                </div>
-            </div>
-        }
-    </div>
-</section>
+                                                                                            {
+                                                                                                <div class="mt-4 text-center">
+                                                                                                    <div class="d-inline-flex flex-wrap justify-content-center gap-4 p-3 bg-light rounded-pill border small">
+                                                                                                        <span class="text-muted"><i class="fas fa-plus-circle text-success me-1"></i> Optional Add-ons:</span>
+                                                                                                        @if (ev.SpouseFee > 0)
+                                                                                                        {
+                                                                                                            <span><strong>Spouse:</strong> ৳@ev.SpouseFee.ToString("N0")</span>
+                                                                                                        }
+                                                                                                        @if (ev.ChildFee > 0)
+                                                                                                        {
+                                                                                                            <span><strong>Child:</strong> ৳@ev.ChildFee.ToString("N0")</span>
+                                                                                                        }
+                                                                                                        @if (ev.GuestFee > 0)
+                                                                                                        {
+                                                                                                            <span><strong>Guest / Attendant:</strong> ৳@ev.GuestFee.ToString("N0")</span>
+                                                                                                        }
+                                                                                                    </div>
+                                                                                                </div>
+                                                                                            }
+                                                                                        }
+                                                                                        else
+                                                                                        {
+                                                                                            <div class="row g-4 justify-content-center">
+                                                                                                <div class="col-lg-4 col-md-6">
+                                                                                                    <div class="pricing-card featured">
+                                                                                                        <span class="pricing-badge"><i class="fas fa-star me-1"></i> Primary Ticket</span>
+                                                                                                        <h5 class="fw-bold text-primary">Single Alumni</h5>
+                                                                                                        <h2 class="fw-bold text-primary my-3">৳ @(ev?.BaseAlumniFee.ToString("N0") ?? "1,500")</h2>
+                                                                                                        <p class="small text-muted mb-4">Complete alumni entitlement package</p>
+                                                                                                        <a asp-controller="Enrollment" asp-action="Register"
+                                                                                                           class="btn btn-primary rounded-pill w-100 py-2 fw-bold">
+                                                                                                            Register Now
+                                                                                                        </a>
+                                                                                                    </div>
+                                                                                                </div>
+                                                                                            </div>
+                                                                                        }
+                                                                                    </div>
+                                                                                </section>
 
-<!-- Committee Showcase -->
-@if (Model.Committees.Any())
-{
-    <section class="section-padding bg-light" id="committee">
-        <div class="container">
-            <div class="text-center">
-                <h2 class="section-title">Organizing Committee</h2>
-                <p class="section-subtitle">The dedicated alumni leaders working tirelessly to make this grand day a resounding success.</p>
-            </div>
-            @foreach (var comm in Model.Committees.Take(2))
-            {
-                <div class="text-center mb-4">
-                    <h4 class="fw-bold text-success">@comm.CommitteeName</h4>
-                    @if (!string.IsNullOrEmpty(comm.CommitteeNameBangla))
-                    {
-                        <p class="text-muted">@comm.CommitteeNameBangla</p>
-                    }
-                </div>
-                <div class="row g-4 justify-content-center mb-5">
-                    @foreach (var member in comm.Members.Take(4))
-                    {
-                        <div class="col-lg-3 col-md-6 text-center">
-                            <div class="card card-custom p-4 text-center h-100">
-                                <div class="mx-auto mb-3" style="width: 110px; height: 110px; border-radius: 50%; overflow: hidden; border: 3px solid var(--primary); background: #f1f5f9;">
-                                    <img src="@(string.IsNullOrEmpty(member.PhotoPath) ? "https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=200&q=80" : member.PhotoPath)" 
-                                         alt="@member.FullName" class="w-100 h-100 object-fit-cover" />
-                                </div>
-                                <h5 class="fw-bold mb-1">@member.FullName</h5>
-                                <p class="text-success fw-semibold small mb-1">@member.Designation</p>
-                                @if (member.BatchYear.HasValue)
-                                {
-                                    <span class="badge bg-secondary rounded-pill px-3 py-1 mb-2">Batch @member.BatchYear</span>
-                                }
-                                @if (!string.IsNullOrEmpty(member.Mobile))
-                                {
-                                    <p class="small text-muted mb-0"><i class="fas fa-phone-alt me-1 text-warning"></i> @member.Mobile</p>
-                                }
-                            </div>
-                        </div>
-                    }
-                </div>
-            }
-            <div class="text-center">
-                <a asp-controller="Home" asp-action="Committee" class="btn btn-outline-success rounded-pill px-4 py-2">
-                    <i class="fas fa-users me-1"></i> View Full Committee Directory
-                </a>
-            </div>
-        </div>
-    </section>
-}
+                                                                                <!-- Committee Showcase -->
+                                                                                @if (Model.Committees.Any())
+                                                                                {
+                                                                                    <section class="section-padding bg-light" id="committee">
+                                                                                        <div class="container">
+                                                                                            <div class="text-center">
+                                                                                                <h2 class="section-title">Organizing Committee</h2>
+                                                                                                <p class="section-subtitle">The dedicated alumni leaders working tirelessly to make this grand day a
+                                                                                                    resounding success.</p>
+                                                                                                </div>
+                                                                                                @foreach (var comm in Model.Committees.Take(2))
+                                                                                                {
+                                                                                                    <div class="text-center mb-4">
+                                                                                                        <h4 class="fw-bold text-success">@comm.CommitteeName</h4>
+                                                                                                        @if (!string.IsNullOrEmpty(comm.CommitteeNameBangla))
+                                                                                                        {
+                                                                                                            <p class="text-muted">@comm.CommitteeNameBangla</p>
+                                                                                                        }
+                                                                                                    </div>
+                                                                                                    <div class="row g-4 justify-content-center mb-5">
+                                                                                                        @foreach (var member in comm.Members.Take(4))
+                                                                                                        {
+                                                                                                            <div class="col-lg-3 col-md-6 text-center">
+                                                                                                                <div class="card card-custom p-4 text-center h-100">
+                                                                                                                    <div class="mx-auto mb-3"
+                                                                                                                         style="width: 110px; height: 110px; border-radius: 50%; overflow: hidden; border: 3px solid var(--primary); background: #f1f5f9;">
+                                                                                                                        <img src="@(string.IsNullOrEmpty(member.PhotoPath) ? "https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=200&q=80" : member.PhotoPath)"
+                                                                                                                             alt="@member.FullName" class="w-100 h-100 object-fit-cover" />
+                                                                                                                    </div>
+                                                                                                                    <h5 class="fw-bold mb-1">@member.FullName</h5>
+                                                                                                                    <p class="text-success fw-semibold small mb-1">@member.Designation</p>
+                                                                                                                    @if (member.BatchYear.HasValue)
+                                                                                                                    {
+                                                                                                                        <span class="badge bg-secondary rounded-pill px-3 py-1 mb-2">Batch @member.BatchYear</span>
+                                                                                                                    }
+                                                                                                                    @if (!string.IsNullOrEmpty(member.Mobile))
+                                                                                                                    {
+                                                                                                                        <p class="small text-muted mb-0"><i class="fas fa-phone-alt me-1 text-warning"></i> @member.Mobile
+                                                                                                                        </p>
+                                                                                                                    }
+                                                                                                                </div>
+                                                                                                            </div>
+                                                                                                        }
+                                                                                                    </div>
+                                                                                                }
+                                                                                                <div class="text-center">
+                                                                                                    <a asp-controller="Home" asp-action="Committee" class="btn btn-outline-success rounded-pill px-4 py-2">
+                                                                                                        <i class="fas fa-users me-1"></i> View Full Committee Directory
+                                                                                                    </a>
+                                                                                                </div>
+                                                                                            </div>
+                                                                                        </section>
+                                                                                    }
 
-<!-- Photo Gallery -->
-<section class="section-padding" id="gallery">
-    <div class="container">
-        <div class="text-center">
-            <h2 class="section-title">Campus Memories &amp; Moments</h2>
-            <p class="section-subtitle">Glimpses of golden school days, past alumni assemblies, and timeless friendships.</p>
-        </div>
-        @if (Model.GalleryImages != null && Model.GalleryImages.Any())
-        {
-            <div class="row g-4">
-                @foreach (var img in Model.GalleryImages.Take(6))
-                {
-                    <div class="col-lg-4 col-md-6">
-                        <div class="card card-custom overflow-hidden h-100 shadow-sm border-0 position-relative">
-                            <div style="height: 240px; overflow: hidden; background: #0f172a;">
-                                <img src="@img.ImagePath" class="w-100 h-100 object-fit-cover" alt="@img.Title"
-                                     onerror="this.onerror=null; this.src='/images/placeholder.svg';" />
-                            </div>
-                            <div class="card-body p-3">
-                                <div class="d-flex justify-content-between align-items-center mb-1">
-                                    <h6 class="fw-bold mb-0 text-dark">@img.Title</h6>
-                                    @if (!string.IsNullOrEmpty(img.Category))
-                                    {
-                                        <span class="badge bg-light text-primary border small">@img.Category</span>
-                                    }
-                                </div>
-                                @if (!string.IsNullOrEmpty(img.Caption))
-                                {
-                                    <p class="small text-muted mb-0">@img.Caption</p>
-                                }
-                            </div>
-                        </div>
-                    </div>
-                }
-            </div>
-            <div class="text-center mt-5">
-                <a asp-controller="Home" asp-action="Gallery" class="btn btn-outline-success rounded-pill px-5 py-3 fw-bold shadow-sm">
-                    <i class="fas fa-images me-2"></i> View Full Photo Gallery (@Model.GalleryImages.Count Photos)
-                </a>
-            </div>
-        }
-        else
-        {
-            <div class="row g-3">
-                <div class="col-md-4 col-sm-6">
-                    <div class="card card-custom overflow-hidden">
-                        <img src="https://images.unsplash.com/photo-1523580494863-6f3031224c94?auto=format&fit=crop&w=600&q=80" class="img-fluid" alt="Campus Life" onerror="this.onerror=null; this.src='/images/placeholder.svg';">
-                    </div>
-                </div>
-                <div class="col-md-4 col-sm-6">
-                    <div class="card card-custom overflow-hidden">
-                        <img src="https://images.unsplash.com/photo-1541339907198-e08756dedf3f?auto=format&fit=crop&w=600&q=80" class="img-fluid" alt="Reunion Joy">
-                    </div>
-                </div>
-                <div class="col-md-4 col-sm-6">
-                    <div class="card card-custom overflow-hidden">
-                        <img src="https://images.unsplash.com/photo-1529156069898-49953e39b3ac?auto=format&fit=crop&w=600&q=80" class="img-fluid" alt="Batch Reunion">
-                    </div>
-                </div>
-                <div class="col-md-4 col-sm-6">
-                    <div class="card card-custom overflow-hidden">
-                        <img src="https://images.unsplash.com/photo-1517486808906-6ca8b3f04846?auto=format&fit=crop&w=600&q=80" class="img-fluid" alt="Classmates">
-                    </div>
-                </div>
-                <div class="col-md-4 col-sm-6">
-                    <div class="card card-custom overflow-hidden">
-                        <img src="https://images.unsplash.com/photo-1492684223066-81342ee5ff30?auto=format&fit=crop&w=600&q=80" class="img-fluid" alt="Grand Stage">
-                    </div>
-                </div>
-                <div class="col-md-4 col-sm-6">
-                    <div class="card card-custom overflow-hidden">
-                        <img src="https://images.unsplash.com/photo-1577495508048-b635879837f1?auto=format&fit=crop&w=600&q=80" class="img-fluid" alt="Celebration">
-                    </div>
-                </div>
-            </div>
-        }
-    </div>
-</section>
+                                                                                    <!-- Photo Gallery -->
+                                                                                    <section class="section-padding" id="gallery">
+                                                                                        <div class="container">
+                                                                                            <div class="text-center">
+                                                                                                <h2 class="section-title">Campus Memories &amp; Moments</h2>
+                                                                                                <p class="section-subtitle">Glimpses of golden school days, past alumni assemblies, and timeless
+                                                                                                    friendships.</p>
+                                                                                                </div>
+                                                                                                @if (Model.GalleryImages != null && Model.GalleryImages.Any())
+                                                                                                {
+                                                                                                    <div class="row g-4">
+                                                                                                        @foreach (var img in Model.GalleryImages.Take(6))
+                                                                                                        {
+                                                                                                            <div class="col-lg-4 col-md-6">
+                                                                                                                <div class="card card-custom overflow-hidden h-100 shadow-sm border-0 position-relative">
+                                                                                                                    <div style="height: 240px; overflow: hidden; background: #0f172a;">
+                                                                                                                        <img src="@img.ImagePath" class="w-100 h-100 object-fit-cover" alt="@img.Title"
+                                                                                                                             onerror="this.onerror=null; this.src='/images/placeholder.svg';" />
+                                                                                                                    </div>
+                                                                                                                    <div class="card-body p-3">
+                                                                                                                        <div class="d-flex justify-content-between align-items-center mb-1">
+                                                                                                                            <h6 class="fw-bold mb-0 text-dark">@img.Title</h6>
+                                                                                                                            @if (!string.IsNullOrEmpty(img.Category))
+                                                                                                                            {
+                                                                                                                                <span class="badge bg-light text-primary border small">@img.Category</span>
+                                                                                                                            }
+                                                                                                                        </div>
+                                                                                                                        @if (!string.IsNullOrEmpty(img.Caption))
+                                                                                                                        {
+                                                                                                                            <p class="small text-muted mb-0">@img.Caption</p>
+                                                                                                                        }
+                                                                                                                    </div>
+                                                                                                                </div>
+                                                                                                            </div>
+                                                                                                        }
+                                                                                                    </div>
+                                                                                                    <div class="text-center mt-5">
+                                                                                                        <a asp-controller="Home" asp-action="Gallery"
+                                                                                                           class="btn btn-outline-success rounded-pill px-5 py-3 fw-bold shadow-sm">
+                                                                                                            <i class="fas fa-images me-2"></i> View Full Photo Gallery (@Model.GalleryImages.Count Photos)
+                                                                                                        </a>
+                                                                                                    </div>
+                                                                                                }
+                                                                                                else
+                                                                                                {
+                                                                                                    <div class="row g-3">
+                                                                                                        <div class="col-md-4 col-sm-6">
+                                                                                                            <div class="card card-custom overflow-hidden">
+                                                                                                                <img src="https://images.unsplash.com/photo-1523580494863-6f3031224c94?auto=format&fit=crop&w=600&q=80"
+                                                                                                                     class="img-fluid" alt="Campus Life"
+                                                                                                                     onerror="this.onerror=null; this.src='/images/placeholder.svg';">
+                                                                                                            </div>
+                                                                                                        </div>
+                                                                                                        <div class="col-md-4 col-sm-6">
+                                                                                                            <div class="card card-custom overflow-hidden">
+                                                                                                                <img src="https://images.unsplash.com/photo-1541339907198-e08756dedf3f?auto=format&fit=crop&w=600&q=80"
+                                                                                                                     class="img-fluid" alt="Reunion Joy">
+                                                                                                            </div>
+                                                                                                        </div>
+                                                                                                        <div class="col-md-4 col-sm-6">
+                                                                                                            <div class="card card-custom overflow-hidden">
+                                                                                                                <img src="https://images.unsplash.com/photo-1529156069898-49953e39b3ac?auto=format&fit=crop&w=600&q=80"
+                                                                                                                     class="img-fluid" alt="Batch Reunion">
+                                                                                                            </div>
+                                                                                                        </div>
+                                                                                                        <div class="col-md-4 col-sm-6">
+                                                                                                            <div class="card card-custom overflow-hidden">
+                                                                                                                <img src="https://images.unsplash.com/photo-1517486808906-6ca8b3f04846?auto=format&fit=crop&w=600&q=80"
+                                                                                                                     class="img-fluid" alt="Classmates">
+                                                                                                            </div>
+                                                                                                        </div>
+                                                                                                        <div class="col-md-4 col-sm-6">
+                                                                                                            <div class="card card-custom overflow-hidden">
+                                                                                                                <img src="https://images.unsplash.com/photo-1492684223066-81342ee5ff30?auto=format&fit=crop&w=600&q=80"
+                                                                                                                     class="img-fluid" alt="Grand Stage">
+                                                                                                            </div>
+                                                                                                        </div>
+                                                                                                        <div class="col-md-4 col-sm-6">
+                                                                                                            <div class="card card-custom overflow-hidden">
+                                                                                                                <img src="https://images.unsplash.com/photo-1577495508048-b635879837f1?auto=format&fit=crop&w=600&q=80"
+                                                                                                                     class="img-fluid" alt="Celebration">
+                                                                                                            </div>
+                                                                                                        </div>
+                                                                                                    </div>
+                                                                                                }
+                                                                                            </div>
+                                                                                        </section>
 
-<!-- Contact & Venue -->
-<section class="section-padding bg-light" id="contact">
-    <div class="container">
-        <div class="row g-5 align-items-center">
-            <div class="col-lg-5">
-                <h2 class="section-title text-start">Have Questions? We're Here to Help!</h2>
-                <p class="text-muted mb-4">Feel free to reach out to our reunion coordination center for assistance with registration, payments, or special accommodation requests.</p>
-                <div class="d-flex align-items-center mb-4">
-                    <div class="bg-success text-white p-3 rounded-circle me-3"><i class="fas fa-map-marker-alt fa-lg"></i></div>
-                    <div>
-                        <h6 class="fw-bold mb-0">Event Location</h6>
-                        <small class="text-muted">@venue</small>
-                    </div>
-                </div>
-                <div class="d-flex align-items-center mb-4">
-                    <div class="bg-warning text-dark p-3 rounded-circle me-3"><i class="fas fa-phone-alt fa-lg"></i></div>
-                    <div>
-                        <h6 class="fw-bold mb-0">Help Desk Hotlines</h6>
-                        <small class="text-muted">@(Model.Settings.GetValueOrDefault("ContactHotline", "+880 1700-000000"))</small>
-                    </div>
-                </div>
-                <div class="d-flex align-items-center">
-                    <div class="bg-primary text-white p-3 rounded-circle me-3"><i class="fas fa-envelope fa-lg"></i></div>
-                    <div>
-                        <h6 class="fw-bold mb-0">Official Email</h6>
-                        <small class="text-muted">@(Model.Settings.GetValueOrDefault("ContactEmail", "reunion@easyalumni.com"))</small>
-                    </div>
-                </div>
-            </div>
-            <div class="col-lg-7">
-                <div class="card card-custom p-4">
-                    <h4 class="fw-bold text-dark mb-4"><i class="fas fa-paper-plane text-success me-2"></i> Send us a Message</h4>
-                    <form onsubmit="event.preventDefault(); Swal.fire('Thank you!', 'Your query has been submitted. Our volunteer desk will reach you shortly.', 'success');">
-                        <div class="row g-3">
-                            <div class="col-md-6">
-                                <label class="form-label fw-semibold">Your Name</label>
-                                <input type="text" class="form-control" placeholder="e.g. Tanvir Ahmed" required>
-                            </div>
-                            <div class="col-md-6">
-                                <label class="form-label fw-semibold">Mobile Number</label>
-                                <input type="tel" class="form-control" placeholder="01XXXXXXXXX" required>
-                            </div>
-                            <div class="col-12">
-                                <label class="form-label fw-semibold">Passing Batch / Year</label>
-                                <input type="number" class="form-control" placeholder="e.g. 2010">
-                            </div>
-                            <div class="col-12">
-                                <label class="form-label fw-semibold">Your Question or Feedback</label>
-                                <textarea class="form-control" rows="4" placeholder="How can we assist you?" required></textarea>
-                            </div>
-                            <div class="col-12">
-                                <button type="submit" class="btn btn-success rounded-pill px-5 py-2 fw-bold">
-                                    <i class="fas fa-paper-plane me-1"></i> Submit Message
-                                </button>
-                            </div>
-                        </div>
-                    </form>
-                </div>
-            </div>
-        </div>
+                                                                                        <!-- Contact & Venue -->
+                                                                                        <section class="section-padding bg-light" id="contact">
+                                                                                            <div class="container">
+                                                                                                <div class="row g-5 align-items-center">
+                                                                                                    <div class="col-lg-5">
+                                                                                                        <h2 class="section-title text-start">Have Questions? We're Here to Help!</h2>
+                                                                                                        <p class="text-muted mb-4">Feel free to reach out to our reunion coordination center for assistance with
+                                                                                                            registration, payments, or special accommodation requests.</p>
+                                                                                                            <div class="d-flex align-items-center mb-4">
+                                                                                                                <div class="bg-success text-white p-3 rounded-circle me-3"><i
+                                                                                                                    class="fas fa-map-marker-alt fa-lg"></i></div>
+                                                                                                                    <div>
+                                                                                                                        <h6 class="fw-bold mb-0">Event Location</h6>
+                                                                                                                        <small class="text-muted">@venue</small>
+                                                                                                                    </div>
+                                                                                                                </div>
+                                                                                                                <div class="d-flex align-items-center mb-4">
+                                                                                                                    <div class="bg-warning text-dark p-3 rounded-circle me-3"><i class="fas fa-phone-alt fa-lg"></i>
+                                                                                                                    </div>
+                                                                                                                    <div>
+                                                                                                                        <h6 class="fw-bold mb-0">Help Desk Hotlines</h6>
+                                                                                                                        <small class="text-muted">@(Model.Settings.GetValueOrDefault("ContactHotline", "+880 1700-000000"))</small>
+                                                                                                                    </div>
+                                                                                                                </div>
+                                                                                                                <div class="d-flex align-items-center">
+                                                                                                                    <div class="bg-primary text-white p-3 rounded-circle me-3"><i class="fas fa-envelope fa-lg"></i>
+                                                                                                                    </div>
+                                                                                                                    <div>
+                                                                                                                        <h6 class="fw-bold mb-0">Official Email</h6>
+                                                                                                                        <small class="text-muted">@(Model.Settings.GetValueOrDefault("ContactEmail",
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                  "reunion@easyalumni.com"))</small>
+                                                                                                                        </div>
+                                                                                                                    </div>
+                                                                                                                </div>
+                                                                                                                <div class="col-lg-7">
+                                                                                                                    <div class="card card-custom p-4">
+                                                                                                                        <h4 class="fw-bold text-dark mb-4"><i class="fas fa-paper-plane text-success me-2"></i> Send us a
+                                                                                                                            Message</h4>
+                                                                                                                            <form
+                                                                                                                                onsubmit="event.preventDefault(); Swal.fire('Thank you!', 'Your query has been submitted. Our volunteer desk will reach you shortly.', 'success');">
+                                                                                                                                <div class="row g-3">
+                                                                                                                                    <div class="col-md-6">
+                                                                                                                                        <label class="form-label fw-semibold">Your Name</label>
+                                                                                                                                        <input type="text" class="form-control" placeholder="e.g. Ayesha " required>
+                                                                                                                                    </div>
+                                                                                                                                    <div class="col-md-6">
+                                                                                                                                        <label class="form-label fw-semibold">Mobile Number</label>
+                                                                                                                                        <input type="tel" class="form-control" placeholder="01XXXXXXXXX" required>
+                                                                                                                                    </div>
+                                                                                                                                    <div class="col-12">
+                                                                                                                                        <label class="form-label fw-semibold">Passing Batch / Year</label>
+                                                                                                                                        <input type="number" class="form-control" placeholder="e.g. 2010">
+                                                                                                                                    </div>
+                                                                                                                                    <div class="col-12">
+                                                                                                                                        <label class="form-label fw-semibold">Your Question or Feedback</label>
+                                                                                                                                        <textarea class="form-control" rows="4" placeholder="How can we assist you?"
+                                                                                                                                                  required></textarea>
+                                                                                                                                    </div>
+                                                                                                                                    <div class="col-12">
+                                                                                                                                        <button type="submit" class="btn btn-success rounded-pill px-5 py-2 fw-bold">
+                                                                                                                                            <i class="fas fa-paper-plane me-1"></i> Submit Message
+                                                                                                                                        </button>
+                                                                                                                                    </div>
+                                                                                                                                </div>
+                                                                                                                            </form>
+                                                                                                                        </div>
+                                                                                                                    </div>
+                                                                                                                </div>
 
-        <!-- Google Map Section -->
-        <div class="row mt-5">
-            <div class="col-12">
-                <div class="card card-custom overflow-hidden p-0 border-0 rounded-4 shadow-sm">
-                    <div class="p-3 bg-white border-bottom d-flex justify-content-between align-items-center flex-wrap gap-2">
-                        <div>
-                            <h5 class="fw-bold text-dark mb-0">
-                                <i class="fas fa-map-marked-alt text-success me-2"></i> Campus Venue Location Map
-                            </h5>
-                            <small class="text-muted">@venue - @(Model.Settings.GetValueOrDefault("VenueAddress", "Hetem Khan, Boalia, Rajshahi"))</small>
-                        </div>
-                        <a href="https://maps.google.com/?q=@Uri.EscapeDataString(venue + " " + Model.Settings.GetValueOrDefault("VenueAddress", "Rajshahi"))" target="_blank" rel="noopener noreferrer" class="btn btn-sm btn-outline-success rounded-pill px-3">
-                            <i class="fas fa-external-link-alt me-1"></i> Open in Google Maps
-                        </a>
-                    </div>
-                    <div style="height: 380px; width: 100%; position: relative;">
-                        <iframe src="@mapUrl" width="100%" height="100%" style="border:0;" allowfullscreen="" loading="lazy" referrerpolicy="no-referrer-when-downgrade"></iframe>
-                    </div>
-                </div>
-            </div>
-        </div>
-    </div>
-</section>
+                                                                                                                <!-- Google Map Section -->
+                                                                                                                <div class="row mt-5">
+                                                                                                                    <div class="col-12">
+                                                                                                                        <div class="card card-custom overflow-hidden p-0 border-0 rounded-4 shadow-sm">
+                                                                                                                            <div
+                                                                                                                                class="p-3 bg-white border-bottom d-flex justify-content-between align-items-center flex-wrap gap-2">
+                                                                                                                                <div>
+                                                                                                                                    <h5 class="fw-bold text-dark mb-0">
+                                                                                                                                        <i class="fas fa-map-marked-alt text-success me-2"></i> Campus Venue Location Map
+                                                                                                                                    </h5>
+                                                                                                                                    <small class="text-muted">@venue - @(Model.Settings.GetValueOrDefault("VenueAddress", "Hetem Khan, Boalia, Rajshahi"))</small>
+                                                                                                                                </div>
+                                                                                                                                <a href="https://maps.google.com/?q=@Uri.EscapeDataString(venue + " " + Model.Settings.GetValueOrDefault("VenueAddress", "Rajshahi"))"
+                                                                                                                                   target="_blank" rel="noopener noreferrer"
+                                                                                                                                   class="btn btn-sm btn-outline-success rounded-pill px-3">
+                                                                                                                                    <i class="fas fa-external-link-alt me-1"></i> Open in Google Maps
+                                                                                                                                </a>
+                                                                                                                            </div>
+                                                                                                                            <div style="height: 380px; width: 100%; position: relative;">
+                                                                                                                                <iframe src="@mapUrl" width="100%" height="100%" style="border:0;" allowfullscreen=""
+                                                                                                                                        loading="lazy" referrerpolicy="no-referrer-when-downgrade"></iframe>
+                                                                                                                            </div>
+                                                                                                                        </div>
+                                                                                                                    </div>
+                                                                                                                </div>
+                                                                                                            </div>
+                                                                                                        </section>
 
-<!-- Download Pass Modal -->
-<div class="modal fade" id="downloadPassModal" tabindex="-1" aria-labelledby="downloadPassModalLabel" aria-hidden="true">
-    <div class="modal-dialog modal-dialog-centered">
-        <div class="modal-content rounded-4 border-0 shadow-lg overflow-hidden">
-            <div class="modal-header bg-dark text-white border-0 py-3" style="background: linear-gradient(135deg, #0f172a 0%, #004d38 100%) !important;">
-                <h5 class="modal-title fw-bold" id="downloadPassModalLabel">
-                    <i class="fas fa-id-badge text-warning me-2"></i> Download Digital Entry Pass / ID Card
-                </h5>
-                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
-            </div>
-            <form asp-controller="Pass" asp-action="FindPass" method="post">
-                @Html.AntiForgeryToken()
-                <div class="modal-body p-4">
-                    <p class="text-muted small mb-4">
-                        Enter your registered mobile number and transaction ID or registration number to print or save your official Digital Entry Pass.
-                    </p>
+                                                                                                        <!-- Download Pass Modal -->
+                                                                                                        <div class="modal fade" id="downloadPassModal" tabindex="-1" aria-labelledby="downloadPassModalLabel"
+                                                                                                             aria-hidden="true">
+                                                                                                            <div class="modal-dialog modal-dialog-centered">
+                                                                                                                <div class="modal-content rounded-4 border-0 shadow-lg overflow-hidden">
+                                                                                                                    <div class="modal-header bg-dark text-white border-0 py-3"
+                                                                                                                         style="background: linear-gradient(135deg, #0f172a 0%, #004d38 100%) !important;">
+                                                                                                                        <h5 class="modal-title fw-bold" id="downloadPassModalLabel">
+                                                                                                                            <i class="fas fa-id-badge text-warning me-2"></i> Download Digital Entry Pass / ID Card
+                                                                                                                        </h5>
+                                                                                                                        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"
+                                                                                                                                aria-label="Close"></button>
+                                                                                                                    </div>
+                                                                                                                    <form asp-controller="Pass" asp-action="FindPass" method="post">
+                                                                                                                        @Html.AntiForgeryToken()
+                                                                                                                        <div class="modal-body p-4">
+                                                                                                                            <p class="text-muted small mb-4">
+                                                                                                                                Enter your registered mobile number and transaction ID or registration number to print or save
+                                                                                                                                your official Digital Entry Pass.
+                                                                                                                            </p>
 
-                    <div class="mb-3">
-                        <label class="form-label fw-semibold text-dark">
-                            Registered Mobile Number <span class="text-danger">*</span>
-                        </label>
-                        <div class="input-group">
-                            <span class="input-group-text bg-light"><i class="fas fa-phone text-success"></i></span>
-                            <input type="tel" name="phoneNumber" class="form-control" placeholder="01XXXXXXXXX" required />
-                        </div>
-                        <small class="text-muted">11-digit mobile number used during registration.</small>
-                    </div>
+                                                                                                                            <div class="mb-3">
+                                                                                                                                <label class="form-label fw-semibold text-dark">
+                                                                                                                                    Registered Mobile Number <span class="text-danger">*</span>
+                                                                                                                                </label>
+                                                                                                                                <div class="input-group">
+                                                                                                                                    <span class="input-group-text bg-light"><i class="fas fa-phone text-success"></i></span>
+                                                                                                                                    <input type="tel" name="phoneNumber" class="form-control" placeholder="01XXXXXXXXX"
+                                                                                                                                           required />
+                                                                                                                                </div>
+                                                                                                                                <small class="text-muted">11-digit mobile number used during registration.</small>
+                                                                                                                            </div>
 
-                    <div class="mb-3">
-                        <label class="form-label fw-semibold text-dark">
-                            Transaction ID (TrxID) or Ticket No (Optional)
-                        </label>
-                        <div class="input-group">
-                            <span class="input-group-text bg-light"><i class="fas fa-receipt text-primary"></i></span>
-                            <input type="text" name="identifier" class="form-control text-uppercase" placeholder="e.g. 9J82KL091 or REG-..." />
-                        </div>
-                        <small class="text-muted">bKash/Nagad TrxID, Bank FT number, or Registration Number.</small>
-                    </div>
-                </div>
-                <div class="modal-footer bg-light border-0 px-4 py-3">
-                    <button type="button" class="btn btn-outline-secondary rounded-pill px-3" data-bs-dismiss="modal">Cancel</button>
-                    <button type="submit" class="btn btn-success rounded-pill px-4 fw-bold shadow-sm">
-                        <i class="fas fa-download me-1"></i> Retrieve &amp; Print Pass
-                    </button>
-                </div>
-            </form>
-        </div>
-    </div>
-</div>
+                                                                                                                            <div class="mb-3">
+                                                                                                                                <label class="form-label fw-semibold text-dark">
+                                                                                                                                    Transaction ID (TrxID) or Ticket No (Optional)
+                                                                                                                                </label>
+                                                                                                                                <div class="input-group">
+                                                                                                                                    <span class="input-group-text bg-light"><i class="fas fa-receipt text-primary"></i></span>
+                                                                                                                                    <input type="text" name="identifier" class="form-control text-uppercase"
+                                                                                                                                           placeholder="e.g. 9J82KL091 or REG-..." />
+                                                                                                                                </div>
+                                                                                                                                <small class="text-muted">bKash/Nagad TrxID, Bank FT number, or Registration Number.</small>
+                                                                                                                            </div>
+                                                                                                                        </div>
+                                                                                                                        <div class="modal-footer bg-light border-0 px-4 py-3">
+                                                                                                                            <button type="button" class="btn btn-outline-secondary rounded-pill px-3"
+                                                                                                                                    data-bs-dismiss="modal">Cancel</button>
+                                                                                                                            <button type="submit" class="btn btn-success rounded-pill px-4 fw-bold shadow-sm">
+                                                                                                                                <i class="fas fa-download me-1"></i> Retrieve &amp; Print Pass
+                                                                                                                            </button>
+                                                                                                                        </div>
+                                                                                                                    </form>
+                                                                                                                </div>
+                                                                                                            </div>
+                                                                                                        </div>
 
-@section Scripts {
-    <script>
-        // Real-Time Countdown Timer
-        const targetDate = new Date("@eventDateStr").getTime();
+                                                                                                        @section Scripts {
+                                                                                                            <script>
+                                                                                                                // Real-Time Countdown Timer
+                                                                                                                const targetDate = new Date("@eventDateStr").getTime();
 
-        function updateCountdown() {
-            const now = new Date().getTime();
-            const difference = targetDate - now;
+                                                                                                                function updateCountdown() {
+                                                                                                                    const now = new Date().getTime();
+                                                                                                                    const difference = targetDate - now;
 
-            if (difference > 0) {
-                const days = Math.floor(difference / (1000 * 60 * 60 * 24));
-                const hours = Math.floor((difference % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
-                const minutes = Math.floor((difference % (1000 * 60 * 60)) / (1000 * 60));
-                const seconds = Math.floor((difference % (1000 * 60)) / 1000);
+                                                                                                                    if (difference > 0) {
+                                                                                                                        const days = Math.floor(difference / (1000 * 60 * 60 * 24));
+                                                                                                                        const hours = Math.floor((difference % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
+                                                                                                                        const minutes = Math.floor((difference % (1000 * 60 * 60)) / (1000 * 60));
+                                                                                                                        const seconds = Math.floor((difference % (1000 * 60)) / 1000);
 
-                document.getElementById('days').innerText = String(days).padStart(2, '0');
-                document.getElementById('hours').innerText = String(hours).padStart(2, '0');
-                document.getElementById('minutes').innerText = String(minutes).padStart(2, '0');
-                document.getElementById('seconds').innerText = String(seconds).padStart(2, '0');
-            } else {
-                document.getElementById('days').innerText = "00";
-                document.getElementById('hours').innerText = "00";
-                document.getElementById('minutes').innerText = "00";
-                document.getElementById('seconds').innerText = "00";
-            }
-        }
+                                                                                                                        document.getElementById('days').innerText = String(days).padStart(2, '0');
+                                                                                                                        document.getElementById('hours').innerText = String(hours).padStart(2, '0');
+                                                                                                                        document.getElementById('minutes').innerText = String(minutes).padStart(2, '0');
+                                                                                                                        document.getElementById('seconds').innerText = String(seconds).padStart(2, '0');
+                                                                                                                    } else {
+                                                                                                                        document.getElementById('days').innerText = "00";
+                                                                                                                        document.getElementById('hours').innerText = "00";
+                                                                                                                        document.getElementById('minutes').innerText = "00";
+                                                                                                                        document.getElementById('seconds').innerText = "00";
+                                                                                                                    }
+                                                                                                                }
 
-        setInterval(updateCountdown, 1000);
-        updateCountdown();
-    </script>
-}
+                                                                                                                setInterval(updateCountdown, 1000);
+                                                                                                                updateCountdown();
+                                                                                                            </script>
+                                                                                                        }

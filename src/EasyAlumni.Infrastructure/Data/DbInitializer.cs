@@ -116,13 +116,9 @@ namespace EasyAlumni.Infrastructure.Data
                         IsSecret = s.Key.Contains("Key") || s.Key.Contains("Token")
                     });
                 }
-                else if (s.Key == "LandingHeroSubtitle" || s.Key == "EventVenue" || s.Key == "ContactEmail" || s.Key == "ContactHotline")
-                {
-                    existingSetting.SettingValue = s.Value.Value;
-                }
             }
 
-            // 4. Seed or Update Default Reunion Event
+            // 4. Seed Default Reunion Event if none exists
             var activeReunion = await context.ReunionEvents.FirstOrDefaultAsync(r => r.IsActive);
             if (activeReunion == null)
             {
@@ -160,16 +156,8 @@ namespace EasyAlumni.Infrastructure.Data
                     new BudgetHead { ReunionEventId = reunion.Id, HeadName = "Photography, Video & Drone Media", AllocatedAmount = 50000m },
                     new BudgetHead { ReunionEventId = reunion.Id, HeadName = "Security, Volunteers & Logistics", AllocatedAmount = 50000m }
                 );
+                await context.SaveChangesAsync();
             }
-            else
-            {
-                activeReunion.EventTitle = "Shahid Nazmul Huq Girls' High School Alumni Reunion 2026";
-                activeReunion.TitleBangla = "শহীদ নাজমুল হক বালিকা উচ্চ বিদ্যালয় প্রাক্তন ছাত্রী পুনর্মিলনী ২০২৬";
-                activeReunion.VenueName = "বিদ্যালয় প্রাঙ্গণ ও মিলনায়তন";
-                activeReunion.VenueAddress = "শহীদ নাজমুল হক বালিকা উচ্চ বিদ্যালয়, রাজশাহী";
-                activeReunion.Description = "স্মৃতিময় দিনগুলোর রোমন্থন ও সোনালী শৈশবে ফিরে যাওয়ার এক অনন্য উৎসব। শহীদ নাজমুল হক বালিকা উচ্চ বিদ্যালয়ের সকল ব্যাচের প্রাক্তন ছাত্রীদের নিয়ে আয়োজিত হতে যাচ্ছে জমকালো পুনর্মিলনী উৎসব ২০২৬।";
-            }
-            await context.SaveChangesAsync();
 
             // 5. Seed Gift Items & Size Stocks
             if (!await context.GiftItems.AnyAsync())
