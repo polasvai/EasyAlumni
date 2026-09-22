@@ -212,8 +212,9 @@
                     <div class="image-drop-box" onclick="document.getElementById('recentPhotoInput').click()">
                         <img id="recentPhotoPreview" src="https://ui-avatars.com/api/?name=Recent+Photo&background=e2e8f0&color=64748b" class="image-preview-circle" alt="Recent Photo Preview" />
                         <span class="fw-semibold text-success d-block fs-6 mb-1"><i class="fas fa-upload me-1"></i> Upload Recent Passport / Portrait Picture <span class="text-danger">*</span></span>
-                        <small class="text-muted d-block">Will be printed on your Official Reunion Digital Pass</small>
-                        <input id="recentPhotoInput" type="file" asp-for="RecentPhotoFile" accept="image/*" style="display:none;" onchange="previewImage(this, 'recentPhotoPreview')" />
+                        <small class="text-muted d-block">Will be printed on your Official Reunion Digital Pass (Max 300KB limit, larger photos up to 10MB are automatically optimized)</small>
+                        <div id="recentPhotoStatus" class="small mt-2" style="display:none;"></div>
+                        <input id="recentPhotoInput" type="file" asp-for="RecentPhotoFile" accept="image/*" style="display:none;" onchange="handleImageUpload(this, 'recentPhotoPreview', 'recentPhotoStatus', 307200)" />
                     </div>
                     <span asp-validation-for="RecentPhotoFile" class="text-danger small text-center d-block mt-1"></span>
                 </div>
@@ -282,8 +283,8 @@
                     <input asp-for="AlternativeNumber" class="form-control" placeholder="01XXXXXXXXX" type="tel" />
                 </div>
                 <div class="col-md-6">
-                    <label class="form-label fw-semibold">Upload Testimonial / School ID (PDF/Image, Max 200KB)</label>
-                    <input asp-for="TestimonialFile" class="form-control" type="file" accept=".pdf,.jpg,.jpeg,.png" onchange="validateFileSize(this, 204800, 'testimonialError')" />
+                    <label class="form-label fw-semibold">Upload Testimonial / School ID (PDF/Image, Max 300KB)</label>
+                    <input asp-for="TestimonialFile" class="form-control" type="file" accept=".pdf,.jpg,.jpeg,.png" onchange="handleDocUpload(this, 'testimonialError', 307200)" />
                     <span id="testimonialError" class="text-danger small"></span>
                 </div>
                 <div class="col-md-6">
@@ -426,7 +427,7 @@
                 <i class="fas fa-user-friends text-warning"></i>
                 <span>5. Accompanying Guests &amp; Preferences</span>
             </div>
-
+            @*
             <!-- Fallback hidden input for TShirtSize -->
             <input type="hidden" asp-for="TShirtSize" value="L" id="tshirtSizeHiddenInput" />
 
@@ -463,7 +464,7 @@
                     }
                 </div>
             }
-
+            *@
             <!-- Dynamic Accompanying Guests Builder -->
             <div class="card border rounded-3 p-3 mb-4 bg-light">
                 <div class="d-flex flex-wrap justify-content-between align-items-center mb-3">
@@ -1138,6 +1139,207 @@
             onPaymentModeChanged();
         });
 
+        /**
+         * Compress an image File if it exceeds maxBytes, keeping it under target size (e.g. 300KB)
+         */
+        async function compressImageToLimit(file, maxBytes = 307200) {
+            // If already below maxBytes, no need to compress
+            if (file.size <= maxBytes) {
+                return file;
+            }
+
+            return new Promise((resolve) => {
+                const img = new Image();
+                const objectUrl = URL.createObjectURL(file);
+                
+                img.onload = () => {
+                    URL.revokeObjectURL(objectUrl);
+                    
+                    let width = img.naturalWidth || img.width;
+                    let height = img.naturalHeight || img.height;
+                    
+                    // Downscale large dimension if > 1600px for avatar/photo
+                    const maxDim = 1600;
+                    if (width > maxDim || height > maxDim) {
+                        if (width > height) {
+                            height = Math.round((height * maxDim) / width);
+                            width = maxDim;
+                        } else {
+                            width = Math.round((width * maxDim) / height);
+                            height = maxDim;
+                        }
+                    }
+                    
+                    const canvas = document.createElement('canvas');
+                    canvas.width = width;
+                    canvas.height = height;
+                    const ctx = canvas.getContext('2d');
+                    ctx.drawImage(img, 0, 0, width, height);
+                    
+                    // Try iterative quality reduction
+                    let minQuality = 0.4;
+                    let maxQuality = 0.92;
+                    let bestBlob = null;
+                    
+                    function tryQuality(q) {
+                        canvas.toBlob((blob) => {
+                            if (!blob) {
+                                resolve(file); // fallback to original
+                                return;
+                            }
+                            
+                            if (blob.size <= maxBytes || q <= 0.45) {
+                                // Close enough or reached limit
+                                const finalName = file.name.replace(/\.[^/.]+$/, "") + ".jpg";
+                                const compressedFile = new File([blob], finalName, {
+                                    type: 'image/jpeg',
+                                    lastModified: Date.now()
+                                });
+                                resolve(compressedFile);
+                            } else {
+                                // Need to reduce quality or dimensions further
+                                if (q > 0.6) {
+                                    tryQuality(q - 0.15);
+                                } else {
+                                    // Scale canvas down by 25% and retry
+                                    const nextW = Math.round(canvas.width * 0.75);
+                                    const nextH = Math.round(canvas.height * 0.75);
+                                    const tempCanvas = document.createElement('canvas');
+                                    tempCanvas.width = nextW;
+                                    tempCanvas.height = nextH;
+                                    const tctx = tempCanvas.getContext('2d');
+                                    tctx.drawImage(canvas, 0, 0, nextW, nextH);
+                                    canvas.width = nextW;
+                                    canvas.height = nextH;
+                                    ctx.drawImage(tempCanvas, 0, 0);
+                                    tryQuality(0.75);
+                                }
+                            }
+                        }, 'image/jpeg', q);
+                    }
+                    
+                    tryQuality(0.85);
+                };
+                
+                img.onerror = () => {
+                    URL.revokeObjectURL(objectUrl);
+                    resolve(file);
+                };
+                
+                img.src = objectUrl;
+            });
+        }
+
+        async function handleImageUpload(input, previewId, statusId, maxBytes = 307200) {
+            const statusEl = document.getElementById(statusId);
+            if (statusEl) {
+                statusEl.style.display = 'none';
+                statusEl.innerHTML = '';
+            }
+
+            if (!input.files || !input.files[0]) return;
+
+            const file = input.files[0];
+            const originalSizeKb = (file.size / 1024).toFixed(0);
+
+            // Display instant preview
+            const reader = new FileReader();
+            reader.onload = function (e) {
+                document.getElementById(previewId).src = e.target.result;
+            };
+            reader.readAsDataURL(file);
+
+            // If file is > 10MB, ask for smaller file
+            if (file.size > 10 * 1024 * 1024) {
+                if (statusEl) {
+                    statusEl.style.display = 'block';
+                    statusEl.className = 'small mt-2 text-danger fw-semibold';
+                    statusEl.innerHTML = `<i class="fas fa-exclamation-circle me-1"></i> Original file is too large (${originalSizeKb} KB). Max initial size is 10MB.`;
+                }
+                input.value = "";
+                return;
+            }
+
+            // If file is over limit, auto-compress
+            if (file.size > maxBytes) {
+                if (statusEl) {
+                    statusEl.style.display = 'block';
+                    statusEl.className = 'small mt-2 text-primary fw-semibold';
+                    statusEl.innerHTML = `<i class="fas fa-spinner fa-spin me-1"></i> Optimizing photo size (${originalSizeKb} KB -> under 300KB)...`;
+                }
+
+                try {
+                    const compressedFile = await compressImageToLimit(file, maxBytes);
+                    
+                    // Replace file in input via DataTransfer
+                    const dt = new DataTransfer();
+                    dt.items.add(compressedFile);
+                    input.files = dt.files;
+
+                    const newSizeKb = (compressedFile.size / 1024).toFixed(0);
+                    if (statusEl) {
+                        statusEl.style.display = 'block';
+                        statusEl.className = 'small mt-2 text-success fw-semibold';
+                        statusEl.innerHTML = `<i class="fas fa-check-circle me-1"></i> Auto-optimized: reduced from ${originalSizeKb} KB to ${newSizeKb} KB (< 300KB)`;
+                    }
+                } catch (err) {
+                    console.error('Image compression error:', err);
+                    if (statusEl) {
+                        statusEl.style.display = 'block';
+                        statusEl.className = 'small mt-2 text-warning';
+                        statusEl.innerHTML = `<i class="fas fa-info-circle me-1"></i> Photo ready (${originalSizeKb} KB)`;
+                    }
+                }
+            } else {
+                if (statusEl) {
+                    statusEl.style.display = 'block';
+                    statusEl.className = 'small mt-2 text-success';
+                    statusEl.innerHTML = `<i class="fas fa-check-circle me-1"></i> Photo size: ${originalSizeKb} KB (under 300KB limit)`;
+                }
+            }
+        }
+
+        async function handleDocUpload(input, errorSpanId, maxBytes = 307200) {
+            const errorEl = document.getElementById(errorSpanId);
+            if (errorEl) errorEl.innerText = "";
+
+            if (!input.files || !input.files[0]) return;
+            const file = input.files[0];
+            const isImage = file.type.startsWith('image/') || /\.(jpg|jpeg|png|webp)$/i.test(file.name);
+
+            if (file.size > maxBytes) {
+                if (isImage) {
+                    // Try auto-compressing image document
+                    try {
+                        const originalSizeKb = (file.size / 1024).toFixed(0);
+                        const compressedFile = await compressImageToLimit(file, maxBytes);
+                        const dt = new DataTransfer();
+                        dt.items.add(compressedFile);
+                        input.files = dt.files;
+
+                        const newSizeKb = (compressedFile.size / 1024).toFixed(0);
+                        if (errorEl) {
+                            errorEl.className = 'text-success small d-block mt-1';
+                            errorEl.innerHTML = `<i class="fas fa-check-circle me-1"></i> Auto-optimized image from ${originalSizeKb} KB to ${newSizeKb} KB.`;
+                        }
+                    } catch (e) {
+                        if (errorEl) {
+                            errorEl.className = 'text-danger small d-block mt-1';
+                            errorEl.innerText = `File size exceeds ${(maxBytes / 1024).toFixed(0)} KB limit.`;
+                        }
+                        input.value = "";
+                    }
+                } else {
+                    // For PDF documents, notify user
+                    if (errorEl) {
+                        errorEl.className = 'text-danger small d-block mt-1';
+                        errorEl.innerText = `PDF file size (${(file.size / 1024).toFixed(0)} KB) exceeds ${(maxBytes / 1024).toFixed(0)} KB limit. Please choose a smaller file or image.`;
+                    }
+                    input.value = "";
+                }
+            }
+        }
+
         function previewImage(input, previewId) {
             if (input.files && input.files[0]) {
                 const reader = new FileReader();
@@ -1149,10 +1351,11 @@
         }
 
         function validateFileSize(input, maxBytes, errorSpanId) {
-            document.getElementById(errorSpanId).innerText = "";
+            const el = document.getElementById(errorSpanId);
+            if (el) el.innerText = "";
             if (input.files && input.files[0]) {
                 if (input.files[0].size > maxBytes) {
-                    document.getElementById(errorSpanId).innerText = `File size exceeds ${(maxBytes / 1024).toFixed(0)} KB limit. Please choose a smaller file.`;
+                    if (el) el.innerText = `File size exceeds ${(maxBytes / 1024).toFixed(0)} KB limit. Please choose a smaller file.`;
                     input.value = "";
                 }
             }

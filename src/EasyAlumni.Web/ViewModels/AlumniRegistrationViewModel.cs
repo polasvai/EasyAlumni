@@ -98,7 +98,7 @@ namespace EasyAlumni.Web.ViewModels
         [Display(Name = "Recent Photo")]
         public IFormFile? RecentPhotoFile { get; set; }
 
-        [Display(Name = "Testimonial / ID Certificate (Max 200KB)")]
+        [Display(Name = "Testimonial / ID Certificate (Max 300KB)")]
         public IFormFile? TestimonialFile { get; set; }
 
         // 4. Merchandise & Guests

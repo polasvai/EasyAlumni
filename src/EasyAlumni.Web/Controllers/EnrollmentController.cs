@@ -246,7 +246,7 @@ namespace EasyAlumni.Web.Controllers
                 if (model.TestimonialFile != null && model.TestimonialFile.Length > 0)
                 {
                     using var stream = model.TestimonialFile.OpenReadStream();
-                    testimonialPath = await _fileStorage.SaveFileAsync(stream, model.TestimonialFile.FileName, "Testimonials", allowedDocExt, 204800); // Max 200KB
+                    testimonialPath = await _fileStorage.SaveFileAsync(stream, model.TestimonialFile.FileName, "Testimonials", allowedDocExt, 307200); // Max 300KB
                 }
 
                 string? slipPath = null;
