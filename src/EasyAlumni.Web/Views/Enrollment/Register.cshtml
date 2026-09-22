@@ -518,10 +518,104 @@
                 </div>
             }
 
-            <!-- 4. Registration Package Selection -->
+
+  <!-- 4. Dynamic Custom Questions -->
+            @if (Model.AvailableCustomQuestions != null && Model.AvailableCustomQuestions.Any())
+            {
+                <div class="form-section-title">
+                    <i class="fas fa-clipboard-question text-warning"></i>
+                    <span>4. Preferences &amp; Program Participation (ঐচ্ছিক কার্যক্রম ও পছন্দ)</span>
+                </div>
+                <div class="row g-3 mb-4">
+                    @for (int i = 0; i < Model.AvailableCustomQuestions.Count; i++)
+                    {
+                        var q = Model.AvailableCustomQuestions[i];
+                        <div class="col-12">
+                            <div class="custom-question-card">
+                                <input type="hidden" name="QuestionResponses[@i].QuestionId" value="@q.Id" />
+                                <div class="d-flex flex-wrap justify-content-between align-items-center mb-2">
+                                    <label class="form-label fw-bold text-dark mb-0 fs-6">
+                                        <i class="fas fa-question-circle text-success me-1"></i> @q.QuestionText
+                                        @if (!string.IsNullOrEmpty(q.QuestionTextBangla))
+                                        {
+                                            <span class="text-muted fw-normal small ms-1">(@q.QuestionTextBangla)</span>
+                                        }
+                                        @if (q.IsRequired)
+                                        {
+                                            <span class="text-danger">*</span>
+                                        }
+                                    </label>
+                                </div>
+
+                                @if (q.FieldType == "YesNoWithSubQuestion" || q.FieldType == "YesNo")
+                                {
+                                    <div class="d-flex gap-4 align-items-center mt-2">
+                                        <div class="form-check form-check-inline">
+                                            <input class="form-check-input question-radio" type="radio" 
+                                                   name="QuestionResponses[@i].Answer" id="q_yes_@q.Id" value="Yes" 
+                                                   onchange="toggleSubQuestion(@q.Id, true)" @(q.IsRequired ? "required" : "") />
+                                            <label class="form-check-label fw-semibold text-success" for="q_yes_@q.Id">
+                                                <i class="fas fa-check-circle me-1"></i> Yes (হ্যাঁ)
+                                            </label>
+                                        </div>
+                                        <div class="form-check form-check-inline">
+                                            <input class="form-check-input question-radio" type="radio" 
+                                                   name="QuestionResponses[@i].Answer" id="q_no_@q.Id" value="No" 
+                                                   checked
+                                                   onchange="toggleSubQuestion(@q.Id, false)" />
+                                            <label class="form-check-label fw-semibold text-muted" for="q_no_@q.Id">
+                                                <i class="fas fa-times-circle me-1"></i> No (না)
+                                            </label>
+                                        </div>
+                                    </div>
+
+                                    @if (q.FieldType == "YesNoWithSubQuestion" && !string.IsNullOrEmpty(q.SubQuestionText))
+                                    {
+                                        <div class="sub-question-container mt-3 p-3 bg-white rounded-3 border border-success-subtle shadow-sm" 
+                                             id="sub_q_box_@q.Id" style="display: none;">
+                                            <label class="form-label fw-semibold text-dark small mb-1">
+                                                <i class="fas fa-level-down-alt text-success me-1"></i> @q.SubQuestionText
+                                            </label>
+                                            <input type="text" name="QuestionResponses[@i].SubAnswer" class="form-control" 
+                                                   placeholder="e.g. Singing, Drama, Recitation, Dance, Donation amount, etc." />
+                                        </div>
+                                    }
+                                }
+                                else if (q.FieldType == "Dropdown" && !string.IsNullOrEmpty(q.OptionsJson))
+                                {
+                                    var opts = q.OptionsJson.Split(new[] { ',', ';' }, StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
+                                    <select name="QuestionResponses[@i].Answer" class="form-select mt-2" @(q.IsRequired ? "required" : "")>
+                                        <option value="">-- Select Option --</option>
+                                        @foreach (var opt in opts)
+                                        {
+                                            <option value="@opt">@opt</option>
+                                        }
+                                    </select>
+                                }
+                                else
+                                {
+                                    <input type="text" name="QuestionResponses[@i].Answer" class="form-control mt-2" 
+                                           placeholder="Enter your response" @(q.IsRequired ? "required" : "") />
+                                }
+                            </div>
+                        </div>
+                    }
+                </div>
+            }
+
+
+
+
+
+
+
+
+ 
+          
+            <!-- 5. Registration Package Selection -->
             <div class="form-section-title">
                 <i class="fas fa-cubes text-warning"></i>
-                <span>4. Select Your Registration Package <span class="text-danger">*</span></span>
+                <span>5. Select Your Registration Package <span class="text-danger">*</span></span>
             </div>
 
             <input type="hidden" asp-for="RegistrationPackageId" id="selectedPackageIdInput" />
@@ -611,10 +705,12 @@
                 </div>
             }
 
-            <!-- 5. Accompanying Guests & Preferences -->
+           
+
+           <!-- 6. Accompanying Guests & Preferences -->
             <div class="form-section-title">
                 <i class="fas fa-user-friends text-warning"></i>
-                <span>5. Accompanying Guests &amp; Preferences</span>
+                <span>6. Accompanying Guests &amp; Preferences</span>
             </div>
             @*
             <!-- Fallback hidden input for TShirtSize -->
@@ -680,6 +776,10 @@
                 </div>
             </div>
 
+
+
+
+
             <!-- Dynamic Fee Calculation Summary Box -->
             <div class="fee-summary-box">
                 <div class="row align-items-center">
@@ -695,90 +795,6 @@
                     </div>
                 </div>
             </div>
-
-            <!-- 6. Dynamic Custom Questions -->
-            @if (Model.AvailableCustomQuestions != null && Model.AvailableCustomQuestions.Any())
-            {
-                <div class="form-section-title">
-                    <i class="fas fa-clipboard-question text-warning"></i>
-                    <span>6. Preferences &amp; Program Participation (ঐচ্ছিক কার্যক্রম ও পছন্দ)</span>
-                </div>
-                <div class="row g-3 mb-4">
-                    @for (int i = 0; i < Model.AvailableCustomQuestions.Count; i++)
-                    {
-                        var q = Model.AvailableCustomQuestions[i];
-                        <div class="col-12">
-                            <div class="custom-question-card">
-                                <input type="hidden" name="QuestionResponses[@i].QuestionId" value="@q.Id" />
-                                <div class="d-flex flex-wrap justify-content-between align-items-center mb-2">
-                                    <label class="form-label fw-bold text-dark mb-0 fs-6">
-                                        <i class="fas fa-question-circle text-success me-1"></i> @q.QuestionText
-                                        @if (!string.IsNullOrEmpty(q.QuestionTextBangla))
-                                        {
-                                            <span class="text-muted fw-normal small ms-1">(@q.QuestionTextBangla)</span>
-                                        }
-                                        @if (q.IsRequired)
-                                        {
-                                            <span class="text-danger">*</span>
-                                        }
-                                    </label>
-                                </div>
-
-                                @if (q.FieldType == "YesNoWithSubQuestion" || q.FieldType == "YesNo")
-                                {
-                                    <div class="d-flex gap-4 align-items-center mt-2">
-                                        <div class="form-check form-check-inline">
-                                            <input class="form-check-input question-radio" type="radio" 
-                                                   name="QuestionResponses[@i].Answer" id="q_yes_@q.Id" value="Yes" 
-                                                   onchange="toggleSubQuestion(@q.Id, true)" @(q.IsRequired ? "required" : "") />
-                                            <label class="form-check-label fw-semibold text-success" for="q_yes_@q.Id">
-                                                <i class="fas fa-check-circle me-1"></i> Yes (হ্যাঁ)
-                                            </label>
-                                        </div>
-                                        <div class="form-check form-check-inline">
-                                            <input class="form-check-input question-radio" type="radio" 
-                                                   name="QuestionResponses[@i].Answer" id="q_no_@q.Id" value="No" 
-                                                   checked
-                                                   onchange="toggleSubQuestion(@q.Id, false)" />
-                                            <label class="form-check-label fw-semibold text-muted" for="q_no_@q.Id">
-                                                <i class="fas fa-times-circle me-1"></i> No (না)
-                                            </label>
-                                        </div>
-                                    </div>
-
-                                    @if (q.FieldType == "YesNoWithSubQuestion" && !string.IsNullOrEmpty(q.SubQuestionText))
-                                    {
-                                        <div class="sub-question-container mt-3 p-3 bg-white rounded-3 border border-success-subtle shadow-sm" 
-                                             id="sub_q_box_@q.Id" style="display: none;">
-                                            <label class="form-label fw-semibold text-dark small mb-1">
-                                                <i class="fas fa-level-down-alt text-success me-1"></i> @q.SubQuestionText
-                                            </label>
-                                            <input type="text" name="QuestionResponses[@i].SubAnswer" class="form-control" 
-                                                   placeholder="e.g. Singing, Drama, Recitation, Dance, Donation amount, etc." />
-                                        </div>
-                                    }
-                                }
-                                else if (q.FieldType == "Dropdown" && !string.IsNullOrEmpty(q.OptionsJson))
-                                {
-                                    var opts = q.OptionsJson.Split(new[] { ',', ';' }, StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
-                                    <select name="QuestionResponses[@i].Answer" class="form-select mt-2" @(q.IsRequired ? "required" : "")>
-                                        <option value="">-- Select Option --</option>
-                                        @foreach (var opt in opts)
-                                        {
-                                            <option value="@opt">@opt</option>
-                                        }
-                                    </select>
-                                }
-                                else
-                                {
-                                    <input type="text" name="QuestionResponses[@i].Answer" class="form-control mt-2" 
-                                           placeholder="Enter your response" @(q.IsRequired ? "required" : "") />
-                                }
-                            </div>
-                        </div>
-                    }
-                </div>
-            }
 
             <!-- 7. Payment Submission -->
             <div class="form-section-title mt-4">
