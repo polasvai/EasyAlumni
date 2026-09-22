@@ -292,6 +292,81 @@
         </div>
     </div>
 
+    <!-- Section 2.1: JanataPay Dedicated Gateway for Donations / Fund -->
+    <div class="card border-0 shadow-sm rounded-4 mb-4 overflow-hidden border-start border-4 border-warning">
+        <div class="card-header bg-white border-bottom p-4 d-flex justify-content-between align-items-center flex-wrap gap-2">
+            <div>
+                <h5 class="fw-bold text-dark mb-1">
+                    <i class="fas fa-hand-holding-usd text-warning me-2"></i> JanataPay Gateway for Donations (Separate Account)
+                </h5>
+                <p class="text-muted small mb-0">Route voluntary alumni donations &amp; endowments to an isolated bank account/merchant</p>
+            </div>
+            <span class="badge bg-warning bg-opacity-10 text-dark px-3 py-2 rounded-pill">
+                <i class="fas fa-coins me-1"></i> Donation Segregation
+            </span>
+        </div>
+
+        <div class="card-body p-4">
+            <div class="form-check form-switch mb-4 p-3 bg-light rounded-3 border">
+                <input class="form-check-input ms-0 me-3" type="checkbox" name="settings[Donation_JanataPayUseDedicated]" 
+                       id="useDedicatedDonationSwitch" value="1" 
+                       @(sDict.GetValueOrDefault("Donation_JanataPayUseDedicated") == "1" ? "checked" : "")
+                       onchange="toggleDonationGatewayFields(this.checked)" />
+                <label class="form-check-label fw-bold text-dark" for="useDedicatedDonationSwitch">
+                    Use Dedicated JanataPay Merchant Account for Donations
+                </label>
+                <div class="small text-muted ms-5">
+                    If enabled, donations will be credited to this separate account. If disabled, donations will use the standard Registration JanataPay account above.
+                </div>
+            </div>
+
+            <div id="donationGatewayFields" style="display: @(sDict.GetValueOrDefault("Donation_JanataPayUseDedicated") == "1" ? "block" : "none");">
+                <div class="mb-3">
+                    <label class="form-label fw-semibold">Donation API Base URL</label>
+                    <input type="url" name="settings[Donation_JanataPayBaseUrl]" class="form-control" 
+                           value="@sDict.GetValueOrDefault("Donation_JanataPayBaseUrl", "https://sandbox-pg.janatapay.com")" />
+                    <small class="text-muted">JanataPay Gateway API URL for the donation account.</small>
+                </div>
+
+                <div class="row g-3 mb-3">
+                    <div class="col-md-6">
+                        <label class="form-label fw-semibold">Donation Merchant UID</label>
+                        <input type="text" name="settings[Donation_JanataPayMerchantUid]" class="form-control" 
+                               value="@sDict.GetValueOrDefault("Donation_JanataPayMerchantUid")" placeholder="e.g. 6521199999" />
+                        <small class="text-muted">Merchant UID for the separate donation account.</small>
+                    </div>
+                    <div class="col-md-6">
+                        <label class="form-label fw-semibold">Donation API Username</label>
+                        <input type="text" name="settings[Donation_JanataPayUsername]" class="form-control" 
+                               value="@sDict.GetValueOrDefault("Donation_JanataPayUsername")" placeholder="e.g. don_j8Dx4778" />
+                        <small class="text-muted">Gateway API username for donations.</small>
+                    </div>
+                </div>
+
+                <div class="mb-3">
+                    <label class="form-label fw-semibold">Donation API Password</label>
+                    <div class="input-group">
+                        <input type="password" name="settings[Donation_JanataPayPassword]" id="donationJanataPayPasswordInput" class="form-control" 
+                               value="@sDict.GetValueOrDefault("Donation_JanataPayPassword")" />
+                        <button type="button" class="btn btn-outline-secondary" onclick="togglePasswordVisibility('donationJanataPayPasswordInput', this)">
+                            <i class="fas fa-eye"></i>
+                        </button>
+                    </div>
+                    <small class="text-muted">Gateway secret account password for donations.</small>
+                </div>
+
+                <div class="mb-3">
+                    <label class="form-label fw-semibold">Donation Gateway RSA 2048-bit Public Key (Base64)</label>
+                    <textarea name="settings[Donation_JanataPayPublicKey]" class="form-control font-monospace small" rows="4" 
+                              placeholder="Paste RSA SPKI public key for the donation merchant...">@sDict.GetValueOrDefault("Donation_JanataPayPublicKey")</textarea>
+                    <small class="text-muted">
+                        Public key supplied by Janata Bank for this specific donation merchant.
+                    </small>
+                </div>
+            </div>
+        </div>
+    </div>
+
     <!-- Section 3: Manual Mobile Banking & Bank Accounts -->
     <div class="card border-0 shadow-sm rounded-4 mb-4 overflow-hidden">
         <div class="card-header bg-white border-bottom p-4">
@@ -331,7 +406,7 @@
     <!-- Save Button Floating Footer -->
     <div class="d-flex justify-content-between align-items-center p-3 bg-white rounded-4 border shadow-sm mb-4">
         <div>
-            <span class="text-muted small">Changes take effect immediately across public registration forms.</span>
+            <span class="text-muted small">Changes take effect immediately across registration and donation checkouts.</span>
         </div>
         <button type="submit" class="btn btn-success btn-lg rounded-pill px-5 fw-bold shadow">
             <i class="fas fa-save me-2"></i> Save All Payment Settings
@@ -343,15 +418,28 @@
 <div class="card border-0 shadow-sm rounded-4 p-4 mb-4">
     <div class="d-flex justify-content-between align-items-center flex-wrap gap-3">
         <div>
-            <h5 class="fw-bold text-dark mb-1"><i class="fas fa-vial text-warning me-2"></i> Test Gateway Handshake</h5>
-            <p class="small text-muted mb-0">Perform a live authentication handshake with JanataPay API (<code>/jbagg/api/auth</code>) using saved settings.</p>
+            <h5 class="fw-bold text-dark mb-1"><i class="fas fa-vial text-warning me-2"></i> Test Gateway Handshakes</h5>
+            <p class="small text-muted mb-0">Perform a live authentication handshake with JanataPay API (<code>/jbagg/api/auth</code>) using saved credentials.</p>
         </div>
-        <form asp-controller="PaymentSettings" asp-action="TestJanataPayHandshake" method="post" class="m-0">
-            @Html.AntiForgeryToken()
-            <button type="submit" class="btn btn-outline-success rounded-pill px-4 fw-bold">
-                <i class="fas fa-network-wired me-1"></i> Test JanataPay Handshake Now
-            </button>
-        </form>
+        <div class="d-flex gap-2 flex-wrap">
+            <form asp-controller="PaymentSettings" asp-action="TestJanataPayHandshake" method="post" class="m-0">
+                @Html.AntiForgeryToken()
+                <input type="hidden" name="accountType" value="Registration" />
+                <button type="submit" class="btn btn-outline-success rounded-pill px-3 fw-bold">
+                    <i class="fas fa-network-wired me-1"></i> Test Registration Gateway
+                </button>
+            </form>
+            @if (sDict.GetValueOrDefault("Donation_JanataPayUseDedicated") == "1")
+            {
+                <form asp-controller="PaymentSettings" asp-action="TestJanataPayHandshake" method="post" class="m-0">
+                    @Html.AntiForgeryToken()
+                    <input type="hidden" name="accountType" value="Donation" />
+                    <button type="submit" class="btn btn-outline-warning rounded-pill px-3 fw-bold">
+                        <i class="fas fa-coins me-1"></i> Test Donation Gateway
+                    </button>
+                </form>
+            }
+        </div>
     </div>
 </div>
 
@@ -368,6 +456,13 @@
                 input.type = 'password';
                 icon.classList.remove('fa-eye-slash');
                 icon.classList.add('fa-eye');
+            }
+        }
+
+        function toggleDonationGatewayFields(isChecked) {
+            const box = document.getElementById('donationGatewayFields');
+            if (box) {
+                box.style.display = isChecked ? 'block' : 'none';
             }
         }
     </script>

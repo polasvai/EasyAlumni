@@ -136,7 +136,7 @@ namespace EasyAlumni.Web.Controllers
                 if (donation != null)
                 {
                     var effectiveDonationToken = !string.IsNullOrWhiteSpace(token) ? token : donation.TransactionId;
-                    var donVerifyResult = await _janataPayService.VerifyPaymentAsync(effectiveRefId, effectiveDonationToken ?? "");
+                    var donVerifyResult = await _janataPayService.VerifyPaymentAsync(effectiveRefId, effectiveDonationToken ?? "", EasyAlumni.Core.Models.JanataPayAccountType.Donation);
 
                     donation.GatewayFtNumber = donVerifyResult.FtNumber;
 

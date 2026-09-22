@@ -98,7 +98,7 @@ namespace EasyAlumni.Infrastructure.Data
                 ["FooterTagline"] = ("Designed for School, College & University Grand Reunions", "Bottom tagline in footer"),
                 ["FooterMadeWith"] = ("Made with ❤️", "Sub-badge text under footer about story"),
 
-                // JanataPay Online Gateway Configuration
+                // JanataPay Online Gateway Configuration (Registrations)
                 ["JanataPayBaseUrl"] = ("https://sandbox-pg.janatapay.com", "JanataPay API Base URL (e.g. sandbox or live)"),
                 ["JanataPayMerchantUid"] = ("6521171673", "JanataPay Merchant UID assigned by Janata Bank"),
                 ["JanataPayUsername"] = ("j8Dx4778daD160", "JanataPay API Username"),
@@ -107,6 +107,14 @@ namespace EasyAlumni.Infrastructure.Data
                 ["JanataPayUseProxy"] = ("1", "Route API requests through Bangladesh SOCKS5 tunnel (1=Yes, 0=No)"),
                 ["JanataPaySocks5Proxy"] = ("socks5://127.0.0.1:1080", "SOCKS5 Proxy URL for Bangladesh IP egress"),
                 ["JanataPayCallbackBaseUrl"] = ("https://alumni.snhghs.edu.bd", "Callback Base URL for redirects after payment"),
+
+                // Dedicated JanataPay Gateway for Donations (Optional separate account)
+                ["Donation_JanataPayUseDedicated"] = ("0", "Use dedicated separate JanataPay account for donations (1=Yes, 0=Same as Registration)"),
+                ["Donation_JanataPayBaseUrl"] = ("https://sandbox-pg.janatapay.com", "Donation JanataPay Base URL"),
+                ["Donation_JanataPayMerchantUid"] = ("", "Donation JanataPay Merchant UID"),
+                ["Donation_JanataPayUsername"] = ("", "Donation JanataPay Username"),
+                ["Donation_JanataPayPassword"] = ("", "Donation JanataPay Password"),
+                ["Donation_JanataPayPublicKey"] = ("", "Donation JanataPay RSA Public Key (Base64)"),
 
                 // Payment Method Activation Toggles & Default Gateway
                 ["Payment_Enable_JanataPay"] = ("1", "Enable Janata Bank / JanataPay Online Gateway (1=Enabled, 0=Disabled)"),

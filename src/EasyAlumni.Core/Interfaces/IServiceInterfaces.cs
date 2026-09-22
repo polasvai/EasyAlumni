@@ -46,13 +46,16 @@ namespace EasyAlumni.Core.Interfaces
             decimal amount,
             string customerName,
             string customerPhone,
-            string? customerEmail);
+            string? customerEmail,
+            EasyAlumni.Core.Models.JanataPayAccountType accountType = EasyAlumni.Core.Models.JanataPayAccountType.Registration);
 
         Task<EasyAlumni.Core.Models.JanataPayVerifyResult> VerifyPaymentAsync(
             string referenceId,
-            string transactionToken);
+            string transactionToken,
+            EasyAlumni.Core.Models.JanataPayAccountType accountType = EasyAlumni.Core.Models.JanataPayAccountType.Registration);
 
-        Task<(bool Success, string Message, string? AccessToken)> TestConnectionAsync();
+        Task<(bool Success, string Message, string? AccessToken)> TestConnectionAsync(
+            EasyAlumni.Core.Models.JanataPayAccountType accountType = EasyAlumni.Core.Models.JanataPayAccountType.Registration);
     }
 }
 

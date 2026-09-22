@@ -1,5 +1,11 @@
 namespace EasyAlumni.Core.Models
 {
+    public enum JanataPayAccountType
+    {
+        Registration = 0,
+        Donation = 1
+    }
+
     public class JanataPayOptions
     {
         public const string SectionName = "JanataPay";

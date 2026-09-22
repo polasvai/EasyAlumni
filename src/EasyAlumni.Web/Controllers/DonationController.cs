@@ -136,7 +136,8 @@ namespace EasyAlumni.Web.Controllers
                     donation.Amount,
                     donation.DonorName,
                     donation.DonorPhone,
-                    donation.DonorEmail);
+                    donation.DonorEmail,
+                    EasyAlumni.Core.Models.JanataPayAccountType.Donation);
 
                 if (tokenizeResult.Success && !string.IsNullOrEmpty(tokenizeResult.CheckoutUrl))
                 {

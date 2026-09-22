@@ -59,7 +59,8 @@ namespace EasyAlumni.Web.Controllers
                 "Payment_Enable_NagadManual",
                 "Payment_Enable_RocketManual",
                 "Payment_Enable_BankTransfer",
-                "Payment_Enable_Cash"
+                "Payment_Enable_Cash",
+                "Donation_JanataPayUseDedicated"
             };
 
             foreach (var tKey in toggleKeys)
@@ -103,16 +104,16 @@ namespace EasyAlumni.Web.Controllers
 
         [HttpPost]
         [ValidateAntiForgeryToken]
-        public async Task<IActionResult> TestJanataPayHandshake()
+        public async Task<IActionResult> TestJanataPayHandshake(EasyAlumni.Core.Models.JanataPayAccountType accountType = EasyAlumni.Core.Models.JanataPayAccountType.Registration)
         {
-            var (success, message, token) = await _janataPayService.TestConnectionAsync();
+            var (success, message, token) = await _janataPayService.TestConnectionAsync(accountType);
             if (success)
             {
-                TempData["Success"] = $"JanataPay Connection Successful: {message}";
+                TempData["Success"] = $"JanataPay [{accountType}] Connection Successful: {message}";
             }
             else
             {
-                TempData["Error"] = $"JanataPay Connection Failed: {message}";
+                TempData["Error"] = $"JanataPay [{accountType}] Connection Failed: {message}";
             }
 
             return RedirectToAction(nameof(Index));

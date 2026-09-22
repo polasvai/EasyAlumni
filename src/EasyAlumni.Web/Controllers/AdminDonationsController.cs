@@ -196,7 +196,7 @@ namespace EasyAlumni.Web.Controllers
             var refId = donation.GatewayReferenceId ?? donation.DonationTrackingNo;
             var token = donation.TransactionId ?? "";
 
-            var verifyResult = await _janataPayService.VerifyPaymentAsync(refId, token);
+            var verifyResult = await _janataPayService.VerifyPaymentAsync(refId, token, EasyAlumni.Core.Models.JanataPayAccountType.Donation);
 
             donation.GatewayFtNumber = verifyResult.FtNumber;
 
