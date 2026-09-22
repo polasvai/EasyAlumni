@@ -25,6 +25,35 @@
     var sizeSpecificGifts = allGifts
         .Where(g => g.IsSizeSpecific)
         .ToList();
+
+    // Dynamic Form Field Controls
+    var ffs = Model.FormFieldSettings ?? new Dictionary<string, string>();
+    bool showPhoto = ffs.GetValueOrDefault("FormField_Photo_Enabled", "1") == "1";
+    bool reqPhoto = ffs.GetValueOrDefault("FormField_Photo_Required", "1") == "1";
+
+    bool showNick = ffs.GetValueOrDefault("FormField_NickName_Enabled", "1") == "1";
+    bool reqNick = ffs.GetValueOrDefault("FormField_NickName_Required", "1") == "1";
+
+    bool showBlood = ffs.GetValueOrDefault("FormField_BloodGroup_Enabled", "1") == "1";
+    bool reqBlood = ffs.GetValueOrDefault("FormField_BloodGroup_Required", "0") == "1";
+
+    bool showAltNumber = ffs.GetValueOrDefault("FormField_AltNumber_Enabled", "1") == "1";
+    bool reqAltNumber = ffs.GetValueOrDefault("FormField_AltNumber_Required", "0") == "1";
+
+    bool showTestimonial = ffs.GetValueOrDefault("FormField_Testimonial_Enabled", "1") == "1";
+    bool reqTestimonial = ffs.GetValueOrDefault("FormField_Testimonial_Required", "0") == "1";
+
+    bool showPresentAddr = ffs.GetValueOrDefault("FormField_PresentAddress_Enabled", "1") == "1";
+    bool reqPresentAddr = ffs.GetValueOrDefault("FormField_PresentAddress_Required", "1") == "1";
+
+    bool showPermAddr = ffs.GetValueOrDefault("FormField_PermanentAddress_Enabled", "1") == "1";
+    bool reqPermAddr = ffs.GetValueOrDefault("FormField_PermanentAddress_Required", "1") == "1";
+
+    bool showEduCareer = ffs.GetValueOrDefault("FormField_EducationCareer_Enabled", "1") == "1";
+    bool reqLastInst = ffs.GetValueOrDefault("FormField_LastInstitute_Required", "0") == "1";
+    bool reqLastDeg = ffs.GetValueOrDefault("FormField_LastDegree_Required", "0") == "1";
+    bool reqCompany = ffs.GetValueOrDefault("FormField_CompanyName_Required", "0") == "1";
+    bool reqDesig = ffs.GetValueOrDefault("FormField_Designation_Required", "0") == "1";
 }
 
 @section Styles {
@@ -203,22 +232,35 @@
             <input type="hidden" asp-for="ReunionEventId" />
 
             <!-- 1. Photograph Section -->
-            <div class="form-section-title">
-                <i class="fas fa-camera text-warning"></i>
-                <span>1. Photograph Upload</span>
-            </div>
-            <div class="row mb-4 justify-content-center">
-                <div class="col-md-8 col-lg-6">
-                    <div class="image-drop-box" onclick="document.getElementById('recentPhotoInput').click()">
-                        <img id="recentPhotoPreview" src="https://ui-avatars.com/api/?name=Recent+Photo&background=e2e8f0&color=64748b" class="image-preview-circle" alt="Recent Photo Preview" />
-                        <span class="fw-semibold text-success d-block fs-6 mb-1"><i class="fas fa-upload me-1"></i> Upload Recent Passport / Portrait Picture <span class="text-danger">*</span></span>
-                        <small class="text-muted d-block">Will be printed on your Official Reunion Digital Pass (Max 300KB limit, larger photos up to 10MB are automatically optimized)</small>
-                        <div id="recentPhotoStatus" class="small mt-2" style="display:none;"></div>
-                        <input id="recentPhotoInput" type="file" asp-for="RecentPhotoFile" accept="image/*" style="display:none;" onchange="handleImageUpload(this, 'recentPhotoPreview', 'recentPhotoStatus', 307200)" />
-                    </div>
-                    <span asp-validation-for="RecentPhotoFile" class="text-danger small text-center d-block mt-1"></span>
+            @if (showPhoto)
+            {
+                <div class="form-section-title">
+                    <i class="fas fa-camera text-warning"></i>
+                    <span>1. Photograph Upload</span>
                 </div>
-            </div>
+                <div class="row mb-4 justify-content-center">
+                    <div class="col-md-8 col-lg-6">
+                        <div class="image-drop-box" onclick="document.getElementById('recentPhotoInput').click()">
+                            <img id="recentPhotoPreview" src="https://ui-avatars.com/api/?name=Recent+Photo&background=e2e8f0&color=64748b" class="image-preview-circle" alt="Recent Photo Preview" />
+                            <span class="fw-semibold text-success d-block fs-6 mb-1">
+                                <i class="fas fa-upload me-1"></i> Upload Recent Passport / Portrait Picture 
+                                @if (reqPhoto) { <span class="text-danger">*</span> }
+                            </span>
+                            <small class="text-muted d-block">Will be printed on your Official Reunion Digital Pass (Max 300KB limit, larger photos up to 10MB are automatically optimized)</small>
+                            <div id="recentPhotoStatus" class="small mt-2" style="display:none;"></div>
+                            @if (reqPhoto)
+                            {
+                                <input id="recentPhotoInput" type="file" asp-for="RecentPhotoFile" accept="image/*" style="display:none;" onchange="handleImageUpload(this, 'recentPhotoPreview', 'recentPhotoStatus', 307200)" required />
+                            }
+                            else
+                            {
+                                <input id="recentPhotoInput" type="file" asp-for="RecentPhotoFile" accept="image/*" style="display:none;" onchange="handleImageUpload(this, 'recentPhotoPreview', 'recentPhotoStatus', 307200)" />
+                            }
+                        </div>
+                        <span asp-validation-for="RecentPhotoFile" class="text-danger small text-center d-block mt-1"></span>
+                    </div>
+                </div>
+            }
 
             <!-- 2. Personal Information -->
             <div class="form-section-title">
@@ -236,11 +278,26 @@
                     <input asp-for="NameEnglish" class="form-control form-control-lg text-uppercase" placeholder="FULL NAME IN CAPITAL LETTERS" required />
                     <span asp-validation-for="NameEnglish" class="text-danger small"></span>
                 </div>
-                <div class="col-md-4">
-                    <label class="form-label fw-semibold">Nick Name <span class="text-danger">*</span></label>
-                    <input asp-for="NickName" class="form-control" placeholder="e.g. Aisha" required />
-                    <span asp-validation-for="NickName" class="text-danger small"></span>
-                </div>
+
+                @if (showNick)
+                {
+                    <div class="col-md-4">
+                        <label class="form-label fw-semibold">
+                            Nick Name 
+                            @if (reqNick) { <span class="text-danger">*</span> }
+                        </label>
+                        @if (reqNick)
+                        {
+                            <input asp-for="NickName" class="form-control" placeholder="e.g. Aisha" required />
+                        }
+                        else
+                        {
+                            <input asp-for="NickName" class="form-control" placeholder="e.g. Aisha" />
+                        }
+                        <span asp-validation-for="NickName" class="text-danger small"></span>
+                    </div>
+                }
+
                 <div class="col-md-4">
                     <label class="form-label fw-semibold">Passing Year (SSC) <span class="text-danger">*</span></label>
                     <select asp-for="PassingYear" class="form-select" id="passingYearSelect" onchange="filterPackagesByPassingYear()" required>
@@ -253,20 +310,46 @@
                     <small class="text-muted"><i class="fas fa-filter text-warning me-1"></i> Dynamically filters eligible packages below</small>
                     <span asp-validation-for="PassingYear" class="text-danger small d-block"></span>
                 </div>
-                <div class="col-md-4">
-                    <label class="form-label fw-semibold">Blood Group</label>
-                    <select asp-for="BloodGroup" class="form-select">
-                        <option value="">Select Blood Group</option>
-                        <option value="A+">A+</option>
-                        <option value="A-">A-</option>
-                        <option value="B+">B+</option>
-                        <option value="B-">B-</option>
-                        <option value="AB+">AB+</option>
-                        <option value="AB-">AB-</option>
-                        <option value="O+">O+</option>
-                        <option value="O-">O-</option>
-                    </select>
-                </div>
+
+                @if (showBlood)
+                {
+                    <div class="col-md-4">
+                        <label class="form-label fw-semibold">
+                            Blood Group 
+                            @if (reqBlood) { <span class="text-danger">*</span> }
+                        </label>
+                        @if (reqBlood)
+                        {
+                            <select asp-for="BloodGroup" class="form-select" required>
+                                <option value="">Select Blood Group</option>
+                                <option value="A+">A+</option>
+                                <option value="A-">A-</option>
+                                <option value="B+">B+</option>
+                                <option value="B-">B-</option>
+                                <option value="AB+">AB+</option>
+                                <option value="AB-">AB-</option>
+                                <option value="O+">O+</option>
+                                <option value="O-">O-</option>
+                            </select>
+                        }
+                        else
+                        {
+                            <select asp-for="BloodGroup" class="form-select">
+                                <option value="">Select Blood Group</option>
+                                <option value="A+">A+</option>
+                                <option value="A-">A-</option>
+                                <option value="B+">B+</option>
+                                <option value="B-">B-</option>
+                                <option value="AB+">AB+</option>
+                                <option value="AB-">AB-</option>
+                                <option value="O+">O+</option>
+                                <option value="O-">O-</option>
+                            </select>
+                        }
+                        <span asp-validation-for="BloodGroup" class="text-danger small"></span>
+                    </div>
+                }
+
                 <div class="col-md-6">
                     <label class="form-label fw-semibold">Contact Mobile Number <span class="text-danger">*</span></label>
                     <input asp-for="ContactNumber" class="form-control" placeholder="01XXXXXXXXX" type="tel" pattern="01[3-9][0-9]{8}" required />
@@ -278,56 +361,162 @@
                     <input asp-for="Email" class="form-control" placeholder="alumni@example.com" type="email" required />
                     <span asp-validation-for="Email" class="text-danger small"></span>
                 </div>
-                <div class="col-md-6">
-                    <label class="form-label fw-semibold">Alternative Number</label>
-                    <input asp-for="AlternativeNumber" class="form-control" placeholder="01XXXXXXXXX" type="tel" />
-                </div>
-                <div class="col-md-6">
-                    <label class="form-label fw-semibold">Upload Testimonial / School ID (PDF/Image, Max 300KB)</label>
-                    <input asp-for="TestimonialFile" class="form-control" type="file" accept=".pdf,.jpg,.jpeg,.png" onchange="handleDocUpload(this, 'testimonialError', 307200)" />
-                    <span id="testimonialError" class="text-danger small"></span>
-                </div>
-                <div class="col-md-6">
-                    <label class="form-label fw-semibold">Present Address</label>
-                    <textarea asp-for="PresentAddress" class="form-control" rows="2" placeholder="House, Road, Area, District"></textarea>
-                </div>
-                <div class="col-md-6">
-                    <label class="form-label fw-semibold">Permanent Address</label>
-                    <textarea asp-for="PermanentAddress" class="form-control" rows="2" placeholder="Village, Post, Thana, District"></textarea>
-                </div>
+
+                @if (showAltNumber)
+                {
+                    <div class="col-md-6">
+                        <label class="form-label fw-semibold">
+                            Alternative Number 
+                            @if (reqAltNumber) { <span class="text-danger">*</span> }
+                        </label>
+                        @if (reqAltNumber)
+                        {
+                            <input asp-for="AlternativeNumber" class="form-control" placeholder="01XXXXXXXXX" type="tel" required />
+                        }
+                        else
+                        {
+                            <input asp-for="AlternativeNumber" class="form-control" placeholder="01XXXXXXXXX" type="tel" />
+                        }
+                        <span asp-validation-for="AlternativeNumber" class="text-danger small"></span>
+                    </div>
+                }
+
+                @if (showTestimonial)
+                {
+                    <div class="col-md-6">
+                        <label class="form-label fw-semibold">
+                            Upload Testimonial / School ID (PDF/Image, Max 300KB) 
+                            @if (reqTestimonial) { <span class="text-danger">*</span> }
+                        </label>
+                        @if (reqTestimonial)
+                        {
+                            <input asp-for="TestimonialFile" class="form-control" type="file" accept=".pdf,.jpg,.jpeg,.png" onchange="handleDocUpload(this, 'testimonialError', 307200)" required />
+                        }
+                        else
+                        {
+                            <input asp-for="TestimonialFile" class="form-control" type="file" accept=".pdf,.jpg,.jpeg,.png" onchange="handleDocUpload(this, 'testimonialError', 307200)" />
+                        }
+                        <span id="testimonialError" class="text-danger small"></span>
+                    </div>
+                }
+
+                @if (showPresentAddr)
+                {
+                    <div class="col-md-6">
+                        <label class="form-label fw-semibold">
+                            Present Address (বর্তমান ঠিকানা) 
+                            @if (reqPresentAddr) { <span class="text-danger">*</span> }
+                        </label>
+                        @if (reqPresentAddr)
+                        {
+                            <textarea asp-for="PresentAddress" class="form-control" rows="2" placeholder="House, Road, Area, District" required></textarea>
+                        }
+                        else
+                        {
+                            <textarea asp-for="PresentAddress" class="form-control" rows="2" placeholder="House, Road, Area, District"></textarea>
+                        }
+                        <span asp-validation-for="PresentAddress" class="text-danger small"></span>
+                    </div>
+                }
+
+                @if (showPermAddr)
+                {
+                    <div class="col-md-6">
+                        <label class="form-label fw-semibold">
+                            Permanent Address (স্থায়ী ঠিকানা) 
+                            @if (reqPermAddr) { <span class="text-danger">*</span> }
+                        </label>
+                        @if (reqPermAddr)
+                        {
+                            <textarea asp-for="PermanentAddress" class="form-control" rows="2" placeholder="Village, Post, Thana, District" required></textarea>
+                        }
+                        else
+                        {
+                            <textarea asp-for="PermanentAddress" class="form-control" rows="2" placeholder="Village, Post, Thana, District"></textarea>
+                        }
+                        <span asp-validation-for="PermanentAddress" class="text-danger small"></span>
+                    </div>
+                }
             </div>
 
             <!-- 3. Higher Education & Professional Info -->
-            <div class="form-section-title">
-                <i class="fas fa-briefcase text-warning"></i>
-                <span>3. Education &amp; Career</span>
-            </div>
-            <div class="row g-3 mb-4">
-                <div class="col-md-6">
-                    <label class="form-label fw-semibold">Last Educational Institute</label>
-                    <input asp-for="LastInstitute" class="form-control" placeholder="e.g. BUET / Rajshahi University / Dhaka University" />
+            @if (showEduCareer)
+            {
+                <div class="form-section-title">
+                    <i class="fas fa-briefcase text-warning"></i>
+                    <span>3. Education &amp; Career (উচ্চশিক্ষা ও পেশা)</span>
                 </div>
-                <div class="col-md-3">
-                    <label class="form-label fw-semibold">Degree Obtained</label>
-                    <input asp-for="LastDegree" class="form-control" placeholder="e.g. BSc / MBBS / MBA" />
+                <div class="row g-3 mb-4">
+                    <div class="col-md-6">
+                        <label class="form-label fw-semibold">
+                            Last Educational Institute 
+                            @if (reqLastInst) { <span class="text-danger">*</span> }
+                        </label>
+                        @if (reqLastInst)
+                        {
+                            <input asp-for="LastInstitute" class="form-control" placeholder="e.g. BUET / Rajshahi University / Dhaka University" required />
+                        }
+                        else
+                        {
+                            <input asp-for="LastInstitute" class="form-control" placeholder="e.g. BUET / Rajshahi University / Dhaka University" />
+                        }
+                        <span asp-validation-for="LastInstitute" class="text-danger small"></span>
+                    </div>
+                    <div class="col-md-3">
+                        <label class="form-label fw-semibold">
+                            Degree Obtained 
+                            @if (reqLastDeg) { <span class="text-danger">*</span> }
+                        </label>
+                        @if (reqLastDeg)
+                        {
+                            <input asp-for="LastDegree" class="form-control" placeholder="e.g. BSc / MBBS / MBA" required />
+                        }
+                        else
+                        {
+                            <input asp-for="LastDegree" class="form-control" placeholder="e.g. BSc / MBBS / MBA" />
+                        }
+                        <span asp-validation-for="LastDegree" class="text-danger small"></span>
+                    </div>
+                    <div class="col-md-3">
+                        <label class="form-label fw-semibold">Subject / Major</label>
+                        <input asp-for="LastDegreeSubject" class="form-control" placeholder="e.g. Computer Science" />
+                    </div>
+                    <div class="col-md-4">
+                        <label class="form-label fw-semibold">
+                            Current Company / Organization 
+                            @if (reqCompany) { <span class="text-danger">*</span> }
+                        </label>
+                        @if (reqCompany)
+                        {
+                            <input asp-for="CompanyName" class="form-control" placeholder="Company / Institution Name" required />
+                        }
+                        else
+                        {
+                            <input asp-for="CompanyName" class="form-control" placeholder="Company / Institution Name" />
+                        }
+                        <span asp-validation-for="CompanyName" class="text-danger small"></span>
+                    </div>
+                    <div class="col-md-4">
+                        <label class="form-label fw-semibold">
+                            Designation 
+                            @if (reqDesig) { <span class="text-danger">*</span> }
+                        </label>
+                        @if (reqDesig)
+                        {
+                            <input asp-for="Designation" class="form-control" placeholder="e.g. Senior Software Engineer" required />
+                        }
+                        else
+                        {
+                            <input asp-for="Designation" class="form-control" placeholder="e.g. Senior Software Engineer" />
+                        }
+                        <span asp-validation-for="Designation" class="text-danger small"></span>
+                    </div>
+                    <div class="col-md-4">
+                        <label class="form-label fw-semibold">Office Address / Location</label>
+                        <input asp-for="CurrentWorkingAddress" class="form-control" placeholder="e.g. Gulshan, Dhaka" />
+                    </div>
                 </div>
-                <div class="col-md-3">
-                    <label class="form-label fw-semibold">Subject / Major</label>
-                    <input asp-for="LastDegreeSubject" class="form-control" placeholder="e.g. Computer Science" />
-                </div>
-                <div class="col-md-4">
-                    <label class="form-label fw-semibold">Current Company / Organization</label>
-                    <input asp-for="CompanyName" class="form-control" placeholder="Company / Institution Name" />
-                </div>
-                <div class="col-md-4">
-                    <label class="form-label fw-semibold">Designation</label>
-                    <input asp-for="Designation" class="form-control" placeholder="e.g. Senior Software Engineer" />
-                </div>
-                <div class="col-md-4">
-                    <label class="form-label fw-semibold">Office Address / Location</label>
-                    <input asp-for="CurrentWorkingAddress" class="form-control" placeholder="e.g. Gulshan, Dhaka" />
-                </div>
-            </div>
+            }
 
             <!-- 4. Registration Package Selection -->
             <div class="form-section-title">

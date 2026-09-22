@@ -58,13 +58,68 @@ namespace EasyAlumni.Web.Controllers
                 .OrderBy(q => q.DisplayOrder)
                 .ToListAsync();
 
+            // 5. Form Field Control Settings
+            var formFieldSettings = await _context.SystemSettings
+                .Where(s => s.SettingKey.StartsWith("FormField_"))
+                .ToDictionaryAsync(s => s.SettingKey, s => s.SettingValue);
+
             ViewBag.Packages = packages;
             ViewBag.AllGiftItems = allGiftItems;
             ViewBag.GuestCategories = guestCategories;
             ViewBag.CustomQuestions = customQuestions;
+            ViewBag.FormFieldSettings = formFieldSettings;
 
             return View();
         }
+
+        #region Registration Form Field Controls
+
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> UpdateFormFieldSettings(Dictionary<string, string> fieldSettings)
+        {
+            var keys = new[]
+            {
+                "FormField_Photo_Enabled", "FormField_Photo_Required",
+                "FormField_NickName_Enabled", "FormField_NickName_Required",
+                "FormField_BloodGroup_Enabled", "FormField_BloodGroup_Required",
+                "FormField_AltNumber_Enabled", "FormField_AltNumber_Required",
+                "FormField_Testimonial_Enabled", "FormField_Testimonial_Required",
+                "FormField_PresentAddress_Enabled", "FormField_PresentAddress_Required",
+                "FormField_PermanentAddress_Enabled", "FormField_PermanentAddress_Required",
+                "FormField_EducationCareer_Enabled",
+                "FormField_LastInstitute_Required",
+                "FormField_LastDegree_Required",
+                "FormField_CompanyName_Required",
+                "FormField_Designation_Required"
+            };
+
+            foreach (var key in keys)
+            {
+                var val = fieldSettings.ContainsKey(key) ? "1" : "0";
+                var setting = await _context.SystemSettings.FirstOrDefaultAsync(s => s.SettingKey == key);
+                if (setting != null)
+                {
+                    setting.SettingValue = val;
+                    setting.UpdatedAt = DateTime.UtcNow;
+                }
+                else
+                {
+                    _context.SystemSettings.Add(new SystemSetting
+                    {
+                        SettingKey = key,
+                        SettingValue = val,
+                        Description = $"Dynamic form field control: {key}"
+                    });
+                }
+            }
+
+            await _context.SaveChangesAsync();
+            TempData["Success"] = "Registration form field rules & requirement controls updated successfully.";
+            return RedirectToAction(nameof(Index), new { activeTab = "fields" });
+        }
+
+        #endregion
 
         #region Package Rules & Gift Inclusions
 

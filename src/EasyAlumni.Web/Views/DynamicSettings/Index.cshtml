@@ -8,6 +8,7 @@
     var allGiftItems = ViewBag.AllGiftItems as List<GiftItem> ?? new();
     var guestCategories = ViewBag.GuestCategories as List<GuestCategory> ?? new();
     var customQuestions = ViewBag.CustomQuestions as List<EventCustomQuestion> ?? new();
+    var formFieldSettings = ViewBag.FormFieldSettings as Dictionary<string, string> ?? new();
 }
 
 <div class="d-flex justify-content-between align-items-center flex-wrap gap-3 mb-4">
@@ -59,6 +60,11 @@
             <li class="nav-item" role="presentation">
                 <button class="nav-link rounded-pill py-2 @(activeTab == "sizes" ? "active" : "")" id="sizes-tab" data-bs-toggle="pill" data-bs-target="#sizes-pane" type="button" role="tab">
                     <i class="fas fa-ruler me-1"></i> Merchandise &amp; Custom Sizes
+                </button>
+            </li>
+            <li class="nav-item" role="presentation">
+                <button class="nav-link rounded-pill py-2 @(activeTab == "fields" ? "active" : "")" id="fields-tab" data-bs-toggle="pill" data-bs-target="#fields-pane" type="button" role="tab">
+                    <i class="fas fa-tasks me-1"></i> Form Fields &amp; Requirements
                 </button>
             </li>
         </ul>
@@ -397,6 +403,298 @@
                 </div>
             }
         </div>
+    </div>
+
+    <!-- ==================== TAB 5: REGISTRATION FORM FIELD CONTROLS ==================== -->
+    <div class="tab-pane fade @(activeTab == "fields" ? "show active" : "")" id="fields-pane" role="tabpanel">
+        <form asp-controller="DynamicSettings" asp-action="UpdateFormFieldSettings" method="post">
+            @Html.AntiForgeryToken()
+            <div class="card border-0 shadow-sm rounded-4 mb-4">
+                <div class="card-header bg-white p-3 border-bottom d-flex justify-content-between align-items-center flex-wrap gap-2">
+                    <div>
+                        <h5 class="fw-bold text-dark mb-0"><i class="fas fa-sliders-h text-primary me-2"></i> Registration Form Field Customization</h5>
+                        <small class="text-muted">Control which input fields appear on the public registration page and whether they are strictly required or optional.</small>
+                    </div>
+                    <button type="submit" class="btn btn-success rounded-pill px-4 shadow-sm">
+                        <i class="fas fa-save me-1"></i> Save Form Field Settings
+                    </button>
+                </div>
+                <div class="card-body p-0">
+                    <div class="table-responsive">
+                        <table class="table table-hover align-middle mb-0">
+                            <thead class="table-light text-muted small text-uppercase">
+                                <tr>
+                                    <th style="width: 35%;">Form Field / Section</th>
+                                    <th style="width: 25%;">Section / Placement</th>
+                                    <th style="width: 20%;" class="text-center">Visibility (Enabled)</th>
+                                    <th style="width: 20%;" class="text-center">Requirement (Mandatory)</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <!-- Photograph Upload -->
+                                <tr>
+                                    <td>
+                                        <div class="fw-bold text-dark">Photograph / Passport Picture</div>
+                                        <small class="text-muted">Printed on official reunion digital entry badge pass</small>
+                                    </td>
+                                    <td><span class="badge bg-secondary-subtle text-secondary">1. Photograph</span></td>
+                                    <td class="text-center">
+                                        <div class="form-check form-switch d-inline-block">
+                                            <input class="form-check-input" type="checkbox" name="fieldSettings[FormField_Photo_Enabled]" value="1" 
+                                                   @(formFieldSettings.GetValueOrDefault("FormField_Photo_Enabled", "1") == "1" ? "checked" : "") />
+                                        </div>
+                                    </td>
+                                    <td class="text-center">
+                                        <div class="form-check form-switch d-inline-block">
+                                            <input class="form-check-input" type="checkbox" name="fieldSettings[FormField_Photo_Required]" value="1" 
+                                                   @(formFieldSettings.GetValueOrDefault("FormField_Photo_Required", "1") == "1" ? "checked" : "") />
+                                        </div>
+                                    </td>
+                                </tr>
+
+                                <!-- Name Bangla & English (Core Fields) -->
+                                <tr class="table-light">
+                                    <td>
+                                        <div class="fw-bold text-dark">Full Name (Bangla &amp; English)</div>
+                                        <small class="text-muted">Core identity for student profile and reunion records</small>
+                                    </td>
+                                    <td><span class="badge bg-secondary-subtle text-secondary">2. Personal Bio-Data</span></td>
+                                    <td class="text-center">
+                                        <span class="badge bg-success-subtle text-success">Always Enabled</span>
+                                    </td>
+                                    <td class="text-center">
+                                        <span class="badge bg-danger-subtle text-danger">Always Required</span>
+                                    </td>
+                                </tr>
+
+                                <!-- Nick Name -->
+                                <tr>
+                                    <td>
+                                        <div class="fw-bold text-dark">Nick Name (ডাক নাম)</div>
+                                        <small class="text-muted">Printed on badge name tag for friendly recognition</small>
+                                    </td>
+                                    <td><span class="badge bg-secondary-subtle text-secondary">2. Personal Bio-Data</span></td>
+                                    <td class="text-center">
+                                        <div class="form-check form-switch d-inline-block">
+                                            <input class="form-check-input" type="checkbox" name="fieldSettings[FormField_NickName_Enabled]" value="1" 
+                                                   @(formFieldSettings.GetValueOrDefault("FormField_NickName_Enabled", "1") == "1" ? "checked" : "") />
+                                        </div>
+                                    </td>
+                                    <td class="text-center">
+                                        <div class="form-check form-switch d-inline-block">
+                                            <input class="form-check-input" type="checkbox" name="fieldSettings[FormField_NickName_Required]" value="1" 
+                                                   @(formFieldSettings.GetValueOrDefault("FormField_NickName_Required", "1") == "1" ? "checked" : "") />
+                                        </div>
+                                    </td>
+                                </tr>
+
+                                <!-- Blood Group -->
+                                <tr>
+                                    <td>
+                                        <div class="fw-bold text-dark">Blood Group (রক্তের গ্রুপ)</div>
+                                        <small class="text-muted">Useful for emergency directory &amp; health desk</small>
+                                    </td>
+                                    <td><span class="badge bg-secondary-subtle text-secondary">2. Personal Bio-Data</span></td>
+                                    <td class="text-center">
+                                        <div class="form-check form-switch d-inline-block">
+                                            <input class="form-check-input" type="checkbox" name="fieldSettings[FormField_BloodGroup_Enabled]" value="1" 
+                                                   @(formFieldSettings.GetValueOrDefault("FormField_BloodGroup_Enabled", "1") == "1" ? "checked" : "") />
+                                        </div>
+                                    </td>
+                                    <td class="text-center">
+                                        <div class="form-check form-switch d-inline-block">
+                                            <input class="form-check-input" type="checkbox" name="fieldSettings[FormField_BloodGroup_Required]" value="1" 
+                                                   @(formFieldSettings.GetValueOrDefault("FormField_BloodGroup_Required", "0") == "1" ? "checked" : "") />
+                                        </div>
+                                    </td>
+                                </tr>
+
+                                <!-- Contact Number & Email (Core Fields) -->
+                                <tr class="table-light">
+                                    <td>
+                                        <div class="fw-bold text-dark">Mobile Number &amp; Email Address</div>
+                                        <small class="text-muted">Primary communication channel for SMS &amp; pass delivery</small>
+                                    </td>
+                                    <td><span class="badge bg-secondary-subtle text-secondary">2. Personal Bio-Data</span></td>
+                                    <td class="text-center">
+                                        <span class="badge bg-success-subtle text-success">Always Enabled</span>
+                                    </td>
+                                    <td class="text-center">
+                                        <span class="badge bg-danger-subtle text-danger">Always Required</span>
+                                    </td>
+                                </tr>
+
+                                <!-- Alternative Number -->
+                                <tr>
+                                    <td>
+                                        <div class="fw-bold text-dark">Alternative Contact Number</div>
+                                        <small class="text-muted">Secondary backup phone number for emergencies</small>
+                                    </td>
+                                    <td><span class="badge bg-secondary-subtle text-secondary">2. Personal Bio-Data</span></td>
+                                    <td class="text-center">
+                                        <div class="form-check form-switch d-inline-block">
+                                            <input class="form-check-input" type="checkbox" name="fieldSettings[FormField_AltNumber_Enabled]" value="1" 
+                                                   @(formFieldSettings.GetValueOrDefault("FormField_AltNumber_Enabled", "1") == "1" ? "checked" : "") />
+                                        </div>
+                                    </td>
+                                    <td class="text-center">
+                                        <div class="form-check form-switch d-inline-block">
+                                            <input class="form-check-input" type="checkbox" name="fieldSettings[FormField_AltNumber_Required]" value="1" 
+                                                   @(formFieldSettings.GetValueOrDefault("FormField_AltNumber_Required", "0") == "1" ? "checked" : "") />
+                                        </div>
+                                    </td>
+                                </tr>
+
+                                <!-- Testimonial / School ID Upload -->
+                                <tr>
+                                    <td>
+                                        <div class="fw-bold text-dark">Upload Testimonial / School ID</div>
+                                        <small class="text-muted">Certificate, marksheet, admit card or student ID proof</small>
+                                    </td>
+                                    <td><span class="badge bg-secondary-subtle text-secondary">2. Personal Bio-Data</span></td>
+                                    <td class="text-center">
+                                        <div class="form-check form-switch d-inline-block">
+                                            <input class="form-check-input" type="checkbox" name="fieldSettings[FormField_Testimonial_Enabled]" value="1" 
+                                                   @(formFieldSettings.GetValueOrDefault("FormField_Testimonial_Enabled", "1") == "1" ? "checked" : "") />
+                                        </div>
+                                    </td>
+                                    <td class="text-center">
+                                        <div class="form-check form-switch d-inline-block">
+                                            <input class="form-check-input" type="checkbox" name="fieldSettings[FormField_Testimonial_Required]" value="1" 
+                                                   @(formFieldSettings.GetValueOrDefault("FormField_Testimonial_Required", "0") == "1" ? "checked" : "") />
+                                        </div>
+                                    </td>
+                                </tr>
+
+                                <!-- Present Address -->
+                                <tr>
+                                    <td>
+                                        <div class="fw-bold text-dark text-success"><i class="fas fa-map-marker-alt me-1"></i> Present Address (বর্তমান ঠিকানা)</div>
+                                        <small class="text-muted">Current living address / city / district</small>
+                                    </td>
+                                    <td><span class="badge bg-secondary-subtle text-secondary">2. Personal Bio-Data</span></td>
+                                    <td class="text-center">
+                                        <div class="form-check form-switch d-inline-block">
+                                            <input class="form-check-input" type="checkbox" name="fieldSettings[FormField_PresentAddress_Enabled]" value="1" 
+                                                   @(formFieldSettings.GetValueOrDefault("FormField_PresentAddress_Enabled", "1") == "1" ? "checked" : "") />
+                                        </div>
+                                    </td>
+                                    <td class="text-center">
+                                        <div class="form-check form-switch d-inline-block">
+                                            <input class="form-check-input" type="checkbox" name="fieldSettings[FormField_PresentAddress_Required]" value="1" 
+                                                   @(formFieldSettings.GetValueOrDefault("FormField_PresentAddress_Required", "1") == "1" ? "checked" : "") />
+                                        </div>
+                                    </td>
+                                </tr>
+
+                                <!-- Permanent Address -->
+                                <tr>
+                                    <td>
+                                        <div class="fw-bold text-dark text-success"><i class="fas fa-home me-1"></i> Permanent Address (স্থায়ী ঠিকানা)</div>
+                                        <small class="text-muted">Village, post, thana, district of origin</small>
+                                    </td>
+                                    <td><span class="badge bg-secondary-subtle text-secondary">2. Personal Bio-Data</span></td>
+                                    <td class="text-center">
+                                        <div class="form-check form-switch d-inline-block">
+                                            <input class="form-check-input" type="checkbox" name="fieldSettings[FormField_PermanentAddress_Enabled]" value="1" 
+                                                   @(formFieldSettings.GetValueOrDefault("FormField_PermanentAddress_Enabled", "1") == "1" ? "checked" : "") />
+                                        </div>
+                                    </td>
+                                    <td class="text-center">
+                                        <div class="form-check form-switch d-inline-block">
+                                            <input class="form-check-input" type="checkbox" name="fieldSettings[FormField_PermanentAddress_Required]" value="1" 
+                                                   @(formFieldSettings.GetValueOrDefault("FormField_PermanentAddress_Required", "1") == "1" ? "checked" : "") />
+                                        </div>
+                                    </td>
+                                </tr>
+
+                                <!-- Education & Career Section Toggle -->
+                                <tr class="table-info-subtle">
+                                    <td colspan="2">
+                                        <div class="fw-bold text-dark"><i class="fas fa-briefcase text-primary me-2"></i> Entire "Education &amp; Career" Section (উচ্চশিক্ষা ও পেশা)</div>
+                                        <small class="text-muted">Toggle visibility for Last Institute, Degree, Subject, Company, Designation &amp; Office Address</small>
+                                    </td>
+                                    <td class="text-center">
+                                        <div class="form-check form-switch d-inline-block">
+                                            <input class="form-check-input" type="checkbox" name="fieldSettings[FormField_EducationCareer_Enabled]" value="1" 
+                                                   @(formFieldSettings.GetValueOrDefault("FormField_EducationCareer_Enabled", "1") == "1" ? "checked" : "") />
+                                        </div>
+                                    </td>
+                                    <td class="text-center text-muted small">
+                                        (Section-level toggle)
+                                    </td>
+                                </tr>
+
+                                <!-- Last Institute -->
+                                <tr>
+                                    <td>
+                                        <div class="fw-semibold text-dark ps-3">↳ Last Educational Institute</div>
+                                    </td>
+                                    <td><span class="badge bg-light text-dark">3. Education &amp; Career</span></td>
+                                    <td class="text-center text-muted small">Inherits section</td>
+                                    <td class="text-center">
+                                        <div class="form-check form-switch d-inline-block">
+                                            <input class="form-check-input" type="checkbox" name="fieldSettings[FormField_LastInstitute_Required]" value="1" 
+                                                   @(formFieldSettings.GetValueOrDefault("FormField_LastInstitute_Required", "0") == "1" ? "checked" : "") />
+                                        </div>
+                                    </td>
+                                </tr>
+
+                                <!-- Last Degree -->
+                                <tr>
+                                    <td>
+                                        <div class="fw-semibold text-dark ps-3">↳ Degree Obtained (BSc, MBBS, etc.)</div>
+                                    </td>
+                                    <td><span class="badge bg-light text-dark">3. Education &amp; Career</span></td>
+                                    <td class="text-center text-muted small">Inherits section</td>
+                                    <td class="text-center">
+                                        <div class="form-check form-switch d-inline-block">
+                                            <input class="form-check-input" type="checkbox" name="fieldSettings[FormField_LastDegree_Required]" value="1" 
+                                                   @(formFieldSettings.GetValueOrDefault("FormField_LastDegree_Required", "0") == "1" ? "checked" : "") />
+                                        </div>
+                                    </td>
+                                </tr>
+
+                                <!-- Company Name -->
+                                <tr>
+                                    <td>
+                                        <div class="fw-semibold text-dark ps-3">↳ Current Company / Organization</div>
+                                    </td>
+                                    <td><span class="badge bg-light text-dark">3. Education &amp; Career</span></td>
+                                    <td class="text-center text-muted small">Inherits section</td>
+                                    <td class="text-center">
+                                        <div class="form-check form-switch d-inline-block">
+                                            <input class="form-check-input" type="checkbox" name="fieldSettings[FormField_CompanyName_Required]" value="1" 
+                                                   @(formFieldSettings.GetValueOrDefault("FormField_CompanyName_Required", "0") == "1" ? "checked" : "") />
+                                        </div>
+                                    </td>
+                                </tr>
+
+                                <!-- Designation -->
+                                <tr>
+                                    <td>
+                                        <div class="fw-semibold text-dark ps-3">↳ Job Designation / Position</div>
+                                    </td>
+                                    <td><span class="badge bg-light text-dark">3. Education &amp; Career</span></td>
+                                    <td class="text-center text-muted small">Inherits section</td>
+                                    <td class="text-center">
+                                        <div class="form-check form-switch d-inline-block">
+                                            <input class="form-check-input" type="checkbox" name="fieldSettings[FormField_Designation_Required]" value="1" 
+                                                   @(formFieldSettings.GetValueOrDefault("FormField_Designation_Required", "0") == "1" ? "checked" : "") />
+                                        </div>
+                                    </td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+                <div class="card-footer bg-white p-3 text-end">
+                    <button type="submit" class="btn btn-success rounded-pill px-4 shadow-sm">
+                        <i class="fas fa-save me-1"></i> Save Form Field Settings
+                    </button>
+                </div>
+            </div>
+        </form>
     </div>
 
 </div>

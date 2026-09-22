@@ -12,6 +12,7 @@ namespace EasyAlumni.Web.ViewModels
         public ReunionEvent? ReunionEvent { get; set; }
 
         public Dictionary<string, string> PaymentSettings { get; set; } = new();
+        public Dictionary<string, string> FormFieldSettings { get; set; } = new();
         public List<PaymentMode> EnabledPaymentModes { get; set; } = new();
         public string DefaultPaymentMode { get; set; } = "JanataPay";
 
@@ -40,10 +41,9 @@ namespace EasyAlumni.Web.ViewModels
         [MaxLength(150)]
         public string NameEnglish { get; set; } = string.Empty;
 
-        [Required(ErrorMessage = "Nick Name is required")]
         [Display(Name = "Nick Name")]
         [MaxLength(100)]
-        public string NickName { get; set; } = string.Empty;
+        public string? NickName { get; set; }
 
         [Required(ErrorMessage = "Passing Year is required")]
         [Display(Name = "Passing Year (SSC)")]

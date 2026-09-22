@@ -90,11 +90,16 @@ namespace EasyAlumni.Web.Controllers
                 .OrderBy(q => q.DisplayOrder)
                 .ToListAsync();
 
+            var formFieldSettings = await _context.SystemSettings
+                .Where(s => s.SettingKey.StartsWith("FormField_"))
+                .ToDictionaryAsync(s => s.SettingKey, s => s.SettingValue);
+
             var vm = new AlumniRegistrationViewModel
             {
                 ReunionEventId = reunionEvent.Id,
                 ReunionEvent = reunionEvent,
                 PaymentSettings = paymentSettings,
+                FormFieldSettings = formFieldSettings,
                 EnabledPaymentModes = enabledPaymentModes,
                 DefaultPaymentMode = defaultMethodStr,
                 PaymentMode = selectedPaymentMode,
@@ -128,41 +133,80 @@ namespace EasyAlumni.Web.Controllers
                 ModelState.AddModelError("ContactNumber", "An alumnus with this mobile number or email is already registered for this event.");
             }
 
-            if (!ModelState.IsValid)
+            // Load Dynamic Form Field Settings
+            var formFieldSettings = await _context.SystemSettings
+                .Where(s => s.SettingKey.StartsWith("FormField_"))
+                .ToDictionaryAsync(s => s.SettingKey, s => s.SettingValue);
+            model.FormFieldSettings = formFieldSettings;
+
+            // Enforce dynamic field requirements
+            if (formFieldSettings.GetValueOrDefault("FormField_Photo_Enabled", "1") == "1" &&
+                formFieldSettings.GetValueOrDefault("FormField_Photo_Required", "1") == "1" &&
+                (model.RecentPhotoFile == null || model.RecentPhotoFile.Length == 0))
             {
-                model.ReunionEvent = reunionEvent;
-                var paymentSettings = await _context.SystemSettings
-                    .Where(s => s.SettingKey.StartsWith("Manual") || s.SettingKey.StartsWith("Payment_"))
-                    .ToDictionaryAsync(s => s.SettingKey, s => s.SettingValue);
+                ModelState.AddModelError("RecentPhotoFile", "Recent passport portrait picture is required.");
+            }
 
-                var enabledPaymentModes = new List<PaymentMode>();
-                if (paymentSettings.GetValueOrDefault("Payment_Enable_JanataPay", "1") == "1") enabledPaymentModes.Add(PaymentMode.JanataPay);
-                if (paymentSettings.GetValueOrDefault("Payment_Enable_bKashManual", "1") == "1") enabledPaymentModes.Add(PaymentMode.bKashManual);
-                if (paymentSettings.GetValueOrDefault("Payment_Enable_NagadManual", "1") == "1") enabledPaymentModes.Add(PaymentMode.NagadManual);
-                if (paymentSettings.GetValueOrDefault("Payment_Enable_RocketManual", "1") == "1") enabledPaymentModes.Add(PaymentMode.RocketManual);
-                if (paymentSettings.GetValueOrDefault("Payment_Enable_BankTransfer", "1") == "1") enabledPaymentModes.Add(PaymentMode.BankTransfer);
-                if (paymentSettings.GetValueOrDefault("Payment_Enable_Cash", "1") == "1") enabledPaymentModes.Add(PaymentMode.Cash);
+            if (formFieldSettings.GetValueOrDefault("FormField_NickName_Enabled", "1") == "1" &&
+                formFieldSettings.GetValueOrDefault("FormField_NickName_Required", "1") == "1" &&
+                string.IsNullOrWhiteSpace(model.NickName))
+            {
+                ModelState.AddModelError("NickName", "Nick Name is required.");
+            }
 
-                if (!enabledPaymentModes.Any()) enabledPaymentModes.Add(PaymentMode.JanataPay);
+            if (formFieldSettings.GetValueOrDefault("FormField_BloodGroup_Enabled", "1") == "1" &&
+                formFieldSettings.GetValueOrDefault("FormField_BloodGroup_Required", "0") == "1" &&
+                string.IsNullOrWhiteSpace(model.BloodGroup))
+            {
+                ModelState.AddModelError("BloodGroup", "Blood Group is required.");
+            }
 
-                model.PaymentSettings = paymentSettings;
-                model.EnabledPaymentModes = enabledPaymentModes;
-                model.AvailablePackages = await _context.RegistrationPackages
-                    .Where(p => p.IsActive && p.ReunionEventId == model.ReunionEventId)
-                    .Include(p => p.PackageGiftItems)
-                        .ThenInclude(pg => pg.GiftItem)
-                            .ThenInclude(g => g!.SizeStocks)
-                    .OrderBy(p => p.DisplayOrder)
-                    .ToListAsync();
-                model.AvailableGuestCategories = await _context.GuestCategories
-                    .Where(g => g.IsActive && g.ReunionEventId == model.ReunionEventId)
-                    .OrderBy(g => g.DisplayOrder)
-                    .ToListAsync();
-                model.AvailableCustomQuestions = await _context.EventCustomQuestions
-                    .Where(q => q.IsActive && q.ReunionEventId == model.ReunionEventId)
-                    .OrderBy(q => q.DisplayOrder)
-                    .ToListAsync();
-                return View(model);
+            if (formFieldSettings.GetValueOrDefault("FormField_AltNumber_Enabled", "1") == "1" &&
+                formFieldSettings.GetValueOrDefault("FormField_AltNumber_Required", "0") == "1" &&
+                string.IsNullOrWhiteSpace(model.AlternativeNumber))
+            {
+                ModelState.AddModelError("AlternativeNumber", "Alternative Mobile Number is required.");
+            }
+
+            if (formFieldSettings.GetValueOrDefault("FormField_Testimonial_Enabled", "1") == "1" &&
+                formFieldSettings.GetValueOrDefault("FormField_Testimonial_Required", "0") == "1" &&
+                (model.TestimonialFile == null || model.TestimonialFile.Length == 0))
+            {
+                ModelState.AddModelError("TestimonialFile", "Testimonial or School ID certificate is required.");
+            }
+
+            if (formFieldSettings.GetValueOrDefault("FormField_PresentAddress_Enabled", "1") == "1" &&
+                formFieldSettings.GetValueOrDefault("FormField_PresentAddress_Required", "1") == "1" &&
+                string.IsNullOrWhiteSpace(model.PresentAddress))
+            {
+                ModelState.AddModelError("PresentAddress", "Present Address is required (বর্তমান ঠিকানা আবশ্যক).");
+            }
+
+            if (formFieldSettings.GetValueOrDefault("FormField_PermanentAddress_Enabled", "1") == "1" &&
+                formFieldSettings.GetValueOrDefault("FormField_PermanentAddress_Required", "1") == "1" &&
+                string.IsNullOrWhiteSpace(model.PermanentAddress))
+            {
+                ModelState.AddModelError("PermanentAddress", "Permanent Address is required (স্থায়ী ঠিকানা আবশ্যক).");
+            }
+
+            if (formFieldSettings.GetValueOrDefault("FormField_EducationCareer_Enabled", "1") == "1")
+            {
+                if (formFieldSettings.GetValueOrDefault("FormField_LastInstitute_Required", "0") == "1" && string.IsNullOrWhiteSpace(model.LastInstitute))
+                {
+                    ModelState.AddModelError("LastInstitute", "Last Educational Institute is required.");
+                }
+                if (formFieldSettings.GetValueOrDefault("FormField_LastDegree_Required", "0") == "1" && string.IsNullOrWhiteSpace(model.LastDegree))
+                {
+                    ModelState.AddModelError("LastDegree", "Last Degree Obtained is required.");
+                }
+                if (formFieldSettings.GetValueOrDefault("FormField_CompanyName_Required", "0") == "1" && string.IsNullOrWhiteSpace(model.CompanyName))
+                {
+                    ModelState.AddModelError("CompanyName", "Company or Organization Name is required.");
+                }
+                if (formFieldSettings.GetValueOrDefault("FormField_Designation_Required", "0") == "1" && string.IsNullOrWhiteSpace(model.Designation))
+                {
+                    ModelState.AddModelError("Designation", "Job Designation is required.");
+                }
             }
 
             // Validate Passing Year Package Eligibility
@@ -199,28 +243,40 @@ namespace EasyAlumni.Web.Controllers
             }
 
             if (!ModelState.IsValid)
-                {
-                    model.ReunionEvent = reunionEvent;
-                    model.PaymentSettings = await _context.SystemSettings
-                        .Where(s => s.SettingKey.StartsWith("Manual"))
-                        .ToDictionaryAsync(s => s.SettingKey, s => s.SettingValue);
-                    model.AvailablePackages = await _context.RegistrationPackages
-                        .Where(p => p.IsActive && p.ReunionEventId == model.ReunionEventId)
-                        .Include(p => p.PackageGiftItems)
-                            .ThenInclude(pg => pg.GiftItem)
-                                .ThenInclude(g => g!.SizeStocks)
-                        .OrderBy(p => p.DisplayOrder)
-                        .ToListAsync();
-                    model.AvailableGuestCategories = await _context.GuestCategories
-                        .Where(g => g.IsActive && g.ReunionEventId == model.ReunionEventId)
-                        .OrderBy(g => g.DisplayOrder)
-                        .ToListAsync();
-                    model.AvailableCustomQuestions = await _context.EventCustomQuestions
-                        .Where(q => q.IsActive && q.ReunionEventId == model.ReunionEventId)
-                        .OrderBy(q => q.DisplayOrder)
-                        .ToListAsync();
-                    return View(model);
-                }
+            {
+                model.ReunionEvent = reunionEvent;
+                model.PaymentSettings = await _context.SystemSettings
+                    .Where(s => s.SettingKey.StartsWith("Manual") || s.SettingKey.StartsWith("Payment_"))
+                    .ToDictionaryAsync(s => s.SettingKey, s => s.SettingValue);
+                model.FormFieldSettings = formFieldSettings;
+
+                var enabledPaymentModes = new List<PaymentMode>();
+                if (model.PaymentSettings.GetValueOrDefault("Payment_Enable_JanataPay", "1") == "1") enabledPaymentModes.Add(PaymentMode.JanataPay);
+                if (model.PaymentSettings.GetValueOrDefault("Payment_Enable_bKashManual", "1") == "1") enabledPaymentModes.Add(PaymentMode.bKashManual);
+                if (model.PaymentSettings.GetValueOrDefault("Payment_Enable_NagadManual", "1") == "1") enabledPaymentModes.Add(PaymentMode.NagadManual);
+                if (model.PaymentSettings.GetValueOrDefault("Payment_Enable_RocketManual", "1") == "1") enabledPaymentModes.Add(PaymentMode.RocketManual);
+                if (model.PaymentSettings.GetValueOrDefault("Payment_Enable_BankTransfer", "1") == "1") enabledPaymentModes.Add(PaymentMode.BankTransfer);
+                if (model.PaymentSettings.GetValueOrDefault("Payment_Enable_Cash", "1") == "1") enabledPaymentModes.Add(PaymentMode.Cash);
+                if (!enabledPaymentModes.Any()) enabledPaymentModes.Add(PaymentMode.JanataPay);
+                model.EnabledPaymentModes = enabledPaymentModes;
+
+                model.AvailablePackages = await _context.RegistrationPackages
+                    .Where(p => p.IsActive && p.ReunionEventId == model.ReunionEventId)
+                    .Include(p => p.PackageGiftItems)
+                        .ThenInclude(pg => pg.GiftItem)
+                            .ThenInclude(g => g!.SizeStocks)
+                    .OrderBy(p => p.DisplayOrder)
+                    .ToListAsync();
+                model.AvailableGuestCategories = await _context.GuestCategories
+                    .Where(g => g.IsActive && g.ReunionEventId == model.ReunionEventId)
+                    .OrderBy(g => g.DisplayOrder)
+                    .ToListAsync();
+                model.AvailableCustomQuestions = await _context.EventCustomQuestions
+                    .Where(q => q.IsActive && q.ReunionEventId == model.ReunionEventId)
+                    .OrderBy(q => q.DisplayOrder)
+                    .ToListAsync();
+                return View(model);
+            }
 
             try
             {

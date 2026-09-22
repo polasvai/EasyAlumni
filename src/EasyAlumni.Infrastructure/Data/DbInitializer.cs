@@ -115,7 +115,28 @@ namespace EasyAlumni.Infrastructure.Data
                 ["Payment_Enable_RocketManual"] = ("1", "Enable Manual Rocket option (1=Enabled, 0=Disabled)"),
                 ["Payment_Enable_BankTransfer"] = ("1", "Enable Direct Bank Transfer option (1=Enabled, 0=Disabled)"),
                 ["Payment_Enable_Cash"] = ("1", "Enable Cash Handover to Committee option (1=Enabled, 0=Disabled)"),
-                ["Payment_Default_Method"] = ("JanataPay", "Default preselected payment method on registration form")
+                ["Payment_Default_Method"] = ("JanataPay", "Default preselected payment method on registration form"),
+
+                // Registration Form Dynamic Field Controls (Enable/Disable & Required/Optional)
+                ["FormField_Photo_Enabled"] = ("1", "Show Photograph Upload field (1=Enabled, 0=Disabled)"),
+                ["FormField_Photo_Required"] = ("1", "Make Photograph Upload required (1=Required, 0=Optional)"),
+                ["FormField_NickName_Enabled"] = ("1", "Show Nick Name field (1=Enabled, 0=Disabled)"),
+                ["FormField_NickName_Required"] = ("1", "Make Nick Name required (1=Required, 0=Optional)"),
+                ["FormField_BloodGroup_Enabled"] = ("1", "Show Blood Group field (1=Enabled, 0=Disabled)"),
+                ["FormField_BloodGroup_Required"] = ("0", "Make Blood Group required (1=Required, 0=Optional)"),
+                ["FormField_AltNumber_Enabled"] = ("1", "Show Alternative Contact Number field (1=Enabled, 0=Disabled)"),
+                ["FormField_AltNumber_Required"] = ("0", "Make Alternative Contact Number required (1=Required, 0=Optional)"),
+                ["FormField_Testimonial_Enabled"] = ("1", "Show Testimonial/School ID upload field (1=Enabled, 0=Disabled)"),
+                ["FormField_Testimonial_Required"] = ("0", "Make Testimonial/School ID upload required (1=Required, 0=Optional)"),
+                ["FormField_PresentAddress_Enabled"] = ("1", "Show Present Address field (1=Enabled, 0=Disabled)"),
+                ["FormField_PresentAddress_Required"] = ("1", "Make Present Address required (1=Required, 0=Optional)"),
+                ["FormField_PermanentAddress_Enabled"] = ("1", "Show Permanent Address field (1=Enabled, 0=Disabled)"),
+                ["FormField_PermanentAddress_Required"] = ("1", "Make Permanent Address required (1=Required, 0=Optional)"),
+                ["FormField_EducationCareer_Enabled"] = ("1", "Show Education & Career section (1=Enabled, 0=Disabled)"),
+                ["FormField_LastInstitute_Required"] = ("0", "Make Last Institute required (1=Required, 0=Optional)"),
+                ["FormField_LastDegree_Required"] = ("0", "Make Last Degree required (1=Required, 0=Optional)"),
+                ["FormField_CompanyName_Required"] = ("0", "Make Company Name required (1=Required, 0=Optional)"),
+                ["FormField_Designation_Required"] = ("0", "Make Designation required (1=Required, 0=Optional)")
             };
 
             foreach (var s in defaultSettings)
