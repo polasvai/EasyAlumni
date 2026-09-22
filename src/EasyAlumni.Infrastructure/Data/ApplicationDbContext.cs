@@ -35,6 +35,7 @@ namespace EasyAlumni.Infrastructure.Data
         public DbSet<EventCustomQuestion> EventCustomQuestions => Set<EventCustomQuestion>();
         public DbSet<RegistrationQuestionResponse> RegistrationQuestionResponses => Set<RegistrationQuestionResponse>();
         public DbSet<RegistrationGiftChoice> RegistrationGiftChoices => Set<RegistrationGiftChoice>();
+        public DbSet<Donation> Donations => Set<Donation>();
 
         protected override void OnModelCreating(ModelBuilder builder)
         {
@@ -47,6 +48,10 @@ namespace EasyAlumni.Infrastructure.Data
 
             builder.Entity<EventRegistration>()
                 .HasIndex(r => r.RegistrationNo)
+                .IsUnique();
+
+            builder.Entity<Donation>()
+                .HasIndex(d => d.DonationTrackingNo)
                 .IsUnique();
 
             builder.Entity<SystemSetting>()
