@@ -57,11 +57,31 @@ namespace EasyAlumni.Web.Controllers
                 trackingNo = $"DON-{currentYear}-{currentCount:D5}";
             }
 
-            // Parse payment mode
+            // Parse payment mode and verify it is enabled in SystemSettings
             var paymentModeEnum = PaymentMode.JanataPay;
             if (Enum.TryParse<PaymentMode>(model.PaymentMode, true, out var parsedMode))
             {
                 paymentModeEnum = parsedMode;
+            }
+
+            var paymentSettings = await _context.SystemSettings
+                .Where(s => s.SettingKey.StartsWith("Payment_Enable_"))
+                .ToDictionaryAsync(s => s.SettingKey, s => s.SettingValue);
+
+            bool isModeEnabled = paymentModeEnum switch
+            {
+                PaymentMode.JanataPay => paymentSettings.GetValueOrDefault("Payment_Enable_JanataPay", "1") == "1",
+                PaymentMode.bKashManual => paymentSettings.GetValueOrDefault("Payment_Enable_bKashManual", "1") == "1",
+                PaymentMode.NagadManual => paymentSettings.GetValueOrDefault("Payment_Enable_NagadManual", "1") == "1",
+                PaymentMode.RocketManual => paymentSettings.GetValueOrDefault("Payment_Enable_RocketManual", "1") == "1",
+                PaymentMode.BankTransfer => paymentSettings.GetValueOrDefault("Payment_Enable_BankTransfer", "1") == "1",
+                _ => true
+            };
+
+            if (!isModeEnabled)
+            {
+                TempData["ErrorMessage"] = $"The selected payment method ({paymentModeEnum}) is currently disabled. Please select an available payment method.";
+                return Redirect("/#donate");
             }
 
             int? batchYearParsed = null;

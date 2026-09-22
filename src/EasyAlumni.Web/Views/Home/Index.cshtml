@@ -17,6 +17,20 @@
     var venue = Model.Settings.GetValueOrDefault("EventVenue", ev?.VenueName ?? "বিদ্যালয় প্রাঙ্গণ ও মিলনায়তন");
     var mapUrl = Model.Settings.GetValueOrDefault("GoogleMapEmbedUrl",
 "https://maps.google.com/maps?q=Shahid+Nazmul+Huq+Girls+High+School+Rajshahi&hl=en&z=16&output=embed");
+
+    // Dynamic Payment Mode Settings
+    var isJanataPayEnabled = Model.Settings.GetValueOrDefault("Payment_Enable_JanataPay", "1") == "1";
+    var isBkashManualEnabled = Model.Settings.GetValueOrDefault("Payment_Enable_bKashManual", "1") == "1";
+    var isNagadManualEnabled = Model.Settings.GetValueOrDefault("Payment_Enable_NagadManual", "1") == "1";
+    var isRocketManualEnabled = Model.Settings.GetValueOrDefault("Payment_Enable_RocketManual", "1") == "1";
+    var isBankTransferEnabled = Model.Settings.GetValueOrDefault("Payment_Enable_BankTransfer", "1") == "1";
+
+    var hasManualPaymentOptions = isBkashManualEnabled || isNagadManualEnabled || isRocketManualEnabled || isBankTransferEnabled;
+    var defaultDonationMode = isJanataPayEnabled ? "JanataPay" :
+                              isBkashManualEnabled ? "bKashManual" :
+                              isNagadManualEnabled ? "NagadManual" :
+                              isRocketManualEnabled ? "RocketManual" :
+                              isBankTransferEnabled ? "BankManual" : "JanataPay";
 }
 
 @section Styles {
@@ -756,81 +770,114 @@
                                                                                                                     </div>
 
                                                                                                                     <!-- Payment Method Selection -->
-                                                                                                                    <div class="mb-3">
-                                                                                                                        <label class="form-label fw-bold text-dark small text-uppercase">Payment Method</label>
-                                                                                                                        <div class="row g-2">
-                                                                                                                            <div class="col-6 col-sm-4">
-                                                                                                                                <div class="form-check p-2 border rounded-3 bg-light">
-                                                                                                                                    <input class="form-check-input ms-1 me-2" type="radio" name="PaymentMode" id="donModeJP" value="JanataPay" checked onchange="toggleDonationManualBox(false)" />
-                                                                                                                                    <label class="form-check-label fw-bold text-success small" for="donModeJP">
-                                                                                                                                        JanataPay <span class="badge bg-success ms-1" style="font-size:0.65rem;">Online</span>
-                                                                                                                                    </label>
-                                                                                                                                </div>
-                                                                                                                            </div>
-                                                                                                                            <div class="col-6 col-sm-4">
-                                                                                                                                <div class="form-check p-2 border rounded-3 bg-light">
-                                                                                                                                    <input class="form-check-input ms-1 me-2" type="radio" name="PaymentMode" id="donModeBkash" value="bKashManual" onchange="toggleDonationManualBox(true, 'bKash')" />
-                                                                                                                                    <label class="form-check-label fw-bold text-danger small" for="donModeBkash">
-                                                                                                                                        bKash Manual
-                                                                                                                                    </label>
-                                                                                                                                </div>
-                                                                                                                            </div>
-                                                                                                                            <div class="col-6 col-sm-4">
-                                                                                                                                <div class="form-check p-2 border rounded-3 bg-light">
-                                                                                                                                    <input class="form-check-input ms-1 me-2" type="radio" name="PaymentMode" id="donModeNagad" value="NagadManual" onchange="toggleDonationManualBox(true, 'Nagad')" />
-                                                                                                                                    <label class="form-check-label fw-bold text-warning small" for="donModeNagad">
-                                                                                                                                        Nagad Manual
-                                                                                                                                    </label>
-                                                                                                                                </div>
-                                                                                                                            </div>
-                                                                                                                            <div class="col-6 col-sm-4">
-                                                                                                                                <div class="form-check p-2 border rounded-3 bg-light">
-                                                                                                                                    <input class="form-check-input ms-1 me-2" type="radio" name="PaymentMode" id="donModeRocket" value="RocketManual" onchange="toggleDonationManualBox(true, 'Rocket')" />
-                                                                                                                                    <label class="form-check-label fw-bold text-primary small" for="donModeRocket">
-                                                                                                                                        Rocket Manual
-                                                                                                                                    </label>
-                                                                                                                                </div>
-                                                                                                                            </div>
-                                                                                                                            <div class="col-6 col-sm-4">
-                                                                                                                                <div class="form-check p-2 border rounded-3 bg-light">
-                                                                                                                                    <input class="form-check-input ms-1 me-2" type="radio" name="PaymentMode" id="donModeBank" value="BankManual" onchange="toggleDonationManualBox(true, 'Bank')" />
-                                                                                                                                    <label class="form-check-label fw-bold text-dark small" for="donModeBank">
-                                                                                                                                        Bank Transfer
-                                                                                                                                    </label>
-                                                                                                                                </div>
-                                                                                                                            </div>
-                                                                                                                        </div>
-                                                                                                                    </div>
+                                                      <div class="mb-3">
+                                                          <label class="form-label fw-bold text-dark small text-uppercase">Payment Method</label>
+                                                          <div class="row g-2">
+                                                              @if (isJanataPayEnabled)
+                                                              {
+                                                                  <div class="col-6 col-sm-4">
+                                                                      <div class="form-check p-2 border rounded-3 bg-light">
+                                                                          <input class="form-check-input ms-1 me-2" type="radio" name="PaymentMode" id="donModeJP" value="JanataPay" @(defaultDonationMode == "JanataPay" ? "checked" : "") onchange="toggleDonationManualBox(false)" />
+                                                                          <label class="form-check-label fw-bold text-success small" for="donModeJP">
+                                                                              JanataPay <span class="badge bg-success ms-1" style="font-size:0.65rem;">Online</span>
+                                                                          </label>
+                                                                      </div>
+                                                                  </div>
+                                                              }
+                                                              @if (isBkashManualEnabled)
+                                                              {
+                                                                  <div class="col-6 col-sm-4">
+                                                                      <div class="form-check p-2 border rounded-3 bg-light">
+                                                                          <input class="form-check-input ms-1 me-2" type="radio" name="PaymentMode" id="donModeBkash" value="bKashManual" @(defaultDonationMode == "bKashManual" ? "checked" : "") onchange="toggleDonationManualBox(true, 'bKash')" />
+                                                                          <label class="form-check-label fw-bold text-danger small" for="donModeBkash">
+                                                                              bKash Manual
+                                                                          </label>
+                                                                      </div>
+                                                                  </div>
+                                                              }
+                                                              @if (isNagadManualEnabled)
+                                                              {
+                                                                  <div class="col-6 col-sm-4">
+                                                                      <div class="form-check p-2 border rounded-3 bg-light">
+                                                                          <input class="form-check-input ms-1 me-2" type="radio" name="PaymentMode" id="donModeNagad" value="NagadManual" @(defaultDonationMode == "NagadManual" ? "checked" : "") onchange="toggleDonationManualBox(true, 'Nagad')" />
+                                                                          <label class="form-check-label fw-bold text-warning small" for="donModeNagad">
+                                                                              Nagad Manual
+                                                                          </label>
+                                                                      </div>
+                                                                  </div>
+                                                              }
+                                                              @if (isRocketManualEnabled)
+                                                              {
+                                                                  <div class="col-6 col-sm-4">
+                                                                      <div class="form-check p-2 border rounded-3 bg-light">
+                                                                          <input class="form-check-input ms-1 me-2" type="radio" name="PaymentMode" id="donModeRocket" value="RocketManual" @(defaultDonationMode == "RocketManual" ? "checked" : "") onchange="toggleDonationManualBox(true, 'Rocket')" />
+                                                                          <label class="form-check-label fw-bold text-primary small" for="donModeRocket">
+                                                                              Rocket Manual
+                                                                          </label>
+                                                                      </div>
+                                                                  </div>
+                                                              }
+                                                              @if (isBankTransferEnabled)
+                                                              {
+                                                                  <div class="col-6 col-sm-4">
+                                                                      <div class="form-check p-2 border rounded-3 bg-light">
+                                                                          <input class="form-check-input ms-1 me-2" type="radio" name="PaymentMode" id="donModeBank" value="BankManual" @(defaultDonationMode == "BankManual" ? "checked" : "") onchange="toggleDonationManualBox(true, 'Bank')" />
+                                                                          <label class="form-check-label fw-bold text-dark small" for="donModeBank">
+                                                                              Bank Transfer
+                                                                          </label>
+                                                                      </div>
+                                                                  </div>
+                                                              }
+                                                          </div>
+                                                      </div>
 
-                                                                                                                    <!-- Manual Details Box (conditional) -->
-                                                                                                                    <div id="donationManualBox" style="display: none;" class="p-3 bg-light rounded-3 border border-warning-subtle mb-3">
-                                                                                                                        <div class="small mb-2">
-                                                                                                                            <strong class="text-dark"><i class="fas fa-info-circle text-warning me-1"></i> Send Money / Deposit details:</strong>
-                                                                                                                            <div class="text-muted mt-1">
-                                                                                                                                bKash: <strong>@(Model.Settings.GetValueOrDefault("ManualBkashNumber", "01700000000"))</strong> | 
-                                                                                                                                Nagad: <strong>@(Model.Settings.GetValueOrDefault("ManualNagadNumber", "01800000000"))</strong> | 
-                                                                                                                                Rocket: <strong>@(Model.Settings.GetValueOrDefault("ManualRocketNumber", "01900000000-8"))</strong>
-                                                                                                                            </div>
-                                                                                                                            @if (!string.IsNullOrEmpty(Model.Settings.GetValueOrDefault("ManualBankDetails")))
-                                                                                                                            {
-                                                                                                                                <div class="text-muted small mt-1">Bank: @Model.Settings.GetValueOrDefault("ManualBankDetails")</div>
-                                                                                                                            }
-                                                                                                                        </div>
-                                                                                                                        <div class="row g-2">
-                                                                                                                            <div class="col-md-6">
-                                                                                                                                <label class="form-label small fw-semibold text-dark">Transaction ID (TrxID) <span class="text-danger">*</span></label>
-                                                                                                                                <input type="text" name="TransactionId" id="donTrxId" class="form-control form-control-sm text-uppercase" placeholder="e.g. 9J82KL091" />
-                                                                                                                            </div>
-                                                                                                                            <div class="col-md-6">
-                                                                                                                                <label class="form-label small fw-semibold text-dark">Sender Phone / Account No</label>
-                                                                                                                                <input type="text" name="SenderNumber" class="form-control form-control-sm" placeholder="01XXXXXXXXX" />
-                                                                                                                            </div>
-                                                                                                                            <div class="col-12">
-                                                                                                                                <label class="form-label small fw-semibold text-dark">Upload Deposit Slip / Screenshot (Optional)</label>
-                                                                                                                                <input type="file" name="SlipAttachment" class="form-control form-control-sm" accept=".jpg,.jpeg,.png,.pdf" />
-                                                                                                                            </div>
-                                                                                                                        </div>
-                                                                                                                    </div>
+                                                      <!-- Manual Details Box (conditional on manual methods being enabled) -->
+                                                      @if (hasManualPaymentOptions)
+                                                      {
+                                                          <div id="donationManualBox" style="display: @(defaultDonationMode != "JanataPay" ? "block" : "none");" class="p-3 bg-light rounded-3 border border-warning-subtle mb-3">
+                                                              <div class="small mb-2">
+                                                                  <strong class="text-dark"><i class="fas fa-info-circle text-warning me-1"></i> Send Money / Deposit details:</strong>
+                                                                  <div class="text-muted mt-1">
+                                                                      @if (isBkashManualEnabled)
+                                                                      {
+                                                                          <span>bKash: <strong>@(Model.Settings.GetValueOrDefault("ManualBkashNumber", "01700000000"))</strong></span>
+                                                                      }
+                                                                      @if (isNagadManualEnabled)
+                                                                      {
+                                                                          <span class="ms-2">Nagad: <strong>@(Model.Settings.GetValueOrDefault("ManualNagadNumber", "01800000000"))</strong></span>
+                                                                      }
+                                                                      @if (isRocketManualEnabled)
+                                                                      {
+                                                                          <span class="ms-2">Rocket: <strong>@(Model.Settings.GetValueOrDefault("ManualRocketNumber", "01900000000-8"))</strong></span>
+                                                                      }
+                                                                  </div>
+                                                                  @if (isBankTransferEnabled)
+                                                                  {
+                                                                      var bankDetails = Model.Settings.ContainsKey("PaymentBankDetails") && !string.IsNullOrWhiteSpace(Model.Settings["PaymentBankDetails"]) 
+                                                                          ? Model.Settings["PaymentBankDetails"] 
+                                                                          : Model.Settings.GetValueOrDefault("ManualBankDetails", "");
+                                                                      if (!string.IsNullOrEmpty(bankDetails))
+                                                                      {
+                                                                          <div class="text-muted small mt-1">Bank: @bankDetails</div>
+                                                                      }
+                                                                  }
+                                                              </div>
+                                                              <div class="row g-2">
+                                                                  <div class="col-md-6">
+                                                                      <label class="form-label small fw-semibold text-dark">Transaction ID (TrxID) <span class="text-danger">*</span></label>
+                                                                      <input type="text" name="TransactionId" id="donTrxId" class="form-control form-control-sm text-uppercase" placeholder="e.g. 9J82KL091" @(defaultDonationMode != "JanataPay" ? "required" : "") />
+                                                                  </div>
+                                                                  <div class="col-md-6">
+                                                                      <label class="form-label small fw-semibold text-dark">Sender Phone / Account No</label>
+                                                                      <input type="text" name="SenderNumber" class="form-control form-control-sm" placeholder="01XXXXXXXXX" />
+                                                                  </div>
+                                                                  <div class="col-12">
+                                                                      <label class="form-label small fw-semibold text-dark">Upload Deposit Slip / Screenshot (Optional)</label>
+                                                                      <input type="file" name="SlipAttachment" class="form-control form-control-sm" accept=".jpg,.jpeg,.png,.pdf" />
+                                                                  </div>
+                                                              </div>
+                                                          </div>
+                                                      }
 
                                                                                                                     <!-- Note & Anonymous Checkbox -->
                                                                                                                     <div class="mb-3">
