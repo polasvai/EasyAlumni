@@ -24,6 +24,7 @@ namespace EasyAlumni.Infrastructure.Data
 
             // 2. Seed SuperAdmin User
             var adminEmail = "admin@easyalumni.com";
+            var targetPassword = "#snhghs#2026*";
             var adminUser = await userManager.FindByEmailAsync(adminEmail);
             if (adminUser == null)
             {
@@ -37,10 +38,24 @@ namespace EasyAlumni.Infrastructure.Data
                     IsActive = true
                 };
 
-                var result = await userManager.CreateAsync(adminUser, "Admin@123");
+                var result = await userManager.CreateAsync(adminUser, targetPassword);
                 if (result.Succeeded)
                 {
                     await userManager.AddToRoleAsync(adminUser, "SuperAdmin");
+                    await userManager.AddToRoleAsync(adminUser, "Admin");
+                }
+            }
+            else
+            {
+                // Ensure password matches targetPassword
+                var token = await userManager.GeneratePasswordResetTokenAsync(adminUser);
+                await userManager.ResetPasswordAsync(adminUser, token, targetPassword);
+                if (!await userManager.IsInRoleAsync(adminUser, "SuperAdmin"))
+                {
+                    await userManager.AddToRoleAsync(adminUser, "SuperAdmin");
+                }
+                if (!await userManager.IsInRoleAsync(adminUser, "Admin"))
+                {
                     await userManager.AddToRoleAsync(adminUser, "Admin");
                 }
             }
