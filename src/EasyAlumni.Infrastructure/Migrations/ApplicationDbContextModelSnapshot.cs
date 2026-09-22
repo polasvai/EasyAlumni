@@ -437,6 +437,102 @@ namespace EasyAlumni.Infrastructure.Migrations
                     b.ToTable("CommitteeMembers");
                 });
 
+            modelBuilder.Entity("EasyAlumni.Core.Entities.Donation", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<decimal>("Amount")
+                        .HasPrecision(18, 2)
+                        .HasColumnType("decimal(18,2)");
+
+                    b.Property<DateTime?>("ApprovedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("ApprovedByUserId")
+                        .HasColumnType("nvarchar(450)");
+
+                    b.Property<int?>("BatchYear")
+                        .HasColumnType("int");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("DonationPurpose")
+                        .IsRequired()
+                        .HasMaxLength(150)
+                        .HasColumnType("nvarchar(150)");
+
+                    b.Property<string>("DonationTrackingNo")
+                        .IsRequired()
+                        .HasMaxLength(30)
+                        .HasColumnType("nvarchar(30)");
+
+                    b.Property<string>("DonorEmail")
+                        .HasMaxLength(150)
+                        .HasColumnType("nvarchar(150)");
+
+                    b.Property<string>("DonorName")
+                        .IsRequired()
+                        .HasMaxLength(150)
+                        .HasColumnType("nvarchar(150)");
+
+                    b.Property<string>("DonorPhone")
+                        .IsRequired()
+                        .HasMaxLength(20)
+                        .HasColumnType("nvarchar(20)");
+
+                    b.Property<string>("GatewayFtNumber")
+                        .HasMaxLength(100)
+                        .HasColumnType("nvarchar(100)");
+
+                    b.Property<string>("GatewayReferenceId")
+                        .HasMaxLength(100)
+                        .HasColumnType("nvarchar(100)");
+
+                    b.Property<bool>("IsAnonymous")
+                        .HasColumnType("bit");
+
+                    b.Property<int>("PaymentMode")
+                        .HasColumnType("int");
+
+                    b.Property<string>("Remarks")
+                        .HasMaxLength(500)
+                        .HasColumnType("nvarchar(500)");
+
+                    b.Property<int?>("ReunionEventId")
+                        .HasColumnType("int");
+
+                    b.Property<string>("SenderNumber")
+                        .HasMaxLength(25)
+                        .HasColumnType("nvarchar(25)");
+
+                    b.Property<string>("SlipAttachmentPath")
+                        .HasMaxLength(255)
+                        .HasColumnType("nvarchar(255)");
+
+                    b.Property<int>("Status")
+                        .HasColumnType("int");
+
+                    b.Property<string>("TransactionId")
+                        .HasMaxLength(100)
+                        .HasColumnType("nvarchar(100)");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("ApprovedByUserId");
+
+                    b.HasIndex("DonationTrackingNo")
+                        .IsUnique();
+
+                    b.HasIndex("ReunionEventId");
+
+                    b.ToTable("Donations");
+                });
+
             modelBuilder.Entity("EasyAlumni.Core.Entities.EventCustomQuestion", b =>
                 {
                     b.Property<int>("Id")
@@ -1436,6 +1532,21 @@ namespace EasyAlumni.Infrastructure.Migrations
                         .IsRequired();
 
                     b.Navigation("Committee");
+                });
+
+            modelBuilder.Entity("EasyAlumni.Core.Entities.Donation", b =>
+                {
+                    b.HasOne("EasyAlumni.Core.Entities.ApplicationUser", "ApprovedByUser")
+                        .WithMany()
+                        .HasForeignKey("ApprovedByUserId");
+
+                    b.HasOne("EasyAlumni.Core.Entities.ReunionEvent", "ReunionEvent")
+                        .WithMany()
+                        .HasForeignKey("ReunionEventId");
+
+                    b.Navigation("ApprovedByUser");
+
+                    b.Navigation("ReunionEvent");
                 });
 
             modelBuilder.Entity("EasyAlumni.Core.Entities.EventCustomQuestion", b =>

@@ -167,6 +167,9 @@
                class="btn btn-lg btn-danger px-4 py-3 rounded-pill fw-bold shadow-lg">
                 <i class="fas fa-user-plus me-2"></i> Register for Reunion
             </a>
+            <a href="#donate" class="btn btn-lg btn-success px-4 py-3 rounded-pill fw-bold shadow-lg">
+                <i class="fas fa-hand-holding-heart me-2"></i> Make a Donation
+            </a>
             <button type="button" class="btn btn-lg btn-warning text-dark px-4 py-3 rounded-pill fw-bold shadow-lg"
                     data-bs-toggle="modal" data-bs-target="#downloadPassModal">
                 <i class="fas fa-id-card me-2"></i> Download ID Card
@@ -651,6 +654,209 @@
                                                                                             </div>
                                                                                         </section>
 
+                                                                                        <!-- Voluntary Donation Section -->
+                                                                                    <section class="section-padding" id="donate" style="background: linear-gradient(180deg, #ffffff 0%, #f8fafc 100%);">
+                                                                                        <div class="container">
+                                                                                            <div class="text-center mb-5">
+                                                                                                <span class="badge bg-danger-subtle text-danger px-3 py-2 rounded-pill fw-bold text-uppercase mb-2">
+                                                                                                    <i class="fas fa-hand-holding-heart me-1"></i> Give Back to Alma Mater
+                                                                                                </span>
+                                                                                                <h2 class="section-title">Support Our School &amp; Reunion Fund</h2>
+                                                                                                <p class="section-subtitle">
+                                                                                                    Your voluntary contributions empower student scholarships, school development initiatives, and help make our grand reunion celebration unforgettable.
+                                                                                                </p>
+                                                                                            </div>
+
+                                                                                            <div class="row justify-content-center">
+                                                                                                <div class="col-lg-10">
+                                                                                                    <div class="card card-custom border-0 shadow-lg overflow-hidden">
+                                                                                                        <div class="row g-0">
+                                                                                                            <div class="col-lg-5 text-white p-4 p-md-5 d-flex flex-column justify-content-between" 
+                                                                                                                 style="background: linear-gradient(135deg, #0f172a 0%, #004d38 100%);">
+                                                                                                                <div>
+                                                                                                                    <div class="d-inline-flex align-items-center gap-2 px-3 py-1 rounded-pill mb-3" style="background: rgba(255,255,255,0.15);">
+                                                                                                                        <i class="fas fa-heart text-warning"></i>
+                                                                                                                        <span class="small fw-semibold">Voluntary Contribution</span>
+                                                                                                                    </div>
+                                                                                                                    <h3 class="fw-bold text-white mb-3">Every Taka Makes a Difference</h3>
+                                                                                                                    <p class="text-light opacity-90 small mb-4">
+                                                                                                                        Whether you are donating to sponsor teachers' gifts, student welfare, or campus infrastructure, your generosity leaves a permanent mark.
+                                                                                                                    </p>
+
+                                                                                                                    <div class="mb-4">
+                                                                                                                        <div class="d-flex align-items-center mb-3">
+                                                                                                                            <div class="bg-success text-white p-2 rounded-circle me-3"><i class="fas fa-check"></i></div>
+                                                                                                                            <span class="small">Instant digital receipt with verify QR code</span>
+                                                                                                                        </div>
+                                                                                                                        <div class="d-flex align-items-center mb-3">
+                                                                                                                            <div class="bg-success text-white p-2 rounded-circle me-3"><i class="fas fa-check"></i></div>
+                                                                                                                            <span class="small">Option to keep your contribution anonymous</span>
+                                                                                                                        </div>
+                                                                                                                        <div class="d-flex align-items-center">
+                                                                                                                            <div class="bg-success text-white p-2 rounded-circle me-3"><i class="fas fa-check"></i></div>
+                                                                                                                            <span class="small">Reconciled directly with school accounting</span>
+                                                                                                                        </div>
+                                                                                                                    </div>
+                                                                                                                </div>
+
+                                                                                                                <div class="p-3 rounded-3" style="background: rgba(255,255,255,0.08); border: 1px solid rgba(255,255,255,0.15);">
+                                                                                                                    <small class="text-warning d-block fw-bold mb-1"><i class="fas fa-headset me-1"></i> Donation Hotline</small>
+                                                                                                                    <span class="small text-white">@(Model.Settings.GetValueOrDefault("ContactHotline", "+880 1700-000000"))</span>
+                                                                                                                </div>
+                                                                                                            </div>
+
+                                                                                                            <div class="col-lg-7 p-4 p-md-5 bg-white">
+                                                                                                                <form asp-controller="Donation" asp-action="Submit" method="post" enctype="multipart/form-data" id="donationForm">
+                                                                                                                    @Html.AntiForgeryToken()
+
+                                                                                                                    <!-- Amount Preset Buttons -->
+                                                                                                                    <div class="mb-4">
+                                                                                                                        <label class="form-label fw-bold text-dark small text-uppercase">Choose Donation Amount (BDT)</label>
+                                                                                                                        <div class="d-flex flex-wrap gap-2 mb-2">
+                                                                                                                            <button type="button" class="btn btn-outline-success rounded-pill fw-semibold don-preset-btn" onclick="setDonationAmount(1000, this)">৳ 1,000</button>
+                                                                                                                            <button type="button" class="btn btn-outline-success rounded-pill fw-semibold don-preset-btn" onclick="setDonationAmount(2500, this)">৳ 2,500</button>
+                                                                                                                            <button type="button" class="btn btn-outline-success rounded-pill fw-semibold don-preset-btn active" onclick="setDonationAmount(5000, this)">৳ 5,000</button>
+                                                                                                                            <button type="button" class="btn btn-outline-success rounded-pill fw-semibold don-preset-btn" onclick="setDonationAmount(10000, this)">৳ 10,000</button>
+                                                                                                                            <button type="button" class="btn btn-outline-secondary rounded-pill fw-semibold don-preset-btn" onclick="focusCustomAmount(this)">Custom</button>
+                                                                                                                        </div>
+                                                                                                                        <div class="input-group">
+                                                                                                                            <span class="input-group-text bg-light fw-bold text-success">৳ BDT</span>
+                                                                                                                            <input type="number" name="Amount" id="donationAmountInput" class="form-control form-control-lg fw-bold text-dark" value="5000" min="10" max="10000000" required />
+                                                                                                                        </div>
+                                                                                                                    </div>
+
+                                                                                                                    <!-- Donor Info -->
+                                                                                                                    <div class="row g-3 mb-3">
+                                                                                                                        <div class="col-md-6">
+                                                                                                                            <label class="form-label fw-semibold text-dark small">Your Name / Organization <span class="text-danger">*</span></label>
+                                                                                                                            <input type="text" name="DonorName" class="form-control" placeholder="e.g. Dr. Sadia Rahman" required />
+                                                                                                                        </div>
+                                                                                                                        <div class="col-md-6">
+                                                                                                                            <label class="form-label fw-semibold text-dark small">Contact Mobile Number <span class="text-danger">*</span></label>
+                                                                                                                            <input type="tel" name="DonorPhone" class="form-control" placeholder="01XXXXXXXXX" pattern="01[3-9][0-9]{8}" required />
+                                                                                                                        </div>
+                                                                                                                        <div class="col-md-6">
+                                                                                                                            <label class="form-label fw-semibold text-dark small">Email Address (Optional)</label>
+                                                                                                                            <input type="email" name="DonorEmail" class="form-control" placeholder="donor@example.com" />
+                                                                                                                        </div>
+                                                                                                                        <div class="col-md-6">
+                                                                                                                            <label class="form-label fw-semibold text-dark small">Batch / SSC Year (Optional)</label>
+                                                                                                                            <input type="number" name="BatchYear" class="form-control" placeholder="e.g. 2005" min="1950" max="2030" />
+                                                                                                                        </div>
+                                                                                                                        <div class="col-12">
+                                                                                                                            <label class="form-label fw-semibold text-dark small">Donation Purpose / Cause</label>
+                                                                                                                            <select name="DonationPurpose" class="form-select">
+                                                                                                                                <option value="General Reunion & Campus Welfare">General Reunion &amp; Campus Welfare (সাধারণ অনুদান)</option>
+                                                                                                                                <option value="Student Scholarship & Poor Fund">Student Scholarship &amp; Poor Fund (দরিদ্র তহবিল ও বৃত্তি)</option>
+                                                                                                                                <option value="Campus Development & Infrastructure">Campus Development &amp; Infrastructure (বিদ্যালয় উন্নয়ন)</option>
+                                                                                                                                <option value="Honoring Former Teachers & Staff">Honoring Former Teachers &amp; Staff (শিক্ষক সংবর্ধনা)</option>
+                                                                                                                                <option value="Cultural Program & Commemorative Souvenir">Cultural Program &amp; Souvenir (সাংস্কৃতিক ও স্মরণিকা)</option>
+                                                                                                                            </select>
+                                                                                                                        </div>
+                                                                                                                    </div>
+
+                                                                                                                    <!-- Payment Method Selection -->
+                                                                                                                    <div class="mb-3">
+                                                                                                                        <label class="form-label fw-bold text-dark small text-uppercase">Payment Method</label>
+                                                                                                                        <div class="row g-2">
+                                                                                                                            <div class="col-6 col-sm-4">
+                                                                                                                                <div class="form-check p-2 border rounded-3 bg-light">
+                                                                                                                                    <input class="form-check-input ms-1 me-2" type="radio" name="PaymentMode" id="donModeJP" value="JanataPay" checked onchange="toggleDonationManualBox(false)" />
+                                                                                                                                    <label class="form-check-label fw-bold text-success small" for="donModeJP">
+                                                                                                                                        JanataPay <span class="badge bg-success ms-1" style="font-size:0.65rem;">Online</span>
+                                                                                                                                    </label>
+                                                                                                                                </div>
+                                                                                                                            </div>
+                                                                                                                            <div class="col-6 col-sm-4">
+                                                                                                                                <div class="form-check p-2 border rounded-3 bg-light">
+                                                                                                                                    <input class="form-check-input ms-1 me-2" type="radio" name="PaymentMode" id="donModeBkash" value="bKashManual" onchange="toggleDonationManualBox(true, 'bKash')" />
+                                                                                                                                    <label class="form-check-label fw-bold text-danger small" for="donModeBkash">
+                                                                                                                                        bKash Manual
+                                                                                                                                    </label>
+                                                                                                                                </div>
+                                                                                                                            </div>
+                                                                                                                            <div class="col-6 col-sm-4">
+                                                                                                                                <div class="form-check p-2 border rounded-3 bg-light">
+                                                                                                                                    <input class="form-check-input ms-1 me-2" type="radio" name="PaymentMode" id="donModeNagad" value="NagadManual" onchange="toggleDonationManualBox(true, 'Nagad')" />
+                                                                                                                                    <label class="form-check-label fw-bold text-warning small" for="donModeNagad">
+                                                                                                                                        Nagad Manual
+                                                                                                                                    </label>
+                                                                                                                                </div>
+                                                                                                                            </div>
+                                                                                                                            <div class="col-6 col-sm-4">
+                                                                                                                                <div class="form-check p-2 border rounded-3 bg-light">
+                                                                                                                                    <input class="form-check-input ms-1 me-2" type="radio" name="PaymentMode" id="donModeRocket" value="RocketManual" onchange="toggleDonationManualBox(true, 'Rocket')" />
+                                                                                                                                    <label class="form-check-label fw-bold text-primary small" for="donModeRocket">
+                                                                                                                                        Rocket Manual
+                                                                                                                                    </label>
+                                                                                                                                </div>
+                                                                                                                            </div>
+                                                                                                                            <div class="col-6 col-sm-4">
+                                                                                                                                <div class="form-check p-2 border rounded-3 bg-light">
+                                                                                                                                    <input class="form-check-input ms-1 me-2" type="radio" name="PaymentMode" id="donModeBank" value="BankManual" onchange="toggleDonationManualBox(true, 'Bank')" />
+                                                                                                                                    <label class="form-check-label fw-bold text-dark small" for="donModeBank">
+                                                                                                                                        Bank Transfer
+                                                                                                                                    </label>
+                                                                                                                                </div>
+                                                                                                                            </div>
+                                                                                                                        </div>
+                                                                                                                    </div>
+
+                                                                                                                    <!-- Manual Details Box (conditional) -->
+                                                                                                                    <div id="donationManualBox" style="display: none;" class="p-3 bg-light rounded-3 border border-warning-subtle mb-3">
+                                                                                                                        <div class="small mb-2">
+                                                                                                                            <strong class="text-dark"><i class="fas fa-info-circle text-warning me-1"></i> Send Money / Deposit details:</strong>
+                                                                                                                            <div class="text-muted mt-1">
+                                                                                                                                bKash: <strong>@(Model.Settings.GetValueOrDefault("ManualBkashNumber", "01700000000"))</strong> | 
+                                                                                                                                Nagad: <strong>@(Model.Settings.GetValueOrDefault("ManualNagadNumber", "01800000000"))</strong> | 
+                                                                                                                                Rocket: <strong>@(Model.Settings.GetValueOrDefault("ManualRocketNumber", "01900000000-8"))</strong>
+                                                                                                                            </div>
+                                                                                                                            @if (!string.IsNullOrEmpty(Model.Settings.GetValueOrDefault("ManualBankDetails")))
+                                                                                                                            {
+                                                                                                                                <div class="text-muted small mt-1">Bank: @Model.Settings.GetValueOrDefault("ManualBankDetails")</div>
+                                                                                                                            }
+                                                                                                                        </div>
+                                                                                                                        <div class="row g-2">
+                                                                                                                            <div class="col-md-6">
+                                                                                                                                <label class="form-label small fw-semibold text-dark">Transaction ID (TrxID) <span class="text-danger">*</span></label>
+                                                                                                                                <input type="text" name="TransactionId" id="donTrxId" class="form-control form-control-sm text-uppercase" placeholder="e.g. 9J82KL091" />
+                                                                                                                            </div>
+                                                                                                                            <div class="col-md-6">
+                                                                                                                                <label class="form-label small fw-semibold text-dark">Sender Phone / Account No</label>
+                                                                                                                                <input type="text" name="SenderNumber" class="form-control form-control-sm" placeholder="01XXXXXXXXX" />
+                                                                                                                            </div>
+                                                                                                                            <div class="col-12">
+                                                                                                                                <label class="form-label small fw-semibold text-dark">Upload Deposit Slip / Screenshot (Optional)</label>
+                                                                                                                                <input type="file" name="SlipAttachment" class="form-control form-control-sm" accept=".jpg,.jpeg,.png,.pdf" />
+                                                                                                                            </div>
+                                                                                                                        </div>
+                                                                                                                    </div>
+
+                                                                                                                    <!-- Note & Anonymous Checkbox -->
+                                                                                                                    <div class="mb-3">
+                                                                                                                        <label class="form-label fw-semibold text-dark small">Remarks / Message (Optional)</label>
+                                                                                                                        <input type="text" name="Remarks" class="form-control" placeholder="A brief note or dedication" />
+                                                                                                                    </div>
+
+                                                                                                                    <div class="form-check mb-4">
+                                                                                                                        <input class="form-check-input" type="checkbox" name="IsAnonymous" value="true" id="donIsAnonymous" />
+                                                                                                                        <label class="form-check-label text-muted small" for="donIsAnonymous">
+                                                                                                                            Keep my donation anonymous (hide name on public honor lists)
+                                                                                                                        </label>
+                                                                                                                    </div>
+
+                                                                                                                    <button type="submit" class="btn btn-success btn-lg w-100 rounded-pill fw-bold shadow">
+                                                                                                                        <i class="fas fa-heart me-2"></i> Proceed to Donate
+                                                                                                                    </button>
+                                                                                                                </form>
+                                                                                                            </div>
+                                                                                                        </div>
+                                                                                                    </div>
+                                                                                                </div>
+                                                                                            </div>
+                                                                                        </div>
+                                                                                    </section>
+
                                                                                         <!-- Contact & Venue -->
                                                                                         <section class="section-padding bg-light" id="contact">
                                                                                             <div class="container">
@@ -834,5 +1040,32 @@
 
                                                                                                                 setInterval(updateCountdown, 1000);
                                                                                                                 updateCountdown();
+
+                                                                                                                // Donation Form Interactive Helpers
+                                                                                                                function setDonationAmount(val, btn) {
+                                                                                                                    document.getElementById('donationAmountInput').value = val;
+                                                                                                                    document.querySelectorAll('.don-preset-btn').forEach(b => b.classList.remove('active', 'btn-success'));
+                                                                                                                    btn.classList.add('active');
+                                                                                                                }
+
+                                                                                                                function focusCustomAmount(btn) {
+                                                                                                                    document.querySelectorAll('.don-preset-btn').forEach(b => b.classList.remove('active'));
+                                                                                                                    btn.classList.add('active');
+                                                                                                                    const input = document.getElementById('donationAmountInput');
+                                                                                                                    input.focus();
+                                                                                                                    input.select();
+                                                                                                                }
+
+                                                                                                                function toggleDonationManualBox(show, mode) {
+                                                                                                                    const box = document.getElementById('donationManualBox');
+                                                                                                                    const trxInput = document.getElementById('donTrxId');
+                                                                                                                    if (show) {
+                                                                                                                        box.style.display = 'block';
+                                                                                                                        trxInput.setAttribute('required', 'required');
+                                                                                                                    } else {
+                                                                                                                        box.style.display = 'none';
+                                                                                                                        trxInput.removeAttribute('required');
+                                                                                                                    }
+                                                                                                                }
                                                                                                             </script>
                                                                                                         }

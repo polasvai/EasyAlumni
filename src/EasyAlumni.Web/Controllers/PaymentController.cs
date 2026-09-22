@@ -129,6 +129,78 @@ namespace EasyAlumni.Web.Controllers
 
             if (payment == null)
             {
+                // Check if this referenceId belongs to a Donation
+                var donation = await _context.Donations
+                    .FirstOrDefaultAsync(d => d.GatewayReferenceId == effectiveRefId || d.DonationTrackingNo == effectiveRefId);
+
+                if (donation != null)
+                {
+                    var effectiveDonationToken = !string.IsNullOrWhiteSpace(token) ? token : donation.TransactionId;
+                    var donVerifyResult = await _janataPayService.VerifyPaymentAsync(effectiveRefId, effectiveDonationToken ?? "");
+
+                    donation.GatewayFtNumber = donVerifyResult.FtNumber;
+
+                    if (donVerifyResult.Success && donVerifyResult.Amount >= donation.Amount)
+                    {
+                        donation.Status = PaymentStatus.Approved;
+                        donation.ApprovedAt = DateTime.UtcNow;
+                        if (!string.IsNullOrWhiteSpace(donVerifyResult.FtNumber))
+                        {
+                            donation.TransactionId = donVerifyResult.FtNumber;
+                        }
+
+                        // Auto-Reconcile into Accounting Cash Book under INC-DON
+                        var donHead = await _context.AccountHeads
+                            .FirstOrDefaultAsync(h => h.Code == "INC-DON" || h.HeadName.Contains("Donation") || h.HeadName.Contains("Donor"))
+                            ?? await _context.AccountHeads.FirstOrDefaultAsync(h => h.Type == AccountHeadType.Income);
+
+                        if (donHead != null)
+                        {
+                            var countVouchers = await _context.CashEntries.CountAsync() + 1;
+                            var entryDesc = $"Online Donation {donation.DonationTrackingNo} from {donation.DonorName} (FT: {donVerifyResult.FtNumber})";
+                            if (!string.IsNullOrWhiteSpace(donation.Remarks))
+                            {
+                                entryDesc += $" - {donation.Remarks}";
+                            }
+
+                            _context.CashEntries.Add(new CashEntry
+                            {
+                                VoucherNumber = $"V-DON-{DateTime.UtcNow.Year}-{countVouchers:D5}",
+                                EntryDate = DateTime.UtcNow,
+                                AccountHeadId = donHead.Id,
+                                Amount = donation.Amount,
+                                PaymentMode = "JanataPay",
+                                Description = entryDesc
+                            });
+                        }
+
+                        // Send SMS if phone number available
+                        if (!string.IsNullOrWhiteSpace(donation.DonorPhone))
+                        {
+                            var receiptUrl = $"{Request.Scheme}://{Request.Host}/Donation/Receipt/{donation.DonationTrackingNo}";
+                            var smsMsg = $"Dear {donation.DonorName}, Thank you for your generous donation of BDT {donation.Amount:N0} to SNHGHS Alumni. Receipt: {receiptUrl}";
+                            try
+                            {
+                                await _smsService.SendSmsAsync(donation.DonorPhone, smsMsg);
+                            }
+                            catch (Exception ex)
+                            {
+                                _logger.LogWarning(ex, "Failed to send donation receipt SMS to {Phone}", donation.DonorPhone);
+                            }
+                        }
+
+                        await _context.SaveChangesAsync();
+                        TempData["Success"] = "Thank you for your generous donation! Payment confirmed successfully.";
+                        return RedirectToAction("Receipt", "Donation", new { trackingNo = donation.DonationTrackingNo });
+                    }
+                    else
+                    {
+                        _logger.LogWarning("Donation JanataPay Verification failed for {RefId}. Status: {Status}", effectiveRefId, donVerifyResult.TransactionStatus);
+                        ViewBag.ErrorMessage = $"Donation verification failed: {donVerifyResult.TransactionStatus ?? "Payment not completed"}.";
+                        return View("JanataPayFailed");
+                    }
+                }
+
                 ViewBag.ErrorMessage = $"No matching payment session found for reference {effectiveRefId}.";
                 return View("JanataPayFailed");
             }
@@ -236,6 +308,16 @@ namespace EasyAlumni.Web.Controllers
                 await _context.SaveChangesAsync();
                 ViewBag.RegistrationNo = payment.EventRegistration?.RegistrationNo;
             }
+            else
+            {
+                var donation = await _context.Donations.FirstOrDefaultAsync(d => d.GatewayReferenceId == effectiveRefId || d.DonationTrackingNo == effectiveRefId);
+                if (donation != null)
+                {
+                    donation.Status = PaymentStatus.Rejected;
+                    await _context.SaveChangesAsync();
+                    ViewBag.RegistrationNo = donation.DonationTrackingNo;
+                }
+            }
 
             ViewBag.ErrorMessage = "The transaction was reported as failed or declined by JanataPay.";
             return View("JanataPayFailed");
@@ -255,6 +337,16 @@ namespace EasyAlumni.Web.Controllers
                 payment.GatewayStatus = "Cancelled";
                 await _context.SaveChangesAsync();
                 ViewBag.RegistrationNo = payment.EventRegistration?.RegistrationNo;
+            }
+            else
+            {
+                var donation = await _context.Donations.FirstOrDefaultAsync(d => d.GatewayReferenceId == effectiveRefId || d.DonationTrackingNo == effectiveRefId);
+                if (donation != null)
+                {
+                    donation.Status = PaymentStatus.Rejected;
+                    await _context.SaveChangesAsync();
+                    ViewBag.RegistrationNo = donation.DonationTrackingNo;
+                }
             }
 
             ViewBag.ErrorMessage = "Payment was cancelled before completion.";

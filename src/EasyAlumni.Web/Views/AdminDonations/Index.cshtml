@@ -1,0 +1,334 @@
+@model List<EasyAlumni.Core.Entities.Donation>
+@{
+    Layout = "_AdminLayout";
+    ViewData["Title"] = "Donations Management";
+    var totalCount = ViewBag.TotalDonationsCount ?? 0;
+    var totalApprovedAmt = ViewBag.TotalApprovedAmount ?? 0m;
+    var pendingCount = ViewBag.TotalPendingCount ?? 0;
+    var pendingAmt = ViewBag.TotalPendingAmount ?? 0m;
+
+    var search = ViewBag.Search as string;
+    var currentStatus = ViewBag.Status as string;
+    var currentMode = ViewBag.PaymentMode as string;
+    var currentPage = (int)(ViewBag.CurrentPage ?? 1);
+    var totalPages = (int)(ViewBag.TotalPages ?? 1);
+    var totalItems = (int)(ViewBag.TotalItems ?? 0);
+}
+
+<div class="d-flex justify-content-between align-items-center flex-wrap gap-2 mb-4">
+    <div>
+        <h4 class="fw-bold text-dark mb-1">
+            <i class="fas fa-hand-holding-heart text-danger me-2"></i> Donations &amp; Voluntary Contributions
+        </h4>
+        <p class="text-muted small mb-0">Track, reconcile, and approve voluntary patron contributions for the reunion and school fund.</p>
+    </div>
+    <div class="d-flex gap-2">
+        <a asp-action="ExportCsv" class="btn btn-outline-success btn-sm rounded-pill px-3 shadow-sm">
+            <i class="fas fa-file-excel me-1"></i> Export to CSV / Excel
+        </a>
+    </div>
+</div>
+
+<!-- Metrics Cards -->
+<div class="row g-3 mb-4">
+    <div class="col-sm-6 col-xl-3">
+        <div class="card border-0 shadow-sm rounded-4 p-3 bg-white border-start border-4 border-primary">
+            <div class="d-flex justify-content-between align-items-center">
+                <div>
+                    <span class="text-muted small fw-semibold text-uppercase">Total Received</span>
+                    <h3 class="fw-bold text-dark mt-1 mb-0">৳ @totalApprovedAmt.ToString("N0")</h3>
+                </div>
+                <div class="bg-primary-subtle text-primary p-3 rounded-circle">
+                    <i class="fas fa-check-circle fa-lg"></i>
+                </div>
+            </div>
+            <small class="text-muted mt-2 d-block">Verified &amp; Credited</small>
+        </div>
+    </div>
+
+    <div class="col-sm-6 col-xl-3">
+        <div class="card border-0 shadow-sm rounded-4 p-3 bg-white border-start border-4 border-warning">
+            <div class="d-flex justify-content-between align-items-center">
+                <div>
+                    <span class="text-muted small fw-semibold text-uppercase">Pending Approval</span>
+                    <h3 class="fw-bold text-warning mt-1 mb-0">৳ @pendingAmt.ToString("N0")</h3>
+                </div>
+                <div class="bg-warning-subtle text-warning p-3 rounded-circle">
+                    <i class="fas fa-clock fa-lg"></i>
+                </div>
+            </div>
+            <small class="text-muted mt-2 d-block">@pendingCount donations awaiting action</small>
+        </div>
+    </div>
+
+    <div class="col-sm-6 col-xl-3">
+        <div class="card border-0 shadow-sm rounded-4 p-3 bg-white border-start border-4 border-info">
+            <div class="d-flex justify-content-between align-items-center">
+                <div>
+                    <span class="text-muted small fw-semibold text-uppercase">Total Donors</span>
+                    <h3 class="fw-bold text-info mt-1 mb-0">@totalCount</h3>
+                </div>
+                <div class="bg-info-subtle text-info p-3 rounded-circle">
+                    <i class="fas fa-users fa-lg"></i>
+                </div>
+            </div>
+            <small class="text-muted mt-2 d-block">Contributions recorded</small>
+        </div>
+    </div>
+
+    <div class="col-sm-6 col-xl-3">
+        <div class="card border-0 shadow-sm rounded-4 p-3 bg-white border-start border-4 border-success">
+            <div class="d-flex justify-content-between align-items-center">
+                <div>
+                    <span class="text-muted small fw-semibold text-uppercase">Accounting Head</span>
+                    <h5 class="fw-bold text-success mt-1 mb-0">INC-DON</h5>
+                </div>
+                <div class="bg-success-subtle text-success p-3 rounded-circle">
+                    <i class="fas fa-book fa-lg"></i>
+                </div>
+            </div>
+            <small class="text-muted mt-2 d-block">Auto-linked Cash Book</small>
+        </div>
+    </div>
+</div>
+
+<!-- Filters Bar -->
+<div class="card border-0 shadow-sm rounded-4 mb-4 bg-white">
+    <div class="card-body p-3">
+        <form method="get" asp-action="Index" class="row g-2 align-items-center">
+            <div class="col-md-4">
+                <div class="input-group">
+                    <span class="input-group-text bg-light border-end-0"><i class="fas fa-search text-muted"></i></span>
+                    <input type="text" name="search" value="@search" class="form-control border-start-0" placeholder="Search by name, phone, TrxID, Tracking No..." />
+                </div>
+            </div>
+            <div class="col-md-3">
+                <select name="status" class="form-select">
+                    <option value="">-- All Statuses --</option>
+                    <option value="Approved" selected="@(currentStatus == "Approved")">Approved</option>
+                    <option value="Pending" selected="@(currentStatus == "Pending")">Pending</option>
+                    <option value="Rejected" selected="@(currentStatus == "Rejected")">Rejected</option>
+                    <option value="Failed" selected="@(currentStatus == "Failed")">Failed</option>
+                </select>
+            </div>
+            <div class="col-md-3">
+                <select name="paymentMode" class="form-select">
+                    <option value="">-- All Payment Modes --</option>
+                    <option value="JanataPay" selected="@(currentMode == "JanataPay")">JanataPay Online</option>
+                    <option value="bKashManual" selected="@(currentMode == "bKashManual")">bKash Manual</option>
+                    <option value="NagadManual" selected="@(currentMode == "NagadManual")">Nagad Manual</option>
+                    <option value="RocketManual" selected="@(currentMode == "RocketManual")">Rocket Manual</option>
+                    <option value="BankManual" selected="@(currentMode == "BankManual")">Bank Transfer</option>
+                </select>
+            </div>
+            <div class="col-md-2 d-flex gap-2">
+                <button type="submit" class="btn btn-primary w-100 rounded-pill fw-semibold">
+                    <i class="fas fa-filter me-1"></i> Filter
+                </button>
+                <a asp-action="Index" class="btn btn-outline-secondary rounded-pill" title="Reset Filters">
+                    <i class="fas fa-undo"></i>
+                </a>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- Donations Table -->
+<div class="card border-0 shadow-sm rounded-4 overflow-hidden bg-white">
+    <div class="table-responsive">
+        <table class="table table-hover align-middle mb-0">
+            <thead class="bg-light text-muted small text-uppercase">
+                <tr>
+                    <th class="ps-4">Tracking No</th>
+                    <th>Donor Details</th>
+                    <th>Batch</th>
+                    <th>Amount</th>
+                    <th>Purpose / Cause</th>
+                    <th>Mode &amp; Ref</th>
+                    <th>Status</th>
+                    <th>Date</th>
+                    <th class="text-end pe-4">Actions</th>
+                </tr>
+            </thead>
+            <tbody>
+                @if (Model.Any())
+                {
+                    @foreach (var don in Model)
+                    {
+                        <tr>
+                            <td class="ps-4">
+                                <strong class="text-primary">@don.DonationTrackingNo</strong>
+                                @if (don.IsAnonymous)
+                                {
+                                    <span class="badge bg-secondary-subtle text-secondary ms-1" title="Anonymous donor" style="font-size:0.65rem;">Anon</span>
+                                }
+                            </td>
+                            <td>
+                                <div class="fw-semibold text-dark">@don.DonorName</div>
+                                <div class="small text-muted"><i class="fas fa-phone me-1"></i> @don.DonorPhone</div>
+                                @if (!string.IsNullOrEmpty(don.DonorEmail))
+                                {
+                                    <div class="small text-muted"><i class="fas fa-envelope me-1"></i> @don.DonorEmail</div>
+                                }
+                            </td>
+                            <td>
+                                @(don.BatchYear.HasValue ? $"'{don.BatchYear.Value}" : "-")
+                            </td>
+                            <td>
+                                <span class="fw-bold text-success fs-6">৳ @don.Amount.ToString("N0")</span>
+                            </td>
+                            <td>
+                                <span class="small text-muted d-inline-block text-truncate" style="max-width: 180px;" title="@don.DonationPurpose">
+                                    @don.DonationPurpose
+                                </span>
+                            </td>
+                            <td>
+                                <span class="badge bg-light text-dark border mb-1">@don.PaymentMode</span>
+                                @if (!string.IsNullOrEmpty(don.GatewayFtNumber))
+                                {
+                                    <div class="small text-primary fw-semibold">FT: @don.GatewayFtNumber</div>
+                                }
+                                else if (!string.IsNullOrEmpty(don.TransactionId))
+                                {
+                                    <div class="small text-monospace text-muted">@don.TransactionId</div>
+                                }
+                                @if (!string.IsNullOrEmpty(don.SenderNumber))
+                                {
+                                    <div class="small text-muted">From: @don.SenderNumber</div>
+                                }
+                            </td>
+                            <td>
+                                @if (don.Status == EasyAlumni.Core.Enums.PaymentStatus.Approved)
+                                {
+                                    <span class="badge bg-success-subtle text-success border border-success-subtle px-2 py-1">
+                                        <i class="fas fa-check-circle me-1"></i> Approved
+                                    </span>
+                                }
+                                else if (don.Status == EasyAlumni.Core.Enums.PaymentStatus.Pending)
+                                {
+                                    <span class="badge bg-warning-subtle text-warning border border-warning-subtle px-2 py-1">
+                                        <i class="fas fa-clock me-1"></i> Pending
+                                    </span>
+                                }
+                                else if (don.Status == EasyAlumni.Core.Enums.PaymentStatus.Rejected)
+                                {
+                                    <span class="badge bg-danger-subtle text-danger border border-danger-subtle px-2 py-1">
+                                        <i class="fas fa-times-circle me-1"></i> Rejected
+                                    </span>
+                                }
+                                else
+                                {
+                                    <span class="badge bg-secondary">@don.Status</span>
+                                }
+                            </td>
+                            <td class="small text-muted">
+                                @don.CreatedAt.AddHours(6).ToString("dd MMM yyyy, hh:mm tt")
+                            </td>
+                            <td class="text-end pe-4">
+                                <div class="btn-group btn-group-sm">
+                                    <a asp-controller="Donation" asp-action="Receipt" asp-route-trackingNo="@don.DonationTrackingNo" target="_blank" class="btn btn-outline-secondary" title="View / Print Receipt">
+                                        <i class="fas fa-receipt"></i>
+                                    </a>
+
+                                    @if (!string.IsNullOrEmpty(don.SlipAttachmentPath))
+                                    {
+                                        <a href="@don.SlipAttachmentPath" target="_blank" class="btn btn-outline-info" title="View Uploaded Slip">
+                                            <i class="fas fa-paperclip"></i>
+                                        </a>
+                                    }
+
+                                    @if (don.Status == EasyAlumni.Core.Enums.PaymentStatus.Pending)
+                                    {
+                                        @if (don.PaymentMode == EasyAlumni.Core.Enums.PaymentMode.JanataPay)
+                                        {
+                                            <form asp-action="VerifyJanataPay" asp-route-id="@don.Id" method="post" class="d-inline">
+                                                @Html.AntiForgeryToken()
+                                                <button type="submit" class="btn btn-primary" title="Re-query JanataPay Gateway">
+                                                    <i class="fas fa-sync-alt"></i> Verify
+                                                </button>
+                                            </form>
+                                        }
+
+                                        <form asp-action="Approve" asp-route-id="@don.Id" method="post" class="d-inline" onsubmit="return confirm('Approve donation from @don.DonorName of BDT @don.Amount? This will record an accounting voucher and send an SMS receipt.');">
+                                            @Html.AntiForgeryToken()
+                                            <button type="submit" class="btn btn-success" title="Approve Donation">
+                                                <i class="fas fa-check"></i>
+                                            </button>
+                                        </form>
+
+                                        <button type="button" class="btn btn-outline-danger" title="Reject Donation" onclick="openRejectModal(@don.Id, '@don.DonationTrackingNo', '@don.DonorName')">
+                                            <i class="fas fa-times"></i>
+                                        </button>
+                                    }
+                                </div>
+                            </td>
+                        </tr>
+                    }
+                }
+                else
+                {
+                    <tr>
+                        <td colspan="9" class="text-center py-5 text-muted">
+                            <i class="fas fa-heart-broken fa-3x mb-3 text-muted opacity-50 d-block"></i>
+                            No donations found matching the criteria.
+                        </td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    </div>
+
+    <!-- Pagination -->
+    @if (totalPages > 1)
+    {
+        <div class="card-footer bg-white border-top p-3 d-flex justify-content-between align-items-center">
+            <small class="text-muted">Showing page @currentPage of @totalPages (Total @totalItems records)</small>
+            <ul class="pagination pagination-sm mb-0">
+                @for (int p = 1; p <= totalPages; p++)
+                {
+                    <li class="page-item @(p == currentPage ? "active" : "")">
+                        <a class="page-link" asp-action="Index" asp-route-page="@p" asp-route-search="@search" asp-route-status="@currentStatus" asp-route-paymentMode="@currentMode">@p</a>
+                    </li>
+                }
+            </ul>
+        </div>
+    }
+</div>
+
+<!-- Reject Modal -->
+<div class="modal fade" id="rejectDonationModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content rounded-4 border-0 shadow">
+            <div class="modal-header bg-danger text-white border-0">
+                <h5 class="modal-title fw-bold"><i class="fas fa-times-circle me-2"></i> Reject Donation</h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+            </div>
+            <form asp-action="Reject" method="post">
+                @Html.AntiForgeryToken()
+                <input type="hidden" name="id" id="rejectDonationId" />
+                <div class="modal-body p-4">
+                    <p class="text-muted mb-3">Are you sure you want to reject donation <strong id="rejectTrackingNo" class="text-dark"></strong> from <strong id="rejectDonorName" class="text-dark"></strong>?</p>
+                    <div class="mb-3">
+                        <label class="form-label fw-semibold text-dark small">Reason for Rejection</label>
+                        <textarea name="remarks" class="form-control" rows="3" placeholder="e.g. Invalid transaction ID or unverified bank deposit" required></textarea>
+                    </div>
+                </div>
+                <div class="modal-footer bg-light border-0">
+                    <button type="button" class="btn btn-outline-secondary rounded-pill px-3" data-bs-dismiss="modal">Cancel</button>
+                    <button type="submit" class="btn btn-danger rounded-pill px-4 fw-bold">Reject Donation</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        function openRejectModal(id, trackingNo, donorName) {
+            document.getElementById('rejectDonationId').value = id;
+            document.getElementById('rejectTrackingNo').innerText = trackingNo;
+            document.getElementById('rejectDonorName').innerText = donorName;
+            new bootstrap.Modal(document.getElementById('rejectDonationModal')).show();
+        }
+    </script>
+}
