@@ -164,7 +164,18 @@
                                     <span class="badge bg-light text-muted border rounded-pill">Pending Collection</span>
                                 }
                             </td>
-                            <td class="text-end">
+                            <td class="text-end text-nowrap">
+                                @if (reg.Status == EasyAlumni.Core.Enums.RegistrationStatus.Pending)
+                                {
+                                    <a asp-controller="Payment" asp-action="JanataPayCheckout" asp-route-registrationNo="@reg.RegistrationNo" target="_blank"
+                                       class="btn btn-sm btn-outline-success rounded-pill px-2 me-1" title="Open JanataPay Checkout Link">
+                                        <i class="fas fa-credit-card"></i>
+                                    </a>
+                                    <button type="button" class="btn btn-sm btn-outline-warning rounded-pill px-2 me-1" 
+                                            onclick="copyPaymentLink('@reg.RegistrationNo')" title="Copy Direct Payment Link to Clipboard">
+                                        <i class="fas fa-copy"></i>
+                                    </button>
+                                }
                                 <a asp-controller="Pass" asp-action="ViewPass" asp-route-id="@reg.RegistrationNo" target="_blank"
                                    class="btn btn-sm btn-outline-primary rounded-pill px-2" title="Print Pass">
                                     <i class="fas fa-id-badge"></i>
@@ -185,5 +196,16 @@
                 "pageLength": 25
             });
         });
+
+        function copyPaymentLink(regNo) {
+            const url = window.location.origin + '/Payment/JanataPayCheckout?registrationNo=' + encodeURIComponent(regNo);
+            if (navigator.clipboard && navigator.clipboard.writeText) {
+                navigator.clipboard.writeText(url).then(() => {
+                    alert('JanataPay payment checkout link copied to clipboard:\n' + url);
+                });
+            } else {
+                prompt('Copy this JanataPay payment link:', url);
+            }
+        }
     </script>
 }

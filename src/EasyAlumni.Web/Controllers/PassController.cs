@@ -109,7 +109,8 @@ namespace EasyAlumni.Web.Controllers
             }
             else
             {
-                TempData["PassLookupWarning"] = $"Your registration ({registration.RegistrationNo}) was found, but payment approval is currently pending. You will be able to print your Digital Pass as soon as payment is confirmed.";
+                TempData["PassLookupWarning"] = $"Your registration ({registration.RegistrationNo}) was found, but payment is currently pending.";
+                TempData["PendingRegNo"] = registration.RegistrationNo;
                 return RedirectToAction(nameof(DownloadPass));
             }
         }

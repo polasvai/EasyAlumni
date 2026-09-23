@@ -123,14 +123,30 @@ namespace EasyAlumni.Web.Controllers
             }
 
             // Check if phone or email already registered for this event
-            var isDuplicate = await _context.EventRegistrations
-                .AnyAsync(r => r.ReunionEventId == model.ReunionEventId &&
-                               (r.AlumniProfile!.ContactNumber == model.ContactNumber.Trim() ||
-                                r.AlumniProfile.Email == model.Email.Trim().ToLower()));
+            var existingReg = await _context.EventRegistrations
+                .Include(r => r.AlumniProfile)
+                .Where(r => r.ReunionEventId == model.ReunionEventId &&
+                            (r.AlumniProfile!.ContactNumber == model.ContactNumber.Trim() ||
+                             (!string.IsNullOrWhiteSpace(model.Email) && r.AlumniProfile.Email == model.Email.Trim().ToLower())))
+                .OrderByDescending(r => r.RegisteredAt)
+                .FirstOrDefaultAsync();
 
-            if (isDuplicate)
+            if (existingReg != null)
             {
-                ModelState.AddModelError("ContactNumber", "An alumnus with this mobile number or email is already registered for this event.");
+                if (existingReg.Status == RegistrationStatus.Pending)
+                {
+                    TempData["PaymentNotice"] = $"You already registered as {existingReg.AlumniProfile?.NameEnglish} ({existingReg.RegistrationNo}), but payment has not been completed yet. Please complete your JanataPay payment below to finalize your registration.";
+                    return RedirectToAction("JanataPayCheckout", "Payment", new { registrationNo = existingReg.RegistrationNo });
+                }
+                else if (existingReg.Status == RegistrationStatus.Approved)
+                {
+                    TempData["PassLookupWarning"] = $"Alumnus {existingReg.AlumniProfile?.NameEnglish} ({existingReg.RegistrationNo}) is already registered and payment is approved. You can view and download your ID pass directly.";
+                    return RedirectToAction("ViewPass", "Pass", new { id = existingReg.RegistrationNo });
+                }
+                else
+                {
+                    ModelState.AddModelError("ContactNumber", $"An alumnus with this mobile number or email is already registered ({existingReg.RegistrationNo}) with status: {existingReg.Status}.");
+                }
             }
 
             // Load Dynamic Form Field Settings
@@ -552,6 +568,52 @@ namespace EasyAlumni.Web.Controllers
             }
 
             return View(reg);
+        }
+
+        // GET: /Enrollment/PayPending
+        [HttpGet]
+        public IActionResult PayPending()
+        {
+            return View();
+        }
+
+        // POST: /Enrollment/PayPending
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> PayPending(string mobileNumber)
+        {
+            if (string.IsNullOrWhiteSpace(mobileNumber))
+            {
+                TempData["ErrorMessage"] = "Please enter your 11-digit mobile number.";
+                return View();
+            }
+
+            var cleanMobile = mobileNumber.Trim();
+            var reg = await _context.EventRegistrations
+                .Include(r => r.AlumniProfile)
+                .Include(r => r.ReunionEvent)
+                .Include(r => r.Payments)
+                .Where(r => r.AlumniProfile != null &&
+                            (r.AlumniProfile.ContactNumber == cleanMobile ||
+                             r.AlumniProfile.AlternativeNumber == cleanMobile))
+                .OrderByDescending(r => r.RegisteredAt)
+                .FirstOrDefaultAsync();
+
+            if (reg == null)
+            {
+                TempData["ErrorMessage"] = $"No registration found with mobile number '{cleanMobile}'. Please register first.";
+                return View();
+            }
+
+            if (reg.Status == RegistrationStatus.Approved)
+            {
+                TempData["SuccessMessage"] = $"Your registration ({reg.RegistrationNo}) is already APPROVED and paid! You can print or download your ID card directly.";
+                return RedirectToAction("ViewPass", "Pass", new { id = reg.RegistrationNo });
+            }
+
+            // Registration is Pending: redirect directly to JanataPay checkout
+            TempData["PaymentNotice"] = $"Welcome back, {reg.AlumniProfile?.NameEnglish}! Your registration ticket {reg.RegistrationNo} was found with status: Pending. Please proceed to payment below.";
+            return RedirectToAction("JanataPayCheckout", "Payment", new { registrationNo = reg.RegistrationNo });
         }
     }
 }

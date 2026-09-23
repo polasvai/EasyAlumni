@@ -35,7 +35,23 @@
                 @if (TempData["PassLookupWarning"] != null)
                 {
                     <div class="alert alert-warning rounded-3 shadow-sm alert-dismissible fade show text-dark" role="alert">
-                        <i class="fas fa-clock me-2 text-warning"></i> @TempData["PassLookupWarning"]
+                        <div class="d-flex align-items-center mb-2">
+                            <i class="fas fa-clock me-2 text-warning fs-5"></i>
+                            <strong>@TempData["PassLookupWarning"]</strong>
+                        </div>
+                        <p class="small text-muted mb-2">
+                            You cannot print your Digital Pass until payment is completed. You can complete your online payment right now using JanataPay:
+                        </p>
+                        @if (TempData["PendingRegNo"] != null)
+                        {
+                            var pendingNo = TempData["PendingRegNo"]?.ToString();
+                            <div class="mt-2">
+                                <a asp-controller="Payment" asp-action="JanataPayCheckout" asp-route-registrationNo="@pendingNo" 
+                                   class="btn btn-success btn-sm rounded-pill fw-bold px-3">
+                                    <i class="fas fa-credit-card me-1"></i> Pay Now with JanataPay Online
+                                </a>
+                            </div>
+                        }
                         <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
                     </div>
                 }

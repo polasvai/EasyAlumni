@@ -1,0 +1,73 @@
+@{
+    ViewData["Title"] = "Complete Registration Payment";
+    Layout = "_Layout";
+}
+
+<div class="py-5" style="background: linear-gradient(135deg, #0f172a 0%, #004d38 100%) !important; padding-top: 130px !important;">
+    <div class="container text-center text-white">
+        <div class="d-inline-block bg-warning text-dark p-3 rounded-circle mb-3 shadow">
+            <i class="fas fa-credit-card fa-3x"></i>
+        </div>
+        <h1 class="fw-bold">Complete Your Registration Payment</h1>
+        <p class="lead opacity-90">নিবন্ধন করেছেন কিন্তু পেমেন্ট সম্পন্ন করেননি? আপনার মোবাইল নম্বর দিয়ে পেমেন্ট সম্পন্ন করুন</p>
+    </div>
+</div>
+
+<div class="container py-5">
+    <div class="row justify-content-center">
+        <div class="col-lg-6 col-md-8">
+            <div class="card border-0 shadow-lg rounded-4 p-4 p-md-5">
+                <h4 class="fw-bold text-dark text-center mb-2">
+                    <i class="fas fa-shield-alt text-success me-2"></i> Pay Pending Registration Fee
+                </h4>
+                <p class="text-muted text-center small mb-4">
+                    Already submitted the registration form earlier but couldn't pay? Just enter your 11-digit registered mobile number below to jump directly to payment.
+                </p>
+
+                @if (TempData["ErrorMessage"] != null)
+                {
+                    <div class="alert alert-danger rounded-3 shadow-sm alert-dismissible fade show" role="alert">
+                        <i class="fas fa-exclamation-circle me-2"></i> @TempData["ErrorMessage"]
+                        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                    </div>
+                }
+
+                @if (TempData["SuccessMessage"] != null)
+                {
+                    <div class="alert alert-success rounded-3 shadow-sm alert-dismissible fade show" role="alert">
+                        <i class="fas fa-check-circle me-2"></i> @TempData["SuccessMessage"]
+                        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                    </div>
+                }
+
+                <form asp-controller="Enrollment" asp-action="PayPending" method="post">
+                    @Html.AntiForgeryToken()
+
+                    <div class="mb-4">
+                        <label class="form-label fw-bold text-dark">
+                            Registered Mobile Number <span class="text-danger">*</span>
+                        </label>
+                        <div class="input-group input-group-lg">
+                            <span class="input-group-text bg-light"><i class="fas fa-phone text-success"></i></span>
+                            <input type="tel" name="mobileNumber" class="form-control" placeholder="01XXXXXXXXX" 
+                                   pattern="^(?:(?:\+|00)88|01)?\d{9}$" required autofocus />
+                        </div>
+                        <small class="text-muted">Enter the exact mobile number you used while filling out the registration form.</small>
+                    </div>
+
+                    <div class="d-grid gap-2">
+                        <button type="submit" class="btn btn-success btn-lg rounded-pill fw-bold shadow py-3">
+                            <i class="fas fa-arrow-right me-2"></i> Find &amp; Pay with JanataPay Online
+                        </button>
+                        <div class="text-center mt-3">
+                            <span class="text-muted small">Haven't registered yet?</span>
+                            <a asp-controller="Enrollment" asp-action="Register" class="text-success fw-bold text-decoration-none ms-1">
+                                Register Now <i class="fas fa-arrow-right"></i>
+                            </a>
+                        </div>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
