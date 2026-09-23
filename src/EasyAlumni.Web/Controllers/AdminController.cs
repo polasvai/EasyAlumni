@@ -413,5 +413,75 @@ namespace EasyAlumni.Web.Controllers
 
             return RedirectToAction(nameof(Index));
         }
+
+        [HttpPost]
+        [Authorize(Roles = "SuperAdmin,Admin")]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> DeleteRegistration(int id)
+        {
+            var reg = await _context.EventRegistrations
+                .Include(r => r.AlumniProfile)
+                .Include(r => r.Payments)
+                .Include(r => r.Guests)
+                .Include(r => r.GiftChoices)
+                .Include(r => r.QuestionResponses)
+                .Include(r => r.GiftDistributions)
+                .FirstOrDefaultAsync(r => r.Id == id);
+
+            if (reg == null)
+            {
+                TempData["Error"] = "Registration not found.";
+                return RedirectToAction(nameof(Registrations));
+            }
+
+            try
+            {
+                var regNo = reg.RegistrationNo;
+                var attendeeName = reg.AlumniProfile?.NameEnglish ?? "Alumnus";
+
+                // Revert stock allocations if any
+                var sizeStock = await _context.GiftItemSizeStocks
+                    .FirstOrDefaultAsync(s => s.SizeName == reg.TShirtSize.ToString());
+                if (sizeStock != null && sizeStock.AllocatedStock > 0)
+                {
+                    sizeStock.AllocatedStock = Math.Max(0, sizeStock.AllocatedStock - 1);
+                }
+
+                // Delete related records in cascade order
+                _context.RegistrationQuestionResponses.RemoveRange(reg.QuestionResponses);
+                _context.RegistrationGiftChoices.RemoveRange(reg.GiftChoices);
+                _context.RegistrationGuests.RemoveRange(reg.Guests);
+                _context.GiftDistributions.RemoveRange(reg.GiftDistributions);
+
+                var cashEntries = await _context.CashEntries.Where(c => c.RelatedRegistrationId == reg.Id).ToListAsync();
+                _context.CashEntries.RemoveRange(cashEntries);
+
+                _context.RegistrationPayments.RemoveRange(reg.Payments);
+
+                var profile = reg.AlumniProfile;
+                _context.EventRegistrations.Remove(reg);
+
+                // If profile has no other registrations, remove the profile as well to free up phone/email
+                if (profile != null)
+                {
+                    var otherRegs = await _context.EventRegistrations
+                        .AnyAsync(r => r.AlumniProfileId == profile.Id && r.Id != reg.Id);
+                    if (!otherRegs)
+                    {
+                        _context.AlumniProfiles.Remove(profile);
+                    }
+                }
+
+                await _context.SaveChangesAsync();
+                TempData["Success"] = $"Registration {regNo} for {attendeeName} was successfully deleted. The alumnus may now register again.";
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Failed to delete registration {Id}", id);
+                TempData["Error"] = $"Failed to delete registration: {ex.Message}";
+            }
+
+            return RedirectToAction(nameof(Registrations));
+        }
     }
 }

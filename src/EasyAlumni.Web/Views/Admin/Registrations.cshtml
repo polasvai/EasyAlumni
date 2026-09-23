@@ -177,9 +177,16 @@
                                     </button>
                                 }
                                 <a asp-controller="Pass" asp-action="ViewPass" asp-route-id="@reg.RegistrationNo" target="_blank"
-                                   class="btn btn-sm btn-outline-primary rounded-pill px-2" title="Print Pass">
+                                   class="btn btn-sm btn-outline-primary rounded-pill px-2 me-1" title="Print Pass">
                                     <i class="fas fa-id-badge"></i>
                                 </a>
+                                <form asp-action="DeleteRegistration" asp-route-id="@reg.Id" method="post" class="d-inline"
+                                      onsubmit="return confirm('Are you sure you want to delete registration @reg.RegistrationNo for @(profile?.NameEnglish ?? "this attendee")? This will free their phone number and allow them to register again.');">
+                                    @Html.AntiForgeryToken()
+                                    <button type="submit" class="btn btn-sm btn-outline-danger rounded-pill px-2" title="Delete Registration (Allows Re-registering)">
+                                        <i class="fas fa-trash-alt"></i>
+                                    </button>
+                                </form>
                             </td>
                         </tr>
                     }
