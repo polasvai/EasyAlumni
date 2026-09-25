@@ -72,13 +72,15 @@
 
                     <div class="mb-4">
                         <label class="form-label fw-bold text-dark">
-                            Transaction ID (TrxID) or Ticket No (Optional)
+                            Transaction ID (TrxID) or Ticket No <span class="text-danger">*</span>
                         </label>
                         <div class="input-group input-group-lg">
                             <span class="input-group-text bg-light"><i class="fas fa-receipt text-primary"></i></span>
-                            <input type="text" name="identifier" class="form-control text-uppercase" placeholder="e.g. 9J82KL091 or REG-2026-..." />
+                            <input type="text" name="identifier" class="form-control text-uppercase" 
+                                   value="@(TempData["VerifyTargetRegNo"]?.ToString() ?? "")"
+                                   placeholder="e.g. DIN4SZJAEI or RE-2026-..." required />
                         </div>
-                        <small class="text-muted">Enter bKash/Nagad TrxID, Janata Bank FT Number, or Ticket Registration No.</small>
+                        <small class="text-muted">Enter your payment Transaction ID (TrxID / FT Number) or your Registration Ticket Number.</small>
                     </div>
 
                     <div class="d-grid gap-2">

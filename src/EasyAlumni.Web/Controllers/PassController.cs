@@ -17,7 +17,7 @@ namespace EasyAlumni.Web.Controllers
         }
 
         [HttpGet]
-        public async Task<IActionResult> ViewPass(string id)
+        public async Task<IActionResult> ViewPass(string id, [FromQuery] string? trx)
         {
             if (string.IsNullOrWhiteSpace(id))
             {
@@ -42,6 +42,35 @@ namespace EasyAlumni.Web.Controllers
             if (reg == null)
             {
                 return NotFound("Registration pass not found.");
+            }
+
+            // Security Check: Prevent unauthorized users from viewing arbitrary passes by changing digits
+            bool isAdmin = User.Identity?.IsAuthenticated == true && 
+                           (User.IsInRole("Admin") || User.IsInRole("SuperAdmin") || User.IsInRole("Accounts") || User.IsInRole("Volunteer"));
+
+            bool isSessionAuthorized = HttpContext.Session.GetString($"Pass_Authorized_{reg.RegistrationNo}") == "1";
+
+            bool isTrxProvidedAndValid = false;
+            if (!string.IsNullOrWhiteSpace(trx))
+            {
+                var cleanTrx = trx.Trim();
+                isTrxProvidedAndValid = reg.Payments.Any(p => 
+                    (!string.IsNullOrEmpty(p.TransactionId) && p.TransactionId.Equals(cleanTrx, StringComparison.OrdinalIgnoreCase)) ||
+                    (!string.IsNullOrEmpty(p.GatewayFtNumber) && p.GatewayFtNumber.Equals(cleanTrx, StringComparison.OrdinalIgnoreCase)) ||
+                    (!string.IsNullOrEmpty(p.GatewayReferenceId) && p.GatewayReferenceId.Equals(cleanTrx, StringComparison.OrdinalIgnoreCase)));
+                
+                if (isTrxProvidedAndValid)
+                {
+                    HttpContext.Session.SetString($"Pass_Authorized_{reg.RegistrationNo}", "1");
+                }
+            }
+
+            if (!isAdmin && !isSessionAuthorized && !isTrxProvidedAndValid)
+            {
+                // Access denied without Transaction ID verification
+                TempData["PassLookupError"] = $"Security Notice: To view or print Digital Pass ({reg.RegistrationNo}), please enter your registered mobile number and your payment Transaction ID (TrxID / FT Number).";
+                TempData["VerifyTargetRegNo"] = reg.RegistrationNo;
+                return RedirectToAction(nameof(DownloadPass));
             }
 
             // Ensure QR Code is generated
@@ -105,7 +134,19 @@ namespace EasyAlumni.Web.Controllers
 
             if (registration.Status == EasyAlumni.Core.Enums.RegistrationStatus.Approved)
             {
-                return RedirectToAction(nameof(ViewPass), new { id = registration.RegistrationNo });
+                // Authorize this session to view this pass
+                HttpContext.Session.SetString($"Pass_Authorized_{registration.RegistrationNo}", "1");
+
+                var successPayment = registration.Payments
+                    .OrderByDescending(p => p.SubmittedAt)
+                    .FirstOrDefault(p => p.Status == EasyAlumni.Core.Enums.PaymentStatus.Approved)
+                    ?? registration.Payments.OrderByDescending(p => p.SubmittedAt).FirstOrDefault();
+
+                var trxParam = !string.IsNullOrEmpty(successPayment?.GatewayFtNumber) 
+                    ? successPayment.GatewayFtNumber 
+                    : successPayment?.TransactionId;
+
+                return RedirectToAction(nameof(ViewPass), new { id = registration.RegistrationNo, trx = trxParam });
             }
             else
             {

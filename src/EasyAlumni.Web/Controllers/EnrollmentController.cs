@@ -125,6 +125,7 @@ namespace EasyAlumni.Web.Controllers
             // Check if phone or email already registered for this event
             var existingReg = await _context.EventRegistrations
                 .Include(r => r.AlumniProfile)
+                .Include(r => r.Payments)
                 .Where(r => r.ReunionEventId == model.ReunionEventId &&
                             (r.AlumniProfile!.ContactNumber == model.ContactNumber.Trim() ||
                              (!string.IsNullOrWhiteSpace(model.Email) && r.AlumniProfile.Email == model.Email.Trim().ToLower())))
@@ -140,8 +141,13 @@ namespace EasyAlumni.Web.Controllers
                 }
                 else if (existingReg.Status == RegistrationStatus.Approved)
                 {
+                    HttpContext.Session.SetString($"Pass_Authorized_{existingReg.RegistrationNo}", "1");
+                    var successPay = existingReg.Payments.OrderByDescending(p => p.SubmittedAt).FirstOrDefault(p => p.Status == PaymentStatus.Approved)
+                                     ?? existingReg.Payments.OrderByDescending(p => p.SubmittedAt).FirstOrDefault();
+                    var trxCode = !string.IsNullOrEmpty(successPay?.GatewayFtNumber) ? successPay.GatewayFtNumber : successPay?.TransactionId;
+
                     TempData["PassLookupWarning"] = $"Alumnus {existingReg.AlumniProfile?.NameEnglish} ({existingReg.RegistrationNo}) is already registered and payment is approved. You can view and download your ID pass directly.";
-                    return RedirectToAction("ViewPass", "Pass", new { id = existingReg.RegistrationNo });
+                    return RedirectToAction("ViewPass", "Pass", new { id = existingReg.RegistrationNo, trx = trxCode });
                 }
                 else
                 {
@@ -607,8 +613,13 @@ namespace EasyAlumni.Web.Controllers
 
             if (reg.Status == RegistrationStatus.Approved)
             {
+                HttpContext.Session.SetString($"Pass_Authorized_{reg.RegistrationNo}", "1");
+                var successPay = reg.Payments.OrderByDescending(p => p.SubmittedAt).FirstOrDefault(p => p.Status == PaymentStatus.Approved)
+                                 ?? reg.Payments.OrderByDescending(p => p.SubmittedAt).FirstOrDefault();
+                var trxCode = !string.IsNullOrEmpty(successPay?.GatewayFtNumber) ? successPay.GatewayFtNumber : successPay?.TransactionId;
+
                 TempData["SuccessMessage"] = $"Your registration ({reg.RegistrationNo}) is already APPROVED and paid! You can print or download your ID card directly.";
-                return RedirectToAction("ViewPass", "Pass", new { id = reg.RegistrationNo });
+                return RedirectToAction("ViewPass", "Pass", new { id = reg.RegistrationNo, trx = trxCode });
             }
 
             // Registration is Pending: redirect directly to JanataPay checkout

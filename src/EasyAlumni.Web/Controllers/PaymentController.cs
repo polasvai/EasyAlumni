@@ -264,7 +264,8 @@ namespace EasyAlumni.Web.Controllers
                     // Dispatch Approval SMS
                     if (reg.AlumniProfile != null && !string.IsNullOrWhiteSpace(reg.AlumniProfile.ContactNumber))
                     {
-                        var passUrl = $"{Request.Scheme}://{Request.Host}/Pass/ViewPass/{reg.RegistrationNo}";
+                        var trxCode = !string.IsNullOrEmpty(verifyResult.FtNumber) ? verifyResult.FtNumber : (payment.TransactionId ?? "");
+                        var passUrl = $"{Request.Scheme}://{Request.Host}/Pass/ViewPass/{reg.RegistrationNo}?trx={trxCode}";
                         var placeholders = new Dictionary<string, string>
                         {
                             ["Name"] = reg.AlumniProfile.NameEnglish,
@@ -279,6 +280,13 @@ namespace EasyAlumni.Web.Controllers
                 }
 
                 await _context.SaveChangesAsync();
+                
+                // Authorize this user session to view their digital pass
+                if (payment.EventRegistration?.RegistrationNo != null)
+                {
+                    HttpContext.Session.SetString($"Pass_Authorized_{payment.EventRegistration.RegistrationNo}", "1");
+                }
+
                 TempData["Success"] = "Payment completed and approved successfully via JanataPay!";
                 return RedirectToAction("Confirmation", "Enrollment", new { registrationNo = payment.EventRegistration?.RegistrationNo });
             }

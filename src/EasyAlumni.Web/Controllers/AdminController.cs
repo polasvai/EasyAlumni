@@ -216,7 +216,8 @@ namespace EasyAlumni.Web.Controllers
                 if (payment.EventRegistration.AlumniProfile != null)
                 {
                     var phone = payment.EventRegistration.AlumniProfile.ContactNumber;
-                    var passUrl = $"{Request.Scheme}://{Request.Host}/Pass/ViewPass/{payment.EventRegistration.RegistrationNo}";
+                    var trxCode = !string.IsNullOrEmpty(payment.GatewayFtNumber) ? payment.GatewayFtNumber : (payment.TransactionId ?? "");
+                    var passUrl = $"{Request.Scheme}://{Request.Host}/Pass/ViewPass/{payment.EventRegistration.RegistrationNo}?trx={trxCode}";
 
                     var placeholders = new Dictionary<string, string>
                     {
@@ -345,7 +346,8 @@ namespace EasyAlumni.Web.Controllers
 
                     if (reg.AlumniProfile != null && !string.IsNullOrWhiteSpace(reg.AlumniProfile.ContactNumber))
                     {
-                        var passUrl = $"{Request.Scheme}://{Request.Host}/Pass/ViewPass/{reg.RegistrationNo}";
+                        var trxCode = !string.IsNullOrEmpty(verifyResult.FtNumber) ? verifyResult.FtNumber : (payment.TransactionId ?? "");
+                        var passUrl = $"{Request.Scheme}://{Request.Host}/Pass/ViewPass/{reg.RegistrationNo}?trx={trxCode}";
                         var placeholders = new Dictionary<string, string>
                         {
                             ["Name"] = reg.AlumniProfile.NameEnglish,
