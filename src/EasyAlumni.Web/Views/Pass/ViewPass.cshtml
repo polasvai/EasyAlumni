@@ -308,12 +308,6 @@
                                 <i class="fas fa-shopping-bag"></i> Official Kit Bag &amp; Souvenir
                             </span>
                         }
-                        @if (pkg.IncludesTShirt)
-                        {
-                            <span class="pill-inclusion bg-info-subtle text-info-emphasis border border-info-subtle">
-                                <i class="fas fa-tshirt"></i> Event T-Shirt (@Model.TShirtSize)
-                            </span>
-                        }
                         @if (pkg.IncludesRaffle)
                         {
                             <span class="pill-inclusion bg-warning-subtle text-warning-emphasis border border-warning-subtle">
@@ -337,15 +331,6 @@
                 </div>
 
                 <div class="row g-2 text-center">
-                    <!-- T-Shirt Allocation -->
-                    <div class="col-sm-3 col-6">
-                        <div class="item-tile">
-                            <small class="text-muted d-block fw-semibold">T-Shirt Size</small>
-                            <h4 class="fw-bold text-primary mb-0 mt-1">@Model.TShirtSize</h4>
-                            <span class="badge bg-primary-subtle text-primary rounded-pill mt-1" style="font-size: 0.7rem;">1 Piece</span>
-                        </div>
-                    </div>
-
                     <!-- Dynamic Gift Items / Choices -->
                     @if (giftChoices.Any())
                     {
@@ -469,7 +454,7 @@
                 <h6 class="fw-bold text-dark mb-1"><i class="fas fa-shield-alt text-primary me-1"></i> Gate Security &amp; Kit Collection Guidelines:</h6>
                 <ul class="mb-0 ps-3">
                     <li>Display this QR code on your phone screen or carry a printed copy for gate check-in.</li>
-                    <li>Kit distribution volunteers will scan this code to issue your official T-shirt <strong>(@Model.TShirtSize)</strong>, gift hamper, and event tokens.</li>
+                    <li>Kit distribution volunteers will scan this code to issue your kit bag, gift hamper, and event tokens.</li>
                     <li>This digital pass is uniquely signed and valid for <strong>@totalHeads person(s)</strong>.</li>
                 </ul>
             </div>
