@@ -14,17 +14,20 @@ namespace EasyAlumni.Web.Controllers
         private readonly ISmsService _smsService;
         private readonly IFileStorageService _fileStorage;
         private readonly IJanataPayService _janataPayService;
+        private readonly ILogsWebsiteService _logsWebsiteService;
 
         public SettingsController(
             ApplicationDbContext context,
             ISmsService smsService,
             IFileStorageService fileStorage,
-            IJanataPayService janataPayService)
+            IJanataPayService janataPayService,
+            ILogsWebsiteService logsWebsiteService)
         {
             _context = context;
             _smsService = smsService;
             _fileStorage = fileStorage;
             _janataPayService = janataPayService;
+            _logsWebsiteService = logsWebsiteService;
         }
 
         public async Task<IActionResult> Index()
@@ -94,6 +97,23 @@ namespace EasyAlumni.Web.Controllers
             else
             {
                 TempData["Error"] = $"JanataPay Connection Failed: {message}";
+            }
+
+            return RedirectToAction(nameof(Index));
+        }
+
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> TestLogsWebsite()
+        {
+            var (success, message) = await _logsWebsiteService.TestLogAsync();
+            if (success)
+            {
+                TempData["Success"] = message;
+            }
+            else
+            {
+                TempData["Error"] = message;
             }
 
             return RedirectToAction(nameof(Index));

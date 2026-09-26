@@ -1,5 +1,9 @@
+using System.Diagnostics;
+using EasyAlumni.Core.Interfaces;
 using EasyAlumni.Infrastructure.Data;
+using EasyAlumni.Web.Models;
 using EasyAlumni.Web.ViewModels;
+using Microsoft.AspNetCore.Diagnostics;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 
@@ -8,10 +12,12 @@ namespace EasyAlumni.Web.Controllers
     public class HomeController : Controller
     {
         private readonly ApplicationDbContext _context;
+        private readonly ILogsWebsiteService _logsWebsiteService;
 
-        public HomeController(ApplicationDbContext context)
+        public HomeController(ApplicationDbContext context, ILogsWebsiteService logsWebsiteService)
         {
             _context = context;
+            _logsWebsiteService = logsWebsiteService;
         }
 
         public async Task<IActionResult> Index()
@@ -103,9 +109,22 @@ namespace EasyAlumni.Web.Controllers
         }
 
         [ResponseCache(Duration = 0, Location = ResponseCacheLocation.None, NoStore = true)]
-        public IActionResult Error()
+        public async Task<IActionResult> Error()
         {
-            return View();
+            var requestId = Activity.Current?.Id ?? HttpContext.TraceIdentifier;
+            var exceptionFeature = HttpContext.Features.Get<IExceptionHandlerPathFeature>();
+
+            if (exceptionFeature?.Error != null)
+            {
+                var ex = exceptionFeature.Error;
+                var path = exceptionFeature.Path;
+                var title = $"{ex.GetType().Name} at {path}";
+                var data = $"Path: {path}\nRequestId: {requestId}\nQuery: {HttpContext.Request.QueryString}\nMethod: {HttpContext.Request.Method}\nUser: {User.Identity?.Name ?? "Anonymous"}\nRemoteIP: {HttpContext.Connection.RemoteIpAddress}\n\nException:\n{ex}";
+
+                await _logsWebsiteService.LogAsync(title, "error", "ExceptionHandler", data);
+            }
+
+            return View(new ErrorViewModel { RequestId = requestId });
         }
     }
 }

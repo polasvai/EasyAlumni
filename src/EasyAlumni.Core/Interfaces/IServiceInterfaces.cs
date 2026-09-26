@@ -57,5 +57,11 @@ namespace EasyAlumni.Core.Interfaces
         Task<(bool Success, string Message, string? AccessToken)> TestConnectionAsync(
             EasyAlumni.Core.Models.JanataPayAccountType accountType = EasyAlumni.Core.Models.JanataPayAccountType.Registration);
     }
+
+    public interface ILogsWebsiteService
+    {
+        Task<bool> LogAsync(string title, string type, string? controller, string? data);
+        Task<(bool Success, string Message)> TestLogAsync();
+    }
 }
 

@@ -144,7 +144,12 @@ namespace EasyAlumni.Infrastructure.Data
                 ["FormField_LastInstitute_Required"] = ("0", "Make Last Institute required (1=Required, 0=Optional)"),
                 ["FormField_LastDegree_Required"] = ("0", "Make Last Degree required (1=Required, 0=Optional)"),
                 ["FormField_CompanyName_Required"] = ("0", "Make Company Name required (1=Required, 0=Optional)"),
-                ["FormField_Designation_Required"] = ("0", "Make Designation required (1=Required, 0=Optional)")
+                ["FormField_Designation_Required"] = ("0", "Make Designation required (1=Required, 0=Optional)"),
+
+                // logs.website Centralized Remote Error Logging
+                ["LogsWebsite_Enabled"] = ("1", "Enable sending application error logs to logs.website (1=Enabled, 0=Disabled)"),
+                ["LogsWebsite_ApiUrl"] = ("https://logs.website/api/ingest", "logs.website Ingestion Endpoint URL"),
+                ["LogsWebsite_ApiToken"] = ("", "logs.website Bearer Ingestion Token (e.g. rbd_...)")
             };
 
             foreach (var s in defaultSettings)

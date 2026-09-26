@@ -58,6 +58,8 @@ builder.Services.AddScoped<EasyAlumni.Core.Interfaces.IWhatsAppService, EasyAlum
 builder.Services.AddScoped<EasyAlumni.Core.Interfaces.IPaymentService, EasyAlumni.Infrastructure.Services.ManualPaymentService>();
 builder.Services.Configure<EasyAlumni.Core.Models.JanataPayOptions>(builder.Configuration.GetSection(EasyAlumni.Core.Models.JanataPayOptions.SectionName));
 builder.Services.AddScoped<EasyAlumni.Core.Interfaces.IJanataPayService, EasyAlumni.Infrastructure.Services.JanataPayService>();
+builder.Services.AddScoped<EasyAlumni.Core.Interfaces.ILogsWebsiteService, EasyAlumni.Infrastructure.Services.LogsWebsiteService>();
+builder.Services.AddSingleton<ILoggerProvider, EasyAlumni.Infrastructure.Logging.LogsWebsiteLoggerProvider>();
 
 builder.Services.AddDistributedMemoryCache();
 builder.Services.AddSession(options =>

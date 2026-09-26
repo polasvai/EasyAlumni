@@ -50,6 +50,11 @@
                 <i class="fas fa-bullhorn me-1"></i> Notices &amp; News Board
             </button>
         </li>
+        <li class="nav-item">
+            <button class="nav-link rounded-pill px-4 fw-semibold" data-bs-toggle="pill" data-bs-target="#logsWebsiteTab">
+                <i class="fas fa-terminal me-1 text-danger"></i> Error Logging (logs.website)
+            </button>
+        </li>
     </ul>
 
     <div class="tab-content" id="settingsTabContent">
@@ -233,6 +238,114 @@
                             }
                         </tbody>
                     </table>
+                </div>
+            </div>
+        </div>
+
+        <!-- 5. Error Logging (logs.website) Tab -->
+        <div class="tab-pane fade" id="logsWebsiteTab">
+            <div class="row g-4">
+                <div class="col-lg-8">
+                    <div class="card border-0 shadow-sm rounded-4 p-4">
+                        <div class="d-flex justify-content-between align-items-center mb-3">
+                            <div>
+                                <h5 class="fw-bold text-dark mb-1">
+                                    <i class="fas fa-satellite-dish text-danger me-2"></i> logs.website Ingestion Configuration
+                                </h5>
+                                <p class="text-muted small mb-0">Direct centralized HTTP log collection and exception monitoring</p>
+                            </div>
+                            <span class="badge @(settingsDict.GetValueOrDefault("LogsWebsite_Enabled", "1") == "1" && !string.IsNullOrWhiteSpace(settingsDict.GetValueOrDefault("LogsWebsite_ApiToken")) ? "bg-success" : "bg-secondary") rounded-pill px-3 py-2">
+                                @(settingsDict.GetValueOrDefault("LogsWebsite_Enabled", "1") == "1" && !string.IsNullOrWhiteSpace(settingsDict.GetValueOrDefault("LogsWebsite_ApiToken")) ? "Active & Streaming" : "Inactive / Missing Token")
+                            </span>
+                        </div>
+
+                        <form asp-controller="Settings" asp-action="UpdateAllSettings" method="post">
+                            @Html.AntiForgeryToken()
+
+                            <div class="row g-3 mb-3">
+                                <div class="col-md-4">
+                                    <label class="form-label fw-semibold">Error Logging State</label>
+                                    <select name="settings[LogsWebsite_Enabled]" class="form-select">
+                                        <option value="1" selected="@(settingsDict.GetValueOrDefault("LogsWebsite_Enabled", "1") == "1")">1 - Enabled (Send All Errors)</option>
+                                        <option value="0" selected="@(settingsDict.GetValueOrDefault("LogsWebsite_Enabled", "1") == "0")">0 - Disabled (Do Not Send)</option>
+                                    </select>
+                                    <small class="text-muted">Toggle automatic dispatch of errors</small>
+                                </div>
+                                <div class="col-md-8">
+                                    <label class="form-label fw-semibold">Ingestion API Endpoint URL</label>
+                                    <input type="url" name="settings[LogsWebsite_ApiUrl]" class="form-control" 
+                                           value="@(string.IsNullOrWhiteSpace(settingsDict.GetValueOrDefault("LogsWebsite_ApiUrl")) ? "https://logs.website/api/ingest" : settingsDict.GetValueOrDefault("LogsWebsite_ApiUrl"))" required />
+                                    <small class="text-muted">Default: <code>https://logs.website/api/ingest</code></small>
+                                </div>
+                            </div>
+
+                            <div class="mb-4">
+                                <label class="form-label fw-semibold">
+                                    API Key / Ingestion Bearer Token <span class="text-danger">*</span>
+                                </label>
+                                <div class="input-group">
+                                    <span class="input-group-text bg-light"><i class="fas fa-key text-warning"></i></span>
+                                    <input type="password" id="logsWebsiteTokenInput" name="settings[LogsWebsite_ApiToken]" class="form-control font-monospace" 
+                                           placeholder="e.g. rbd_a1b2c3d4e5f6g7h8..." 
+                                           value="@settingsDict.GetValueOrDefault("LogsWebsite_ApiToken")" autocomplete="off" />
+                                    <button class="btn btn-outline-secondary" type="button" onclick="togglePasswordVisibility('logsWebsiteTokenInput', this)">
+                                        <i class="fas fa-eye"></i>
+                                    </button>
+                                </div>
+                                <small class="text-muted">
+                                    Obtained from your <a href="https://logs.website/app" target="_blank" class="fw-semibold text-primary">logs.website dashboard</a> under <em>API tokens</em> (format: <code>rbd_...</code> or guest token <code>guest_...</code>).
+                                </small>
+                            </div>
+
+                            <div class="d-flex justify-content-between align-items-center">
+                                <button type="submit" class="btn btn-success rounded-pill px-4 fw-bold">
+                                    <i class="fas fa-save me-1"></i> Save logs.website Settings
+                                </button>
+                            </div>
+                        </form>
+                    </div>
+
+                    <!-- Test Connection Box -->
+                    <div class="card border-0 shadow-sm rounded-4 p-4 mt-4">
+                        <h6 class="fw-bold text-dark mb-2"><i class="fas fa-paper-plane text-primary me-2"></i> Verify API Connection</h6>
+                        <p class="text-muted small mb-3">
+                            Send an immediate test log entry to <a href="https://logs.website" target="_blank">logs.website</a> to confirm your API Token and connectivity.
+                        </p>
+                        <form asp-controller="Settings" asp-action="TestLogsWebsite" method="post">
+                            @Html.AntiForgeryToken()
+                            <button type="submit" class="btn btn-outline-primary rounded-pill px-4 fw-semibold">
+                                <i class="fas fa-vial me-1"></i> Send Test Log Event
+                            </button>
+                        </form>
+                    </div>
+                </div>
+
+                <!-- Info Side Card -->
+                <div class="col-lg-4">
+                    <div class="card border-0 shadow-sm rounded-4 p-4 bg-light">
+                        <h6 class="fw-bold text-dark mb-3"><i class="fas fa-info-circle text-info me-2"></i> How It Works</h6>
+                        <p class="small text-muted mb-3">
+                            When configured, <strong>all unhandled application exceptions, 500 crashes, critical warnings, and database errors</strong> occurring across your application are automatically captured and dispatched via HTTP POST to:
+                        </p>
+                        <div class="p-2 bg-dark text-white rounded font-monospace small mb-3" style="font-size: 0.78rem;">
+                            POST https://logs.website/api/ingest<br>
+                            Authorization: Bearer rbd_...
+                        </div>
+                        <ul class="small text-muted ps-3 mb-3">
+                            <li><strong>Asynchronous &amp; Non-blocking:</strong> Logs are streamed in background workers without slowing user requests.</li>
+                            <li><strong>Rich Diagnostics:</strong> Includes request URL, method, error stack trace, and user IP.</li>
+                            <li><strong>Live Dashboard:</strong> View, search, and filter real-time logs anytime in your <a href="https://logs.website/app" target="_blank" class="fw-semibold">logs.website dashboard</a>.</li>
+                        </ul>
+                        @if (!string.IsNullOrWhiteSpace(settingsDict.GetValueOrDefault("LogsWebsite_ApiToken")))
+                        {
+                            var tokenVal = settingsDict.GetValueOrDefault("LogsWebsite_ApiToken")!.Trim();
+                            <div class="d-grid mt-3">
+                                <a href="https://logs.website/app/@tokenVal" target="_blank" class="btn btn-outline-dark rounded-pill btn-sm fw-bold">
+                                    <i class="fas fa-external-link-alt me-1"></i> Open Read-Only Web Viewer
+                                </a>
+                            </div>
+                        }
+                    </div>
                 </div>
             </div>
         </div>
