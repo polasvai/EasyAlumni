@@ -300,7 +300,7 @@ namespace EasyAlumni.Infrastructure.Services
                 }
                 else
                 {
-                    return (true, $"Test log was recorded in local database! Remote sync status: {testLog.RemoteSyncError ?? "Pending"}");
+                    return (false, $"Test log saved locally, but logs.website rejected sync: {testLog.RemoteSyncError ?? "Not synced"}. Please verify your API token.");
                 }
             }
             catch (Exception ex)
@@ -345,6 +345,7 @@ namespace EasyAlumni.Infrastructure.Services
 
                 var payload = new
                 {
+                    token = token,
                     title = log.Title,
                     type = log.Type,
                     controller = log.Controller,
