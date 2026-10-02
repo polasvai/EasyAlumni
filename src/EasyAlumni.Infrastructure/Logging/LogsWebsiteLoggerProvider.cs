@@ -55,7 +55,8 @@ namespace EasyAlumni.Infrastructure.Logging
             // Avoid infinite recursion if the logging service or HTTP client itself logs an error
             if (_categoryName.Contains("LogsWebsite") || 
                 _categoryName.Contains("System.Net.Http") || 
-                _categoryName.Contains("Microsoft.EntityFrameworkCore"))
+                _categoryName.Contains("Microsoft.EntityFrameworkCore") ||
+                _categoryName.Contains("Microsoft.Data.SqlClient"))
             {
                 return;
             }
@@ -73,19 +74,7 @@ namespace EasyAlumni.Infrastructure.Logging
                 _ => "error"
             };
 
-            var dataSb = new System.Text.StringBuilder();
-            dataSb.AppendLine($"Category: {_categoryName}");
-            dataSb.AppendLine($"EventId: {eventId.Id} ({eventId.Name})");
-            dataSb.AppendLine($"Message: {message}");
-
-            if (exception != null)
-            {
-                dataSb.AppendLine();
-                dataSb.AppendLine("Exception Details:");
-                dataSb.AppendLine(exception.ToString());
-            }
-
-            var data = dataSb.ToString();
+            var stackTrace = exception?.ToString();
 
             // Run in background task to avoid blocking request thread
             _ = Task.Run(async () =>
@@ -96,7 +85,12 @@ namespace EasyAlumni.Infrastructure.Logging
                     var logsService = scope.ServiceProvider.GetService<ILogsWebsiteService>();
                     if (logsService != null)
                     {
-                        await logsService.LogAsync(title, severity, _categoryName, data);
+                        await logsService.RecordErrorAsync(
+                            title: title,
+                            type: severity,
+                            controller: _categoryName,
+                            message: message,
+                            stackTrace: stackTrace);
                     }
                 }
                 catch

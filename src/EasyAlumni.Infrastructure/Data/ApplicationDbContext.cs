@@ -36,6 +36,7 @@ namespace EasyAlumni.Infrastructure.Data
         public DbSet<RegistrationQuestionResponse> RegistrationQuestionResponses => Set<RegistrationQuestionResponse>();
         public DbSet<RegistrationGiftChoice> RegistrationGiftChoices => Set<RegistrationGiftChoice>();
         public DbSet<Donation> Donations => Set<Donation>();
+        public DbSet<AppErrorLog> AppErrorLogs => Set<AppErrorLog>();
 
         protected override void OnModelCreating(ModelBuilder builder)
         {
@@ -57,6 +58,12 @@ namespace EasyAlumni.Infrastructure.Data
             builder.Entity<SystemSetting>()
                 .HasIndex(s => s.SettingKey)
                 .IsUnique();
+
+            builder.Entity<AppErrorLog>()
+                .HasIndex(l => l.CreatedAt);
+
+            builder.Entity<AppErrorLog>()
+                .HasIndex(l => l.IsSyncedToRemote);
 
             // Decimal Precisions
             foreach (var property in builder.Model.GetEntityTypes()

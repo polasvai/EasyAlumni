@@ -119,9 +119,17 @@ namespace EasyAlumni.Web.Controllers
                 var ex = exceptionFeature.Error;
                 var path = exceptionFeature.Path;
                 var title = $"{ex.GetType().Name} at {path}";
-                var data = $"Path: {path}\nRequestId: {requestId}\nQuery: {HttpContext.Request.QueryString}\nMethod: {HttpContext.Request.Method}\nUser: {User.Identity?.Name ?? "Anonymous"}\nRemoteIP: {HttpContext.Connection.RemoteIpAddress}\n\nException:\n{ex}";
 
-                await _logsWebsiteService.LogAsync(title, "error", "ExceptionHandler", data);
+                await _logsWebsiteService.RecordErrorAsync(
+                    title: title,
+                    type: "error",
+                    controller: "GlobalExceptionHandler",
+                    message: ex.Message,
+                    stackTrace: ex.ToString(),
+                    requestPath: path + HttpContext.Request.QueryString,
+                    requestMethod: HttpContext.Request.Method,
+                    userIdentifier: User.Identity?.Name ?? "Anonymous",
+                    clientIp: HttpContext.Connection.RemoteIpAddress?.ToString());
             }
 
             return View(new ErrorViewModel { RequestId = requestId });

@@ -1,3 +1,4 @@
+using EasyAlumni.Core.Entities;
 using EasyAlumni.Core.Enums;
 
 namespace EasyAlumni.Core.Interfaces
@@ -60,8 +61,21 @@ namespace EasyAlumni.Core.Interfaces
 
     public interface ILogsWebsiteService
     {
+        Task<AppErrorLog> RecordErrorAsync(
+            string title,
+            string type,
+            string? controller,
+            string? message,
+            string? stackTrace = null,
+            string? requestPath = null,
+            string? requestMethod = null,
+            string? userIdentifier = null,
+            string? clientIp = null);
+
         Task<bool> LogAsync(string title, string type, string? controller, string? data);
         Task<(bool Success, string Message)> TestLogAsync();
+        Task<(bool Success, string Message)> RetrySyncLogAsync(int errorLogId);
+        Task<(int SuccessCount, int FailCount, string Message)> SyncAllPendingLogsAsync();
     }
 }
 

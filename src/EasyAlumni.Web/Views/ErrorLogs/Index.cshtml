@@ -1,0 +1,480 @@
+@model EasyAlumni.Web.ViewModels.ErrorLogsIndexViewModel
+@{
+    ViewData["Title"] = "System Error Logs";
+    Layout = "_AdminLayout";
+}
+
+<!-- Page Header & Action Controls -->
+<div class="d-flex justify-content-between align-items-center flex-wrap gap-3 mb-4">
+    <div>
+        <h2 class="h4 fw-bold text-dark mb-1">
+            <i class="fas fa-shield-virus text-danger me-2"></i> Application Error Logs Keeping
+        </h2>
+        <p class="text-muted small mb-0">Local persistent crash logs, exception stack traces, and remote sync status</p>
+    </div>
+    <div class="d-flex align-items-center gap-2 flex-wrap">
+        <form asp-controller="ErrorLogs" asp-action="SyncAllPending" method="post" class="d-inline">
+            @Html.AntiForgeryToken()
+            <button type="submit" class="btn btn-primary rounded-pill px-3 shadow-sm btn-sm fw-semibold" 
+                    title="Retry syncing unsynced logs to logs.website" @(Model.PendingSyncCount == 0 ? "disabled" : "")>
+                <i class="fas fa-cloud-upload-alt me-1"></i> Sync Pending (@Model.PendingSyncCount)
+            </button>
+        </form>
+
+        <form asp-controller="ErrorLogs" asp-action="TriggerTestError" method="post" class="d-inline">
+            @Html.AntiForgeryToken()
+            <button type="submit" class="btn btn-outline-danger rounded-pill px-3 shadow-sm btn-sm fw-semibold" title="Test error logger pipeline">
+                <i class="fas fa-bug me-1"></i> Trigger Test Error
+            </button>
+        </form>
+
+        <!-- Prune/Clear Dropdown -->
+        <div class="dropdown d-inline">
+            <button class="btn btn-outline-secondary rounded-pill px-3 shadow-sm btn-sm fw-semibold dropdown-toggle" type="button" data-bs-toggle="dropdown">
+                <i class="fas fa-trash-alt me-1"></i> Clean Logs
+            </button>
+            <ul class="dropdown-menu dropdown-menu-end shadow-sm border-0 rounded-3">
+                <li>
+                    <form asp-controller="ErrorLogs" asp-action="ClearLogs" method="post">
+                        @Html.AntiForgeryToken()
+                        <input type="hidden" name="filter" value="older30" />
+                        <button type="submit" class="dropdown-item py-2 small" onclick="return confirm('Delete logs older than 30 days?')">
+                            <i class="fas fa-calendar-minus me-2 text-muted"></i> Delete older than 30 days
+                        </button>
+                    </form>
+                </li>
+                <li>
+                    <form asp-controller="ErrorLogs" asp-action="ClearLogs" method="post">
+                        @Html.AntiForgeryToken()
+                        <input type="hidden" name="filter" value="older7" />
+                        <button type="submit" class="dropdown-item py-2 small" onclick="return confirm('Delete logs older than 7 days?')">
+                            <i class="fas fa-calendar-times me-2 text-muted"></i> Delete older than 7 days
+                        </button>
+                    </form>
+                </li>
+                <li>
+                    <form asp-controller="ErrorLogs" asp-action="ClearLogs" method="post">
+                        @Html.AntiForgeryToken()
+                        <input type="hidden" name="filter" value="synced" />
+                        <button type="submit" class="dropdown-item py-2 small" onclick="return confirm('Delete all logs that are already synced to remote?')">
+                            <i class="fas fa-check-double me-2 text-success"></i> Delete all synced logs
+                        </button>
+                    </form>
+                </li>
+                <li><hr class="dropdown-divider"></li>
+                <li>
+                    <form asp-controller="ErrorLogs" asp-action="ClearLogs" method="post">
+                        @Html.AntiForgeryToken()
+                        <input type="hidden" name="filter" value="all" />
+                        <button type="submit" class="dropdown-item py-2 small text-danger fw-semibold" onclick="return confirm('DANGER: Clear ALL application error logs completely?')">
+                            <i class="fas fa-fire-alt me-2 text-danger"></i> Clear ALL Logs
+                        </button>
+                    </form>
+                </li>
+            </ul>
+        </div>
+    </div>
+</div>
+
+<!-- Alerts -->
+@if (TempData["Success"] != null)
+{
+    <div class="alert alert-success alert-dismissible fade show rounded-3 shadow-sm" role="alert">
+        <i class="fas fa-check-circle me-2"></i> @TempData["Success"]
+        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+    </div>
+}
+@if (TempData["Warning"] != null)
+{
+    <div class="alert alert-warning alert-dismissible fade show rounded-3 shadow-sm text-dark" role="alert">
+        <i class="fas fa-exclamation-triangle me-2 text-warning"></i> @TempData["Warning"]
+        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+    </div>
+}
+@if (TempData["Error"] != null)
+{
+    <div class="alert alert-danger alert-dismissible fade show rounded-3 shadow-sm" role="alert">
+        <i class="fas fa-exclamation-circle me-2"></i> @TempData["Error"]
+        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+    </div>
+}
+
+<!-- Metrics Summary Cards -->
+<div class="row g-3 mb-4">
+    <div class="col-sm-6 col-xl-3">
+        <div class="card border-0 shadow-sm rounded-4 p-3 h-100 bg-white">
+            <div class="d-flex align-items-center justify-content-between">
+                <div>
+                    <span class="text-muted small fw-semibold text-uppercase">Total Captured Logs</span>
+                    <h3 class="fw-bold text-dark mb-0 mt-1">@Model.TotalCount</h3>
+                </div>
+                <div class="p-3 bg-secondary bg-opacity-10 text-secondary rounded-circle">
+                    <i class="fas fa-list-alt fa-2x"></i>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="col-sm-6 col-xl-3">
+        <div class="card border-0 shadow-sm rounded-4 p-3 h-100 bg-white">
+            <div class="d-flex align-items-center justify-content-between">
+                <div>
+                    <span class="text-muted small fw-semibold text-uppercase">Critical Severity</span>
+                    <h3 class="fw-bold text-danger mb-0 mt-1">@Model.CriticalCount</h3>
+                </div>
+                <div class="p-3 bg-danger bg-opacity-10 text-danger rounded-circle">
+                    <i class="fas fa-radiation fa-2x"></i>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="col-sm-6 col-xl-3">
+        <div class="card border-0 shadow-sm rounded-4 p-3 h-100 bg-white">
+            <div class="d-flex align-items-center justify-content-between">
+                <div>
+                    <span class="text-muted small fw-semibold text-uppercase">Errors / Crashes</span>
+                    <h3 class="fw-bold text-warning mb-0 mt-1">@Model.ErrorCount</h3>
+                </div>
+                <div class="p-3 bg-warning bg-opacity-10 text-warning rounded-circle">
+                    <i class="fas fa-exclamation-triangle fa-2x"></i>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="col-sm-6 col-xl-3">
+        <div class="card border-0 shadow-sm rounded-4 p-3 h-100 bg-white">
+            <div class="d-flex align-items-center justify-content-between">
+                <div>
+                    <span class="text-muted small fw-semibold text-uppercase">Pending Remote Sync</span>
+                    <h3 class="fw-bold @(Model.PendingSyncCount > 0 ? "text-primary" : "text-success") mb-0 mt-1">@Model.PendingSyncCount</h3>
+                </div>
+                <div class="p-3 bg-primary bg-opacity-10 text-primary rounded-circle">
+                    <i class="fas fa-cloud-upload-alt fa-2x"></i>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Filter Bar -->
+<div class="card border-0 shadow-sm rounded-4 p-3 mb-4 bg-white">
+    <form asp-controller="ErrorLogs" asp-action="Index" method="get" class="row g-2 align-items-center">
+        <div class="col-md-5">
+            <div class="input-group">
+                <span class="input-group-text bg-light border-end-0"><i class="fas fa-search text-muted"></i></span>
+                <input type="text" name="q" class="form-control border-start-0" placeholder="Search title, message, stack, path, IP, user..." value="@Model.Query" />
+            </div>
+        </div>
+        <div class="col-md-3">
+            <select name="type" class="form-select">
+                <option value="all" selected="@(string.IsNullOrEmpty(Model.Type) || Model.Type == "all")">All Severities</option>
+                <option value="critical" selected="@(Model.Type == "critical")">Critical Only</option>
+                <option value="error" selected="@(Model.Type == "error")">Error Only</option>
+                <option value="warning" selected="@(Model.Type == "warning")">Warning Only</option>
+                <option value="info" selected="@(Model.Type == "info")">Info Only</option>
+            </select>
+        </div>
+        <div class="col-md-2">
+            <select name="sync" class="form-select">
+                <option value="all" selected="@(string.IsNullOrEmpty(Model.SyncStatus) || Model.SyncStatus == "all")">All Sync States</option>
+                <option value="synced" selected="@(Model.SyncStatus == "synced")">Synced Only</option>
+                <option value="pending" selected="@(Model.SyncStatus == "pending")">Pending / Unsynced</option>
+            </select>
+        </div>
+        <div class="col-md-2 d-flex gap-2">
+            <button type="submit" class="btn btn-dark rounded-pill px-3 flex-grow-1 fw-semibold">
+                <i class="fas fa-filter me-1"></i> Filter
+            </button>
+            @if (!string.IsNullOrEmpty(Model.Query) || !string.IsNullOrEmpty(Model.Type) || !string.IsNullOrEmpty(Model.SyncStatus))
+            {
+                <a asp-controller="ErrorLogs" asp-action="Index" class="btn btn-outline-secondary rounded-pill px-2" title="Reset Filters">
+                    <i class="fas fa-times"></i>
+                </a>
+            }
+        </div>
+    </form>
+</div>
+
+<!-- Error Logs Table Card -->
+<div class="card border-0 shadow-sm rounded-4 overflow-hidden bg-white mb-4">
+    <div class="card-header bg-white border-bottom p-3 d-flex justify-content-between align-items-center">
+        <h6 class="fw-bold mb-0 text-dark">
+            <i class="fas fa-history text-secondary me-2"></i> Log Records (@Model.FilteredCount @(Model.FilteredCount != Model.TotalCount ? $"filtered from {Model.TotalCount}" : ""))
+        </h6>
+        <span class="text-muted small">Auto-persisted to database with fallback file mirror</span>
+    </div>
+
+    <div class="table-responsive">
+        <table class="table table-hover align-middle mb-0" style="font-size: 0.88rem;">
+            <thead class="table-light text-uppercase small text-muted">
+                <tr>
+                    <th style="width: 80px;">ID</th>
+                    <th style="width: 100px;">Level</th>
+                    <th style="width: 170px;">Timestamp</th>
+                    <th style="width: 180px;">Source / Category</th>
+                    <th>Error Summary &amp; Path</th>
+                    <th style="width: 140px;">Remote Sync</th>
+                    <th style="width: 110px;" class="text-end">Actions</th>
+                </tr>
+            </thead>
+            <tbody>
+                @if (!Model.Logs.Any())
+                {
+                    <tr>
+                        <td colspan="7" class="text-center py-5 text-muted">
+                            <i class="fas fa-check-circle fa-3x text-success mb-3 opacity-50 d-block"></i>
+                            <span class="fs-6 fw-semibold">No error logs found.</span>
+                            <p class="small text-muted mb-0">Either no errors have occurred or your filter returned 0 results.</p>
+                        </td>
+                    </tr>
+                }
+                else
+                {
+                    @foreach (var log in Model.Logs)
+                    {
+                        var badgeClass = log.Type switch
+                        {
+                            "critical" => "bg-danger",
+                            "error" => "bg-danger bg-opacity-75",
+                            "warning" => "bg-warning text-dark",
+                            "info" => "bg-info text-dark",
+                            _ => "bg-secondary"
+                        };
+
+                        <tr>
+                            <td class="font-monospace text-muted fw-bold">#@log.Id</td>
+                            <td>
+                                <span class="badge @badgeClass rounded-pill text-uppercase px-2 py-1" style="font-size: 0.72rem;">
+                                    @log.Type
+                                </span>
+                            </td>
+                            <td>
+                                <div class="fw-semibold text-dark">@log.CreatedAt.ToString("yyyy-MM-dd")</div>
+                                <small class="text-muted font-monospace">@log.CreatedAt.ToString("HH:mm:ss") UTC</small>
+                            </td>
+                            <td>
+                                <span class="d-inline-block text-truncate font-monospace small" style="max-width: 170px;" title="@log.Controller">
+                                    @(string.IsNullOrEmpty(log.Controller) ? "EasyAlumni.Web" : log.Controller)
+                                </span>
+                            </td>
+                            <td>
+                                <div class="fw-bold text-dark text-truncate" style="max-width: 480px;" title="@log.Title">
+                                    @log.Title
+                                </div>
+                                @if (!string.IsNullOrWhiteSpace(log.RequestPath))
+                                {
+                                    <div class="small text-primary font-monospace text-truncate" style="max-width: 480px;">
+                                        <span class="badge bg-light text-dark border me-1">@(log.RequestMethod ?? "GET")</span>@log.RequestPath
+                                    </div>
+                                }
+                                else if (!string.IsNullOrWhiteSpace(log.Message))
+                                {
+                                    <div class="small text-muted text-truncate" style="max-width: 480px;">
+                                        @log.Message
+                                    </div>
+                                }
+                            </td>
+                            <td>
+                                @if (log.IsSyncedToRemote)
+                                {
+                                    <span class="badge bg-success bg-opacity-10 text-success border border-success rounded-pill px-2 py-1" 
+                                          title="Synced to logs.website at @(log.RemoteSyncedAt?.ToString("yyyy-MM-dd HH:mm:ss") ?? "")">
+                                        <i class="fas fa-check me-1"></i> Synced
+                                    </span>
+                                }
+                                else
+                                {
+                                    <span class="badge bg-warning bg-opacity-10 text-dark border border-warning rounded-pill px-2 py-1" 
+                                          title="@(log.RemoteSyncError ?? "Not synced yet")">
+                                        <i class="fas fa-clock text-warning me-1"></i> Pending
+                                    </span>
+                                }
+                            </td>
+                            <td class="text-end">
+                                <div class="btn-group btn-group-sm">
+                                    <button type="button" class="btn btn-outline-primary btn-sm rounded-start-pill" 
+                                            onclick="openLogDetails(@log.Id)" title="View Full Details">
+                                        <i class="fas fa-eye"></i>
+                                    </button>
+                                    @if (!log.IsSyncedToRemote)
+                                    {
+                                        <form asp-controller="ErrorLogs" asp-action="RetrySync" asp-route-id="@log.Id" method="post" class="d-inline">
+                                            @Html.AntiForgeryToken()
+                                            <button type="submit" class="btn btn-outline-success btn-sm" title="Retry Sync to Remote">
+                                                <i class="fas fa-sync-alt"></i>
+                                            </button>
+                                        </form>
+                                    }
+                                    <form asp-controller="ErrorLogs" asp-action="Delete" asp-route-id="@log.Id" method="post" class="d-inline">
+                                        @Html.AntiForgeryToken()
+                                        <button type="submit" class="btn btn-outline-danger btn-sm rounded-end-pill" 
+                                                onclick="return confirm('Delete Log #@log.Id?')" title="Delete Log">
+                                            <i class="fas fa-trash"></i>
+                                        </button>
+                                    </form>
+                                </div>
+                            </td>
+                        </tr>
+                    }
+                }
+            </tbody>
+        </table>
+    </div>
+
+    <!-- Pagination -->
+    @if (Model.TotalPages > 1)
+    {
+        <div class="card-footer bg-white border-top p-3 d-flex justify-content-between align-items-center flex-wrap gap-2">
+            <span class="text-muted small">
+                Showing page <strong>@Model.CurrentPage</strong> of <strong>@Model.TotalPages</strong> (@Model.FilteredCount records)
+            </span>
+            <ul class="pagination pagination-sm mb-0">
+                <li class="page-item @(Model.HasPreviousPage ? "" : "disabled")">
+                    <a class="page-link rounded-start-pill" asp-controller="ErrorLogs" asp-action="Index" 
+                       asp-route-page="@(Model.CurrentPage - 1)" asp-route-q="@Model.Query" asp-route-type="@Model.Type" asp-route-sync="@Model.SyncStatus">
+                        Previous
+                    </a>
+                </li>
+                @for (int p = Math.Max(1, Model.CurrentPage - 2); p <= Math.Min(Model.TotalPages, Model.CurrentPage + 2); p++)
+                {
+                    <li class="page-item @(p == Model.CurrentPage ? "active" : "")">
+                        <a class="page-link" asp-controller="ErrorLogs" asp-action="Index" 
+                           asp-route-page="@p" asp-route-q="@Model.Query" asp-route-type="@Model.Type" asp-route-sync="@Model.SyncStatus">
+                            @p
+                        </a>
+                    </li>
+                }
+                <li class="page-item @(Model.HasNextPage ? "" : "disabled")">
+                    <a class="page-link rounded-end-pill" asp-controller="ErrorLogs" asp-action="Index" 
+                       asp-route-page="@(Model.CurrentPage + 1)" asp-route-q="@Model.Query" asp-route-type="@Model.Type" asp-route-sync="@Model.SyncStatus">
+                        Next
+                    </a>
+                </li>
+            </ul>
+        </div>
+    }
+</div>
+
+<!-- Log Details Modal -->
+<div class="modal fade" id="logDetailsModal" tabindex="-1" aria-labelledby="logDetailsModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered modal-xl">
+        <div class="modal-content rounded-4 border-0 shadow-lg overflow-hidden">
+            <div class="modal-header bg-dark text-white border-0 py-3">
+                <div class="d-flex align-items-center gap-2">
+                    <span id="modalLogLevelBadge" class="badge rounded-pill text-uppercase"></span>
+                    <h5 class="modal-title fw-bold mb-0" id="logDetailsModalLabel">Log #<span id="modalLogId"></span> Details</h5>
+                </div>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body p-4 bg-light">
+                <!-- Meta Info Strip -->
+                <div class="row g-3 p-3 bg-white rounded-3 border mb-3 small">
+                    <div class="col-md-4">
+                        <span class="text-muted d-block">Time (UTC):</span>
+                        <strong id="modalCreatedAt" class="text-dark font-monospace"></strong>
+                    </div>
+                    <div class="col-md-4">
+                        <span class="text-muted d-block">Source / Controller:</span>
+                        <strong id="modalController" class="text-dark font-monospace"></strong>
+                    </div>
+                    <div class="col-md-4">
+                        <span class="text-muted d-block">Remote Sync Status:</span>
+                        <span id="modalSyncStatus"></span>
+                    </div>
+                    <div class="col-md-6">
+                        <span class="text-muted d-block">Request Endpoint:</span>
+                        <span id="modalRequestPath" class="text-primary font-monospace"></span>
+                    </div>
+                    <div class="col-md-3">
+                        <span class="text-muted d-block">User Identifier:</span>
+                        <span id="modalUser" class="text-dark fw-semibold"></span>
+                    </div>
+                    <div class="col-md-3">
+                        <span class="text-muted d-block">Client IP Address:</span>
+                        <span id="modalClientIp" class="text-dark font-monospace"></span>
+                    </div>
+                </div>
+
+                <!-- Error Title & Message -->
+                <div class="mb-3">
+                    <label class="form-label fw-bold text-dark mb-1">Title / Summary:</label>
+                    <div id="modalTitle" class="p-2.5 bg-white rounded border fw-semibold text-danger"></div>
+                </div>
+
+                <div class="mb-3">
+                    <label class="form-label fw-bold text-dark mb-1">Detailed Message:</label>
+                    <div id="modalMessage" class="p-3 bg-white rounded border font-monospace small" style="white-space: pre-wrap; max-height: 180px; overflow-y: auto;"></div>
+                </div>
+
+                <!-- Stack Trace -->
+                <div>
+                    <div class="d-flex justify-content-between align-items-center mb-1">
+                        <label class="form-label fw-bold text-dark mb-0">Stack Trace:</label>
+                        <button type="button" class="btn btn-sm btn-outline-secondary rounded-pill py-0 px-2" onclick="copyStackTrace()">
+                            <i class="fas fa-copy me-1"></i> Copy Stack Trace
+                        </button>
+                    </div>
+                    <pre id="modalStackTrace" class="bg-dark text-white p-3 rounded font-monospace small mb-0" 
+                         style="font-size: 0.78rem; max-height: 320px; overflow-y: auto; white-space: pre-wrap;"></pre>
+                </div>
+            </div>
+            <div class="modal-footer bg-white border-top py-2 px-4">
+                <button type="button" class="btn btn-secondary rounded-pill px-4" data-bs-dismiss="modal">Close</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        let currentStackTraceText = '';
+
+        function openLogDetails(id) {
+            fetch(`/ErrorLogs/GetDetails/${id}`)
+                .then(r => {
+                    if (!r.ok) throw new Error("Log not found");
+                    return r.json();
+                })
+                .then(d => {
+                    document.getElementById('modalLogId').textContent = d.id;
+                    document.getElementById('modalCreatedAt').textContent = d.createdAt;
+                    document.getElementById('modalController').textContent = d.controller || 'EasyAlumni.Web';
+                    document.getElementById('modalTitle').textContent = d.title;
+                    document.getElementById('modalMessage').textContent = d.message || '(No extra message)';
+                    document.getElementById('modalRequestPath').textContent = d.requestPath ? `${d.requestMethod || 'GET'} ${d.requestPath}` : 'N/A';
+                    document.getElementById('modalUser').textContent = d.userIdentifier || 'Anonymous';
+                    document.getElementById('modalClientIp').textContent = d.clientIp || 'Unknown';
+
+                    const badge = document.getElementById('modalLogLevelBadge');
+                    badge.textContent = d.type;
+                    badge.className = 'badge rounded-pill text-uppercase px-2 py-1 ' + 
+                        (d.type === 'critical' ? 'bg-danger' : 
+                         d.type === 'error' ? 'bg-danger bg-opacity-75' : 
+                         d.type === 'warning' ? 'bg-warning text-dark' : 'bg-info text-dark');
+
+                    const syncEl = document.getElementById('modalSyncStatus');
+                    if (d.isSynced) {
+                        syncEl.innerHTML = `<span class="badge bg-success rounded-pill px-2 py-1"><i class="fas fa-check me-1"></i> Synced to logs.website</span> <small class="text-muted">(${d.remoteSyncedAt || ''})</small>`;
+                    } else {
+                        const err = d.remoteSyncError ? `: ${d.remoteSyncError}` : '';
+                        syncEl.innerHTML = `<span class="badge bg-warning text-dark rounded-pill px-2 py-1"><i class="fas fa-clock me-1"></i> Pending / Not Synced</span> <small class="text-danger">${err}</small>`;
+                    }
+
+                    currentStackTraceText = d.stackTrace || d.message || '';
+                    document.getElementById('modalStackTrace').textContent = currentStackTraceText || '(No stack trace recorded)';
+
+                    const modal = new bootstrap.Modal(document.getElementById('logDetailsModal'));
+                    modal.show();
+                })
+                .catch(err => {
+                    alert("Error loading log details: " + err.message);
+                });
+        }
+
+        function copyStackTrace() {
+            if (!currentStackTraceText) return;
+            navigator.clipboard.writeText(currentStackTraceText).then(() => {
+                alert("Stack trace copied to clipboard!");
+            });
+        }
+    </script>
+}
