@@ -76,6 +76,23 @@
             margin-top: 5px;
         }
 
+        .hero-title {
+            font-size: clamp(1.35rem, 2.2vw, 2rem);
+            font-weight: 600;
+            color: rgba(255, 255, 255, 0.92);
+            letter-spacing: 0.5px;
+            margin-bottom: 0.75rem;
+        }
+
+        .hero-subtitle {
+            font-size: clamp(2.2rem, 5vw, 3.8rem);
+            font-weight: 800;
+            line-height: 1.25;
+            color: var(--accent);
+            text-shadow: 0 3px 20px rgba(0, 0, 0, 0.45);
+            margin-bottom: 1.25rem;
+        }
+
         .section-padding {
             padding: 85px 0;
         }
@@ -153,8 +170,8 @@
              style="background: rgba(245, 158, 11, 0.2); border: 1px solid var(--accent); color: var(--accent); font-weight: 600;">
             <i class="fas fa-calendar-check me-2"></i> Celebrating Lifelong Bonds &amp; Brotherhood
         </div>
-        <h1 class="display-3 fw-bold mb-2">@heroTitle</h1>
-        <h3 class="fw-semibold text-warning mb-3">@heroSubtitle</h3>
+        <h2 class="hero-title">@heroTitle</h2>
+        <h1 class="hero-subtitle">@heroSubtitle</h1>
         <p class="lead mb-4 mx-auto text-light opacity-90" style="max-width: 750px;">
             @heroTagline
         </p>
