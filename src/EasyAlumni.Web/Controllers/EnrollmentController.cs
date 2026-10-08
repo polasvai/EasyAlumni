@@ -393,146 +393,163 @@ namespace EasyAlumni.Web.Controllers
                 // 5. Save all entities atomically within an execution strategy transaction
                 var strategy = _context.Database.CreateExecutionStrategy();
                 string? confirmedRegNo = null;
+                string? confirmedUserCode = null;
 
                 await strategy.ExecuteAsync(async () =>
                 {
-                    using var transaction = await _context.Database.BeginTransactionAsync();
-
-                    // 3. Create AlumniProfile
-                    var profile = new AlumniProfile
+                    const int maxAttempts = 3;
+                    for (int attempt = 1; attempt <= maxAttempts; attempt++)
                     {
-                        UserCode = userCode,
-                        NameBangla = model.NameBangla.Trim(),
-                        NameEnglish = model.NameEnglish.Trim().ToUpperInvariant(),
-                        NickName = model.NickName.Trim(),
-                        PassingYear = model.PassingYear,
-                        BloodGroup = model.BloodGroup,
-                        ContactNumber = model.ContactNumber.Trim(),
-                        AlternativeNumber = model.AlternativeNumber?.Trim(),
-                        Email = model.Email.Trim().ToLowerInvariant(),
-                        LastInstitute = model.LastInstitute?.Trim(),
-                        LastDegree = model.LastDegree?.Trim(),
-                        LastDegreeSubject = model.LastDegreeSubject?.Trim(),
-                        CompanyName = model.CompanyName?.Trim(),
-                        CurrentWorkingAddress = model.CurrentWorkingAddress?.Trim(),
-                        Designation = model.Designation?.Trim(),
-                        PresentAddress = model.PresentAddress?.Trim(),
-                        PermanentAddress = model.PermanentAddress?.Trim(),
-                        OldPhotoPath = oldPhotoPath,
-                        RecentPhotoPath = recentPhotoPath,
-                        TestimonialPath = testimonialPath,
-                        CreatedAt = DateTime.UtcNow
-                    };
-
-                    _context.AlumniProfiles.Add(profile);
-                    await _context.SaveChangesAsync();
-
-                    // Generate Unique Ticket Registration Number (Max sequence + 1, collision-free)
-                    var regNo = await GenerateUniqueRegistrationNoAsync(reunionEvent!.Id, reunionEvent.EventDate.Year);
-
-                    // 6. Create EventRegistration
-                    var registration = new EventRegistration
-                    {
-                        RegistrationNo = regNo,
-                        ReunionEventId = reunionEvent.Id,
-                        AlumniProfileId = profile.Id,
-                        RegistrationPackageId = selectedPackage?.Id,
-                        TShirtSize = !string.IsNullOrWhiteSpace(model.TShirtSize) ? model.TShirtSize : "L",
-                        SpouseCount = spouseCount,
-                        ChildCount = childCount,
-                        GuestCount = otherGuestCount,
-                        TotalAmount = totalFee,
-                        PaidAmount = totalFee, // claimed amount submitted
-                        Status = RegistrationStatus.Pending,
-                        RegisteredAt = DateTime.UtcNow
-                    };
-
-                    // Generate signed QR code
-                    var signedToken = _qrCodeService.GenerateSignedToken(regNo, 0, userCode);
-                    var qrBase64 = _qrCodeService.GenerateQrCodeBase64(signedToken);
-
-                    registration.QrCodeToken = signedToken;
-                    registration.QrCodeBase64 = qrBase64;
-
-                    _context.EventRegistrations.Add(registration);
-                    await _context.SaveChangesAsync();
-
-                    // 7. Save Dynamic Guests
-                    foreach (var guest in validGuestsToSave)
-                    {
-                        guest.EventRegistrationId = registration.Id;
-                        _context.RegistrationGuests.Add(guest);
-                    }
-
-                    // 8. Save Custom Registration Question Responses
-                    if (model.QuestionResponses != null && model.QuestionResponses.Any())
-                    {
-                        foreach (var qr in model.QuestionResponses)
+                        var currentUserCode = Guid.NewGuid().ToString("N")[..10].ToUpperInvariant();
+                        using var transaction = await _context.Database.BeginTransactionAsync();
+                        try
                         {
-                            if (qr.QuestionId > 0 && !string.IsNullOrWhiteSpace(qr.Answer))
+                            // 3. Create AlumniProfile
+                            var profile = new AlumniProfile
                             {
-                                _context.RegistrationQuestionResponses.Add(new RegistrationQuestionResponse
-                                {
-                                    EventRegistrationId = registration.Id,
-                                    EventCustomQuestionId = qr.QuestionId,
-                                    AnswerValue = qr.Answer.Trim(),
-                                    SubAnswerValue = qr.SubAnswer?.Trim()
-                                });
-                            }
-                        }
-                    }
+                                UserCode = currentUserCode,
+                                NameBangla = model.NameBangla.Trim(),
+                                NameEnglish = model.NameEnglish.Trim().ToUpperInvariant(),
+                                NickName = model.NickName?.Trim() ?? string.Empty,
+                                PassingYear = model.PassingYear,
+                                BloodGroup = model.BloodGroup,
+                                ContactNumber = model.ContactNumber.Trim(),
+                                AlternativeNumber = model.AlternativeNumber?.Trim(),
+                                Email = model.Email.Trim().ToLowerInvariant(),
+                                LastInstitute = model.LastInstitute?.Trim(),
+                                LastDegree = model.LastDegree?.Trim(),
+                                LastDegreeSubject = model.LastDegreeSubject?.Trim(),
+                                CompanyName = model.CompanyName?.Trim(),
+                                CurrentWorkingAddress = model.CurrentWorkingAddress?.Trim(),
+                                Designation = model.Designation?.Trim(),
+                                PresentAddress = model.PresentAddress?.Trim(),
+                                PermanentAddress = model.PermanentAddress?.Trim(),
+                                OldPhotoPath = oldPhotoPath,
+                                RecentPhotoPath = recentPhotoPath,
+                                TestimonialPath = testimonialPath,
+                                CreatedAt = DateTime.UtcNow
+                            };
 
-                    // 9. Save Dynamic Gift Size Choices
-                    if (model.GiftSizeChoices != null && model.GiftSizeChoices.Any())
-                    {
-                        foreach (var gc in model.GiftSizeChoices)
-                        {
-                            if (gc.GiftItemId > 0 && !string.IsNullOrWhiteSpace(gc.SelectedSize))
+                            _context.AlumniProfiles.Add(profile);
+                            await _context.SaveChangesAsync();
+
+                            // Generate Unique Ticket Registration Number (Max sequence + 1, collision-free)
+                            var regNo = await GenerateUniqueRegistrationNoAsync(reunionEvent!.Id, reunionEvent.EventDate.Year);
+
+                            // 6. Create EventRegistration
+                            var registration = new EventRegistration
                             {
-                                _context.RegistrationGiftChoices.Add(new RegistrationGiftChoice
-                                {
-                                    EventRegistrationId = registration.Id,
-                                    GiftItemId = gc.GiftItemId,
-                                    SelectedSize = gc.SelectedSize.Trim()
-                                });
+                                RegistrationNo = regNo,
+                                ReunionEventId = reunionEvent.Id,
+                                AlumniProfileId = profile.Id,
+                                RegistrationPackageId = selectedPackage?.Id,
+                                TShirtSize = !string.IsNullOrWhiteSpace(model.TShirtSize) ? model.TShirtSize : "L",
+                                SpouseCount = spouseCount,
+                                ChildCount = childCount,
+                                GuestCount = otherGuestCount,
+                                TotalAmount = totalFee,
+                                PaidAmount = totalFee, // claimed amount submitted
+                                Status = RegistrationStatus.Pending,
+                                RegisteredAt = DateTime.UtcNow
+                            };
+
+                            // Generate signed QR code
+                            var signedToken = _qrCodeService.GenerateSignedToken(regNo, 0, currentUserCode);
+                            var qrBase64 = _qrCodeService.GenerateQrCodeBase64(signedToken);
+
+                            registration.QrCodeToken = signedToken;
+                            registration.QrCodeBase64 = qrBase64;
+
+                            _context.EventRegistrations.Add(registration);
+                            await _context.SaveChangesAsync();
+
+                            // 7. Save Dynamic Guests
+                            foreach (var guest in validGuestsToSave)
+                            {
+                                guest.EventRegistrationId = registration.Id;
+                                _context.RegistrationGuests.Add(guest);
                             }
+
+                            // 8. Save Custom Registration Question Responses
+                            if (model.QuestionResponses != null && model.QuestionResponses.Any())
+                            {
+                                foreach (var qr in model.QuestionResponses)
+                                {
+                                    if (qr.QuestionId > 0 && !string.IsNullOrWhiteSpace(qr.Answer))
+                                    {
+                                        _context.RegistrationQuestionResponses.Add(new RegistrationQuestionResponse
+                                        {
+                                            EventRegistrationId = registration.Id,
+                                            EventCustomQuestionId = qr.QuestionId,
+                                            AnswerValue = qr.Answer.Trim(),
+                                            SubAnswerValue = qr.SubAnswer?.Trim()
+                                        });
+                                    }
+                                }
+                            }
+
+                            // 9. Save Dynamic Gift Size Choices
+                            if (model.GiftSizeChoices != null && model.GiftSizeChoices.Any())
+                            {
+                                foreach (var gc in model.GiftSizeChoices)
+                                {
+                                    if (gc.GiftItemId > 0 && !string.IsNullOrWhiteSpace(gc.SelectedSize))
+                                    {
+                                        _context.RegistrationGiftChoices.Add(new RegistrationGiftChoice
+                                        {
+                                            EventRegistrationId = registration.Id,
+                                            GiftItemId = gc.GiftItemId,
+                                            SelectedSize = gc.SelectedSize.Trim()
+                                        });
+                                    }
+                                }
+                            }
+
+                            // 10. Record Payment
+                            var payment = new RegistrationPayment
+                            {
+                                EventRegistrationId = registration.Id,
+                                PaymentMode = model.PaymentMode,
+                                TransactionId = !string.IsNullOrWhiteSpace(model.TransactionId) ? model.TransactionId.Trim() : (model.PaymentMode == PaymentMode.JanataPay ? $"JP-{registration.RegistrationNo}" : string.Empty),
+                                SenderNumber = !string.IsNullOrWhiteSpace(model.SenderNumber) ? model.SenderNumber.Trim() : profile.ContactNumber,
+                                Amount = totalFee,
+                                SlipAttachmentPath = slipPath,
+                                Status = PaymentStatus.Pending,
+                                SubmittedAt = DateTime.UtcNow
+                            };
+
+                            _context.RegistrationPayments.Add(payment);
+
+                            // 11. Update inventory allocation for T-Shirt
+                            var tShirtItem = await _context.GiftItems
+                                .Include(g => g.SizeStocks)
+                                .FirstOrDefaultAsync(g => g.IsSizeSpecific && g.ItemName.Contains("T-Shirt"));
+
+                            if (tShirtItem != null)
+                            {
+                                tShirtItem.AllocatedQuantity += 1;
+                                var sizeStock = tShirtItem.SizeStocks.FirstOrDefault(s => s.SizeName == model.TShirtSize);
+                                if (sizeStock != null)
+                                {
+                                    sizeStock.AllocatedStock += 1;
+                                }
+                            }
+
+                            await _context.SaveChangesAsync();
+                            await transaction.CommitAsync();
+
+                            confirmedRegNo = regNo;
+                            confirmedUserCode = currentUserCode;
+                            break; // Successfully committed, break loop
                         }
-                    }
-
-                    // 10. Record Payment
-                    var payment = new RegistrationPayment
-                    {
-                        EventRegistrationId = registration.Id,
-                        PaymentMode = model.PaymentMode,
-                        TransactionId = !string.IsNullOrWhiteSpace(model.TransactionId) ? model.TransactionId.Trim() : (model.PaymentMode == PaymentMode.JanataPay ? $"JP-{registration.RegistrationNo}" : string.Empty),
-                        SenderNumber = !string.IsNullOrWhiteSpace(model.SenderNumber) ? model.SenderNumber.Trim() : profile.ContactNumber,
-                        Amount = totalFee,
-                        SlipAttachmentPath = slipPath,
-                        Status = PaymentStatus.Pending,
-                        SubmittedAt = DateTime.UtcNow
-                    };
-
-                    _context.RegistrationPayments.Add(payment);
-
-                    // 11. Update inventory allocation for T-Shirt
-                    var tShirtItem = await _context.GiftItems
-                        .Include(g => g.SizeStocks)
-                        .FirstOrDefaultAsync(g => g.IsSizeSpecific && g.ItemName.Contains("T-Shirt"));
-
-                    if (tShirtItem != null)
-                    {
-                        tShirtItem.AllocatedQuantity += 1;
-                        var sizeStock = tShirtItem.SizeStocks.FirstOrDefault(s => s.SizeName == model.TShirtSize);
-                        if (sizeStock != null)
+                        catch (DbUpdateException dbEx) when (attempt < maxAttempts && IsDuplicateRegistrationNoException(dbEx))
                         {
-                            sizeStock.AllocatedStock += 1;
+                            await transaction.RollbackAsync();
+                            _context.ChangeTracker.Clear();
+                            _logger.LogWarning("Registration number collision on attempt {Attempt}. Retrying with next sequence...", attempt);
+                            await Task.Delay(50 * attempt);
                         }
                     }
-
-                    await _context.SaveChangesAsync();
-                    await transaction.CommitAsync();
-
-                    confirmedRegNo = regNo;
                 });
 
                 // If JanataPay chosen, immediately redirect to JanataPayCheckout
@@ -545,10 +562,10 @@ namespace EasyAlumni.Web.Controllers
                 var placeholders = new Dictionary<string, string>
                 {
                     ["Name"] = model.NameEnglish.Trim().ToUpperInvariant(),
-                    ["UserId"] = userCode,
+                    ["UserId"] = confirmedUserCode ?? userCode,
                     ["TicketNo"] = confirmedRegNo!,
                     ["Amount"] = totalFee.ToString("N0"),
-                    ["EventName"] = reunionEvent.EventTitle
+                    ["EventName"] = reunionEvent!.EventTitle
                 };
 
                 await _smsService.SendTemplateSmsAsync("PendingPaymentSMS", model.ContactNumber.Trim(), placeholders);
@@ -692,6 +709,15 @@ namespace EasyAlumni.Web.Controllers
             }
 
             return candidate;
+        }
+
+        private static bool IsDuplicateRegistrationNoException(DbUpdateException ex)
+        {
+            var msg = ex.ToString();
+            return msg.Contains("IX_EventRegistrations_RegistrationNo")
+                || msg.Contains("IX_AlumniProfiles_UserCode")
+                || msg.Contains("2601")
+                || msg.Contains("2627");
         }
     }
 }

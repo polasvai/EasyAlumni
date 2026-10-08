@@ -46,16 +46,9 @@ namespace EasyAlumni.Web.Controllers
                 return Redirect("/#donate");
             }
 
-            // Generate unique tracking number DON-YYYY-XXXXX
+            // Generate unique tracking number DON-YYYY-XXXXX (Max sequence + 1, collision-free)
             var currentYear = DateTime.UtcNow.Year;
-            var currentCount = await _context.Donations.CountAsync(d => d.DonationTrackingNo.StartsWith($"DON-{currentYear}-")) + 1;
-            var trackingNo = $"DON-{currentYear}-{currentCount:D5}";
-
-            while (await _context.Donations.AnyAsync(d => d.DonationTrackingNo == trackingNo))
-            {
-                currentCount++;
-                trackingNo = $"DON-{currentYear}-{currentCount:D5}";
-            }
+            var trackingNo = await GenerateUniqueTrackingNoAsync(currentYear);
 
             // Parse payment mode and verify it is enabled in SystemSettings
             var paymentModeEnum = PaymentMode.JanataPay;
@@ -183,6 +176,39 @@ namespace EasyAlumni.Web.Controllers
             ViewBag.QrCodeBase64 = _qrCodeService.GenerateQrCodeBase64(verifyUrl);
 
             return View(donation);
+        }
+
+        private async Task<string> GenerateUniqueTrackingNoAsync(int year)
+        {
+            var prefix = $"DON-{year}-";
+            var existingTrackingNos = await _context.Donations
+                .Where(d => d.DonationTrackingNo.StartsWith(prefix))
+                .Select(d => d.DonationTrackingNo)
+                .ToListAsync();
+
+            int maxSeq = 0;
+            foreach (var tn in existingTrackingNos)
+            {
+                var parts = tn.Split('-');
+                if (parts.Length == 3 && int.TryParse(parts[2], out var seq))
+                {
+                    if (seq > maxSeq)
+                    {
+                        maxSeq = seq;
+                    }
+                }
+            }
+
+            int nextSeq = maxSeq + 1;
+            var candidate = $"{prefix}{nextSeq:D5}";
+
+            while (existingTrackingNos.Contains(candidate) || await _context.Donations.AnyAsync(d => d.DonationTrackingNo == candidate))
+            {
+                nextSeq++;
+                candidate = $"{prefix}{nextSeq:D5}";
+            }
+
+            return candidate;
         }
     }
 }
