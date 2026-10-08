@@ -337,35 +337,6 @@ namespace EasyAlumni.Web.Controllers
                 // 2. Generate Unique User Code (10 characters)
                 var userCode = Guid.NewGuid().ToString("N")[..10].ToUpperInvariant();
 
-                // 3. Create or find AlumniProfile
-                var profile = new AlumniProfile
-                {
-                    UserCode = userCode,
-                    NameBangla = model.NameBangla.Trim(),
-                    NameEnglish = model.NameEnglish.Trim().ToUpperInvariant(),
-                    NickName = model.NickName.Trim(),
-                    PassingYear = model.PassingYear,
-                    BloodGroup = model.BloodGroup,
-                    ContactNumber = model.ContactNumber.Trim(),
-                    AlternativeNumber = model.AlternativeNumber?.Trim(),
-                    Email = model.Email.Trim().ToLowerInvariant(),
-                    LastInstitute = model.LastInstitute?.Trim(),
-                    LastDegree = model.LastDegree?.Trim(),
-                    LastDegreeSubject = model.LastDegreeSubject?.Trim(),
-                    CompanyName = model.CompanyName?.Trim(),
-                    CurrentWorkingAddress = model.CurrentWorkingAddress?.Trim(),
-                    Designation = model.Designation?.Trim(),
-                    PresentAddress = model.PresentAddress?.Trim(),
-                    PermanentAddress = model.PermanentAddress?.Trim(),
-                    OldPhotoPath = oldPhotoPath,
-                    RecentPhotoPath = recentPhotoPath,
-                    TestimonialPath = testimonialPath,
-                    CreatedAt = DateTime.UtcNow
-                };
-
-                _context.AlumniProfiles.Add(profile);
-                await _context.SaveChangesAsync();
-
                 // 4. Calculate total fee based on selected package & dynamic guests
                 var basePackageFee = selectedPackage?.Fee ?? reunionEvent!.BaseAlumniFee;
 
@@ -419,9 +390,40 @@ namespace EasyAlumni.Web.Controllers
 
                 var totalFee = basePackageFee + dynamicGuestTotal;
 
-                // 5. Generate Ticket Registration Number
-                var regCount = await _context.EventRegistrations.CountAsync(r => r.ReunionEventId == reunionEvent!.Id) + 1;
-                var regNo = $"RE-{reunionEvent!.EventDate.Year}-{regCount:D5}";
+                // 5. Save all entities atomically within a database transaction
+                using var transaction = await _context.Database.BeginTransactionAsync();
+
+                // 3. Create AlumniProfile
+                var profile = new AlumniProfile
+                {
+                    UserCode = userCode,
+                    NameBangla = model.NameBangla.Trim(),
+                    NameEnglish = model.NameEnglish.Trim().ToUpperInvariant(),
+                    NickName = model.NickName.Trim(),
+                    PassingYear = model.PassingYear,
+                    BloodGroup = model.BloodGroup,
+                    ContactNumber = model.ContactNumber.Trim(),
+                    AlternativeNumber = model.AlternativeNumber?.Trim(),
+                    Email = model.Email.Trim().ToLowerInvariant(),
+                    LastInstitute = model.LastInstitute?.Trim(),
+                    LastDegree = model.LastDegree?.Trim(),
+                    LastDegreeSubject = model.LastDegreeSubject?.Trim(),
+                    CompanyName = model.CompanyName?.Trim(),
+                    CurrentWorkingAddress = model.CurrentWorkingAddress?.Trim(),
+                    Designation = model.Designation?.Trim(),
+                    PresentAddress = model.PresentAddress?.Trim(),
+                    PermanentAddress = model.PermanentAddress?.Trim(),
+                    OldPhotoPath = oldPhotoPath,
+                    RecentPhotoPath = recentPhotoPath,
+                    TestimonialPath = testimonialPath,
+                    CreatedAt = DateTime.UtcNow
+                };
+
+                _context.AlumniProfiles.Add(profile);
+                await _context.SaveChangesAsync();
+
+                // Generate Unique Ticket Registration Number (Max sequence + 1, collision-free)
+                var regNo = await GenerateUniqueRegistrationNoAsync(reunionEvent!.Id, reunionEvent.EventDate.Year);
 
                 // 6. Create EventRegistration
                 var registration = new EventRegistration
@@ -492,9 +494,7 @@ namespace EasyAlumni.Web.Controllers
                     }
                 }
 
-                await _context.SaveChangesAsync();
-
-                // 7. Record Payment
+                // 10. Record Payment
                 var payment = new RegistrationPayment
                 {
                     EventRegistrationId = registration.Id,
@@ -509,7 +509,7 @@ namespace EasyAlumni.Web.Controllers
 
                 _context.RegistrationPayments.Add(payment);
 
-                // 8. Update inventory allocation for T-Shirt
+                // 11. Update inventory allocation for T-Shirt
                 var tShirtItem = await _context.GiftItems
                     .Include(g => g.SizeStocks)
                     .FirstOrDefaultAsync(g => g.IsSizeSpecific && g.ItemName.Contains("T-Shirt"));
@@ -525,6 +525,7 @@ namespace EasyAlumni.Web.Controllers
                 }
 
                 await _context.SaveChangesAsync();
+                await transaction.CommitAsync();
 
                 // If JanataPay chosen, immediately redirect to JanataPayCheckout
                 if (model.PaymentMode == PaymentMode.JanataPay)
@@ -532,7 +533,7 @@ namespace EasyAlumni.Web.Controllers
                     return RedirectToAction("JanataPayCheckout", "Payment", new { registrationNo = registration.RegistrationNo });
                 }
 
-                // 9. Dispatch Confirmation SMS to Attendee (Manual Payment flow)
+                // Dispatch Confirmation SMS to Attendee (Manual Payment flow)
                 var placeholders = new Dictionary<string, string>
                 {
                     ["Name"] = profile.NameEnglish,
@@ -550,11 +551,34 @@ namespace EasyAlumni.Web.Controllers
             catch (Exception ex)
             {
                 _logger.LogError(ex, "Registration failed for alumnus {Name}", model.NameEnglish);
-                ModelState.AddModelError("", $"Registration failed: {ex.Message}");
+                var rootEx = ex;
+                while (rootEx.InnerException != null)
+                {
+                    rootEx = rootEx.InnerException;
+                }
+                ModelState.AddModelError("", $"Registration failed: {rootEx.Message}");
                 model.ReunionEvent = reunionEvent;
                 model.PaymentSettings = await _context.SystemSettings
-                    .Where(s => s.SettingKey.StartsWith("Manual"))
+                    .Where(s => s.SettingKey.StartsWith("Manual") || s.SettingKey.StartsWith("Payment_"))
                     .ToDictionaryAsync(s => s.SettingKey, s => s.SettingValue);
+                model.FormFieldSettings = await _context.SystemSettings
+                    .Where(s => s.SettingKey.StartsWith("FormField_"))
+                    .ToDictionaryAsync(s => s.SettingKey, s => s.SettingValue);
+                model.AvailablePackages = await _context.RegistrationPackages
+                    .Where(p => p.IsActive && p.ReunionEventId == model.ReunionEventId)
+                    .Include(p => p.PackageGiftItems)
+                        .ThenInclude(pg => pg.GiftItem)
+                            .ThenInclude(g => g!.SizeStocks)
+                    .OrderBy(p => p.DisplayOrder)
+                    .ToListAsync();
+                model.AvailableGuestCategories = await _context.GuestCategories
+                    .Where(g => g.IsActive && g.ReunionEventId == model.ReunionEventId)
+                    .OrderBy(g => g.DisplayOrder)
+                    .ToListAsync();
+                model.AvailableCustomQuestions = await _context.EventCustomQuestions
+                    .Where(q => q.IsActive && q.ReunionEventId == model.ReunionEventId)
+                    .OrderBy(q => q.DisplayOrder)
+                    .ToListAsync();
                 return View(model);
             }
         }
@@ -625,6 +649,41 @@ namespace EasyAlumni.Web.Controllers
             // Registration is Pending: redirect directly to JanataPay checkout
             TempData["PaymentNotice"] = $"Welcome back, {reg.AlumniProfile?.NameEnglish}! Your registration ticket {reg.RegistrationNo} was found with status: Pending. Please proceed to payment below.";
             return RedirectToAction("JanataPayCheckout", "Payment", new { registrationNo = reg.RegistrationNo });
+        }
+
+        private async Task<string> GenerateUniqueRegistrationNoAsync(int reunionEventId, int eventYear)
+        {
+            var prefix = $"RE-{eventYear}-";
+
+            // Find all existing registration numbers starting with this prefix
+            var existingRegNos = await _context.EventRegistrations
+                .Where(r => r.RegistrationNo.StartsWith(prefix))
+                .Select(r => r.RegistrationNo)
+                .ToListAsync();
+
+            int maxSeq = 0;
+            foreach (var no in existingRegNos)
+            {
+                var parts = no.Split('-');
+                if (parts.Length == 3 && int.TryParse(parts[2], out var seq))
+                {
+                    if (seq > maxSeq)
+                    {
+                        maxSeq = seq;
+                    }
+                }
+            }
+
+            int nextSeq = maxSeq + 1;
+            var candidate = $"{prefix}{nextSeq:D5}";
+
+            while (existingRegNos.Contains(candidate) || await _context.EventRegistrations.AnyAsync(r => r.RegistrationNo == candidate))
+            {
+                nextSeq++;
+                candidate = $"{prefix}{nextSeq:D5}";
+            }
+
+            return candidate;
         }
     }
 }
