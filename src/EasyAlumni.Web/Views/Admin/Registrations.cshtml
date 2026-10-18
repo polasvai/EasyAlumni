@@ -138,7 +138,17 @@
                             <td>
                                 @if (reg.Status == EasyAlumni.Core.Enums.RegistrationStatus.Approved)
                                 {
+                                    var payment = reg.Payments.OrderByDescending(p => p.SubmittedAt).FirstOrDefault(p => p.Status == EasyAlumni.Core.Enums.PaymentStatus.Approved)
+                                                  ?? reg.Payments.OrderByDescending(p => p.SubmittedAt).FirstOrDefault();
+                                    var txnNo = !string.IsNullOrEmpty(payment?.GatewayFtNumber) ? payment.GatewayFtNumber : payment?.TransactionId;
+
                                     <span class="badge bg-success">Approved</span>
+                                    @if (!string.IsNullOrWhiteSpace(txnNo))
+                                    {
+                                        <small class="d-block text-muted font-monospace mt-1 text-nowrap" title="Transaction ID / FT Number">
+                                            <i class="fas fa-receipt me-1 text-secondary"></i>@txnNo
+                                        </small>
+                                    }
                                 }
                                 else if (reg.Status == EasyAlumni.Core.Enums.RegistrationStatus.Pending)
                                 {
