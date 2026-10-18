@@ -703,7 +703,7 @@ namespace EasyAlumni.Web.Controllers
                 payment.PaymentMode = model.PaymentMode;
                 payment.Status = model.PaymentStatus;
                 payment.Amount = model.PaidAmount;
-                payment.SenderNumber = model.SenderNumber?.Trim();
+                payment.SenderNumber = model.SenderNumber?.Trim() ?? cleanPhone;
                 payment.AdminRemarks = model.AdminRemarks?.Trim();
 
                 if (model.PaymentStatus == PaymentStatus.Approved && payment.ApprovedAt == null)

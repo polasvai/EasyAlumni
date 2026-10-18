@@ -1,0 +1,401 @@
+@model EasyAlumni.Web.ViewModels.AdminEditRegistrationViewModel
+@{
+    ViewData["Title"] = $"Edit Attendee - {Model.RegistrationNo}";
+    Layout = "_AdminLayout";
+}
+
+<!-- Page Header -->
+<div class="d-flex justify-content-between align-items-center flex-wrap gap-3 mb-4">
+    <div>
+        <div class="d-flex align-items-center gap-2 mb-1">
+            <a asp-action="Registrations" class="btn btn-sm btn-outline-secondary rounded-circle" title="Back to Directory">
+                <i class="fas fa-arrow-left"></i>
+            </a>
+            <h2 class="h4 fw-bold text-dark mb-0">Edit Registered Member</h2>
+        </div>
+        <p class="text-muted small mb-0 ms-4 ps-2">Update attendee personal info, academic details, merchandise, and payment status</p>
+    </div>
+    <div class="d-flex gap-2">
+        <a asp-controller="Pass" asp-action="ViewPass" asp-route-id="@Model.RegistrationNo" target="_blank" class="btn btn-outline-primary rounded-pill px-3">
+            <i class="fas fa-id-badge me-1"></i> Preview Pass
+        </a>
+        <a asp-action="Registrations" class="btn btn-outline-secondary rounded-pill px-3">
+            <i class="fas fa-times me-1"></i> Cancel
+        </a>
+    </div>
+</div>
+
+@if (!ViewData.ModelState.IsValid)
+{
+    <div class="alert alert-danger rounded-4 shadow-sm mb-4">
+        <div class="d-flex align-items-center mb-2">
+            <i class="fas fa-exclamation-triangle me-2 fs-5"></i>
+            <strong class="text-danger">Please correct the following errors:</strong>
+        </div>
+        <div asp-validation-summary="All" class="text-danger small mb-0"></div>
+    </div>
+}
+
+<!-- Immutable Identifiers Bar (Strictly Non-Editable) -->
+<div class="card border-0 shadow-sm rounded-4 bg-light mb-4 p-3 border-start border-4 border-secondary">
+    <div class="row g-3 align-items-center">
+        <div class="col-md-3 col-sm-6">
+            <small class="text-muted d-block text-uppercase fw-semibold" style="font-size: 0.75rem;">
+                <i class="fas fa-lock text-muted me-1"></i> Ticket Number
+            </small>
+            <span class="fs-5 fw-bold text-dark font-monospace">@Model.RegistrationNo</span>
+        </div>
+        <div class="col-md-3 col-sm-6">
+            <small class="text-muted d-block text-uppercase fw-semibold" style="font-size: 0.75rem;">
+                <i class="fas fa-lock text-muted me-1"></i> Alumnus ID
+            </small>
+            <span class="fs-6 fw-bold text-secondary font-monospace">@Model.UserCode</span>
+        </div>
+        <div class="col-md-3 col-sm-6">
+            <small class="text-muted d-block text-uppercase fw-semibold" style="font-size: 0.75rem;">
+                <i class="fas fa-lock text-muted me-1"></i> Database Record ID
+            </small>
+            <span class="fs-6 fw-bold text-dark font-monospace">#@Model.RegistrationId</span>
+        </div>
+        <div class="col-md-3 col-sm-6">
+            <small class="text-muted d-block text-uppercase fw-semibold" style="font-size: 0.75rem;">
+                <i class="fas fa-lock text-muted me-1"></i> Transaction ID / FT
+            </small>
+            <span class="fs-6 fw-bold text-primary font-monospace text-break">
+                @(string.IsNullOrWhiteSpace(Model.GatewayFtNumber) 
+                    ? (string.IsNullOrWhiteSpace(Model.TransactionId) ? "N/A" : Model.TransactionId) 
+                    : Model.GatewayFtNumber)
+            </span>
+        </div>
+    </div>
+</div>
+
+<form asp-action="EditRegistration" method="post" enctype="multipart/form-data">
+    @Html.AntiForgeryToken()
+    <input type="hidden" asp-for="RegistrationId" />
+    <input type="hidden" asp-for="RegistrationNo" />
+    <input type="hidden" asp-for="UserCode" />
+    <input type="hidden" asp-for="ProfileId" />
+    <input type="hidden" asp-for="TransactionId" />
+    <input type="hidden" asp-for="GatewayFtNumber" />
+    <input type="hidden" asp-for="CurrentRecentPhotoPath" />
+
+    <div class="row g-4">
+        <!-- Section 1: Personal Information -->
+        <div class="col-lg-6">
+            <div class="card border-0 shadow-sm rounded-4 h-100 p-4">
+                <div class="d-flex align-items-center gap-2 mb-3 pb-2 border-bottom">
+                    <div class="p-2 bg-primary bg-opacity-10 text-primary rounded-3">
+                        <i class="fas fa-user"></i>
+                    </div>
+                    <h5 class="fw-bold text-dark mb-0">1. Personal Information</h5>
+                </div>
+
+                <div class="row g-3">
+                    <!-- Photo Preview & Replacement -->
+                    <div class="col-12">
+                        <label class="form-label fw-semibold small text-muted">Attendee Portrait Photo</label>
+                        <div class="d-flex align-items-center gap-3 p-3 bg-light rounded-4">
+                            <img src="@(string.IsNullOrEmpty(Model.CurrentRecentPhotoPath) ? "https://ui-avatars.com/api/?name=" + Uri.EscapeDataString(Model.NameEnglish ?? "A") : Model.CurrentRecentPhotoPath)"
+                                 alt="Photo" class="rounded-circle shadow-sm" style="width: 64px; height: 64px; object-fit: cover;" />
+                            <div class="flex-grow-1">
+                                <label class="form-label small mb-1 fw-semibold">Replace Photo (JPG, PNG, WebP up to 5MB)</label>
+                                <input type="file" asp-for="NewPhotoFile" class="form-control form-control-sm" accept="image/*" />
+                                <span asp-validation-for="NewPhotoFile" class="text-danger small"></span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="col-md-6">
+                        <label asp-for="NameEnglish" class="form-label fw-semibold small"></label>
+                        <input asp-for="NameEnglish" class="form-control" placeholder="Full name in English" required />
+                        <span asp-validation-for="NameEnglish" class="text-danger small"></span>
+                    </div>
+
+                    <div class="col-md-6">
+                        <label asp-for="NameBangla" class="form-label fw-semibold small"></label>
+                        <input asp-for="NameBangla" class="form-control" placeholder="বাংলায় পূর্ণ নাম" required />
+                        <span asp-validation-for="NameBangla" class="text-danger small"></span>
+                    </div>
+
+                    <div class="col-md-4">
+                        <label asp-for="NickName" class="form-label fw-semibold small"></label>
+                        <input asp-for="NickName" class="form-control" placeholder="ডাক নাম" />
+                        <span asp-validation-for="NickName" class="text-danger small"></span>
+                    </div>
+
+                    <div class="col-md-4">
+                        <label asp-for="PassingYear" class="form-label fw-semibold small"></label>
+                        <input asp-for="PassingYear" type="number" class="form-control" min="1950" max="2035" required />
+                        <span asp-validation-for="PassingYear" class="text-danger small"></span>
+                    </div>
+
+                    <div class="col-md-4">
+                        <label asp-for="BloodGroup" class="form-label fw-semibold small"></label>
+                        <select asp-for="BloodGroup" class="form-select">
+                            <option value="">-- Select --</option>
+                            <option value="A+">A+</option>
+                            <option value="A-">A-</option>
+                            <option value="B+">B+</option>
+                            <option value="B-">B-</option>
+                            <option value="AB+">AB+</option>
+                            <option value="AB-">AB-</option>
+                            <option value="O+">O+</option>
+                            <option value="O-">O-</option>
+                        </select>
+                        <span asp-validation-for="BloodGroup" class="text-danger small"></span>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Section 2: Contact Information & Addresses -->
+        <div class="col-lg-6">
+            <div class="card border-0 shadow-sm rounded-4 h-100 p-4">
+                <div class="d-flex align-items-center gap-2 mb-3 pb-2 border-bottom">
+                    <div class="p-2 bg-success bg-opacity-10 text-success rounded-3">
+                        <i class="fas fa-address-book"></i>
+                    </div>
+                    <h5 class="fw-bold text-dark mb-0">2. Contact & Addresses</h5>
+                </div>
+
+                <div class="row g-3">
+                    <div class="col-md-6">
+                        <label asp-for="ContactNumber" class="form-label fw-semibold small"></label>
+                        <input asp-for="ContactNumber" class="form-control" placeholder="01XXXXXXXXX" required />
+                        <span asp-validation-for="ContactNumber" class="text-danger small"></span>
+                    </div>
+
+                    <div class="col-md-6">
+                        <label asp-for="AlternativeNumber" class="form-label fw-semibold small"></label>
+                        <input asp-for="AlternativeNumber" class="form-control" placeholder="Alternative mobile number" />
+                        <span asp-validation-for="AlternativeNumber" class="text-danger small"></span>
+                    </div>
+
+                    <div class="col-12">
+                        <label asp-for="Email" class="form-label fw-semibold small"></label>
+                        <input asp-for="Email" type="email" class="form-control" placeholder="name@domain.com" required />
+                        <span asp-validation-for="Email" class="text-danger small"></span>
+                    </div>
+
+                    <div class="col-12">
+                        <label asp-for="PresentAddress" class="form-label fw-semibold small"></label>
+                        <textarea asp-for="PresentAddress" class="form-control" rows="2" placeholder="বর্তমান ঠিকানা"></textarea>
+                        <span asp-validation-for="PresentAddress" class="text-danger small"></span>
+                    </div>
+
+                    <div class="col-12">
+                        <label asp-for="PermanentAddress" class="form-label fw-semibold small"></label>
+                        <textarea asp-for="PermanentAddress" class="form-control" rows="2" placeholder="স্থায়ী ঠিকানা"></textarea>
+                        <span asp-validation-for="PermanentAddress" class="text-danger small"></span>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Section 3: Education & Professional Details -->
+        <div class="col-lg-6">
+            <div class="card border-0 shadow-sm rounded-4 h-100 p-4">
+                <div class="d-flex align-items-center gap-2 mb-3 pb-2 border-bottom">
+                    <div class="p-2 bg-info bg-opacity-10 text-info rounded-3">
+                        <i class="fas fa-briefcase"></i>
+                    </div>
+                    <h5 class="fw-bold text-dark mb-0">3. Education & Career</h5>
+                </div>
+
+                <div class="row g-3">
+                    <div class="col-md-6">
+                        <label asp-for="LastInstitute" class="form-label fw-semibold small"></label>
+                        <input asp-for="LastInstitute" class="form-control" placeholder="College / University" />
+                        <span asp-validation-for="LastInstitute" class="text-danger small"></span>
+                    </div>
+
+                    <div class="col-md-6">
+                        <label asp-for="LastDegree" class="form-label fw-semibold small"></label>
+                        <input asp-for="LastDegree" class="form-control" placeholder="e.g. BSc, MBBS, MBA" />
+                        <span asp-validation-for="LastDegree" class="text-danger small"></span>
+                    </div>
+
+                    <div class="col-12">
+                        <label asp-for="LastDegreeSubject" class="form-label fw-semibold small"></label>
+                        <input asp-for="LastDegreeSubject" class="form-control" placeholder="Subject / Discipline" />
+                        <span asp-validation-for="LastDegreeSubject" class="text-danger small"></span>
+                    </div>
+
+                    <div class="col-md-6">
+                        <label asp-for="CompanyName" class="form-label fw-semibold small"></label>
+                        <input asp-for="CompanyName" class="form-control" placeholder="Current Organization" />
+                        <span asp-validation-for="CompanyName" class="text-danger small"></span>
+                    </div>
+
+                    <div class="col-md-6">
+                        <label asp-for="Designation" class="form-label fw-semibold small"></label>
+                        <input asp-for="Designation" class="form-control" placeholder="Job Title / Designation" />
+                        <span asp-validation-for="Designation" class="text-danger small"></span>
+                    </div>
+
+                    <div class="col-12">
+                        <label asp-for="CurrentWorkingAddress" class="form-label fw-semibold small"></label>
+                        <input asp-for="CurrentWorkingAddress" class="form-control" placeholder="Office / Work Location" />
+                        <span asp-validation-for="CurrentWorkingAddress" class="text-danger small"></span>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Section 4: Package, Merchandise & Guests -->
+        <div class="col-lg-6">
+            <div class="card border-0 shadow-sm rounded-4 h-100 p-4">
+                <div class="d-flex align-items-center gap-2 mb-3 pb-2 border-bottom">
+                    <div class="p-2 bg-warning bg-opacity-10 text-warning rounded-3">
+                        <i class="fas fa-gift"></i>
+                    </div>
+                    <h5 class="fw-bold text-dark mb-0">4. Package, Merchandise &amp; Attendance</h5>
+                </div>
+
+                <div class="row g-3">
+                    <div class="col-md-7">
+                        <label asp-for="RegistrationPackageId" class="form-label fw-semibold small"></label>
+                        <select asp-for="RegistrationPackageId" class="form-select">
+                            <option value="">-- Default Alumni Rate --</option>
+                            @foreach (var pkg in Model.AvailablePackages)
+                            {
+                                <option value="@pkg.Id">@pkg.PackageName (৳ @pkg.Fee.ToString("N0"))</option>
+                            }
+                        </select>
+                        <span asp-validation-for="RegistrationPackageId" class="text-danger small"></span>
+                    </div>
+
+                    <div class="col-md-5">
+                        <label asp-for="TShirtSize" class="form-label fw-semibold small"></label>
+                        <select asp-for="TShirtSize" class="form-select" required>
+                            <option value="S">S (36")</option>
+                            <option value="M">M (38")</option>
+                            <option value="L">L (40")</option>
+                            <option value="XL">XL (42")</option>
+                            <option value="XXL">XXL (44")</option>
+                            <option value="XXXL">XXXL (46")</option>
+                        </select>
+                        <span asp-validation-for="TShirtSize" class="text-danger small"></span>
+                    </div>
+
+                    <div class="col-md-4">
+                        <label asp-for="SpouseCount" class="form-label fw-semibold small"></label>
+                        <input asp-for="SpouseCount" type="number" min="0" max="10" class="form-control" />
+                        <span asp-validation-for="SpouseCount" class="text-danger small"></span>
+                    </div>
+
+                    <div class="col-md-4">
+                        <label asp-for="ChildCount" class="form-label fw-semibold small"></label>
+                        <input asp-for="ChildCount" type="number" min="0" max="20" class="form-control" />
+                        <span asp-validation-for="ChildCount" class="text-danger small"></span>
+                    </div>
+
+                    <div class="col-md-4">
+                        <label asp-for="GuestCount" class="form-label fw-semibold small"></label>
+                        <input asp-for="GuestCount" type="number" min="0" max="50" class="form-control" />
+                        <span asp-validation-for="GuestCount" class="text-danger small"></span>
+                    </div>
+
+                    <div class="col-12 pt-2">
+                        <div class="form-check form-switch p-3 bg-light rounded-4">
+                            <input class="form-check-input ms-0 me-3" type="checkbox" asp-for="IsKitDistributed" id="kitHandoverSwitch" style="width: 2.5em; height: 1.3em;">
+                            <label class="form-check-label fw-semibold" for="kitHandoverSwitch">
+                                <i class="fas fa-box-open text-primary me-1"></i> Souvenir Kit / Gift Handed Over to Attendee
+                            </label>
+                            @if (Model.IsKitDistributed && Model.KitDistributedAt.HasValue)
+                            {
+                                <small class="text-success d-block ms-5 mt-1">
+                                    <i class="fas fa-check-circle me-1"></i> Previously recorded at @Model.KitDistributedAt.Value.ToString("dd MMM yyyy, hh:mm tt")
+                                </small>
+                            }
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Section 5: Financials & Approval Status -->
+        <div class="col-12">
+            <div class="card border-0 shadow-sm rounded-4 p-4 border-start border-4 border-warning">
+                <div class="d-flex align-items-center gap-2 mb-3 pb-2 border-bottom">
+                    <div class="p-2 bg-success bg-opacity-10 text-success rounded-3">
+                        <i class="fas fa-money-bill-wave"></i>
+                    </div>
+                    <h5 class="fw-bold text-dark mb-0">5. Payment Details &amp; Registration Approval</h5>
+                </div>
+
+                <div class="row g-3">
+                    <div class="col-md-3">
+                        <label asp-for="TotalAmount" class="form-label fw-semibold small"></label>
+                        <div class="input-group">
+                            <span class="input-group-text bg-light fw-bold">৳</span>
+                            <input asp-for="TotalAmount" type="number" step="1" class="form-control fw-bold" required />
+                        </div>
+                        <span asp-validation-for="TotalAmount" class="text-danger small"></span>
+                    </div>
+
+                    <div class="col-md-3">
+                        <label asp-for="PaidAmount" class="form-label fw-semibold small"></label>
+                        <div class="input-group">
+                            <span class="input-group-text bg-light fw-bold text-success">৳</span>
+                            <input asp-for="PaidAmount" type="number" step="1" class="form-control fw-bold text-success" required />
+                        </div>
+                        <span asp-validation-for="PaidAmount" class="text-danger small"></span>
+                    </div>
+
+                    <div class="col-md-3">
+                        <label asp-for="PaymentMode" class="form-label fw-semibold small"></label>
+                        <select asp-for="PaymentMode" class="form-select" asp-items="Html.GetEnumSelectList<EasyAlumni.Core.Enums.PaymentMode>()"></select>
+                        <span asp-validation-for="PaymentMode" class="text-danger small"></span>
+                    </div>
+
+                    <div class="col-md-3">
+                        <label asp-for="SenderNumber" class="form-label fw-semibold small"></label>
+                        <input asp-for="SenderNumber" class="form-control" placeholder="Payer mobile / account" />
+                        <span asp-validation-for="SenderNumber" class="text-danger small"></span>
+                    </div>
+
+                    <div class="col-md-3">
+                        <label asp-for="PaymentStatus" class="form-label fw-semibold small"></label>
+                        <select asp-for="PaymentStatus" class="form-select fw-bold" asp-items="Html.GetEnumSelectList<EasyAlumni.Core.Enums.PaymentStatus>()"></select>
+                        <span asp-validation-for="PaymentStatus" class="text-danger small"></span>
+                    </div>
+
+                    <div class="col-md-3">
+                        <label asp-for="RegistrationStatus" class="form-label fw-semibold small"></label>
+                        <select asp-for="RegistrationStatus" class="form-select fw-bold" asp-items="Html.GetEnumSelectList<EasyAlumni.Core.Enums.RegistrationStatus>()"></select>
+                        <span asp-validation-for="RegistrationStatus" class="text-danger small"></span>
+                    </div>
+
+                    <div class="col-md-6">
+                        <label asp-for="AdminRemarks" class="form-label fw-semibold small"></label>
+                        <input asp-for="AdminRemarks" class="form-control" placeholder="Internal admin verification note" />
+                        <span asp-validation-for="AdminRemarks" class="text-danger small"></span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Sticky / Bottom Action Bar -->
+    <div class="card border-0 shadow-sm rounded-4 p-3 mt-4 bg-light">
+        <div class="d-flex justify-content-between align-items-center flex-wrap gap-2">
+            <span class="text-muted small">
+                <i class="fas fa-info-circle me-1"></i> Modifying attendee information will update database records and pass generation details immediately.
+            </span>
+            <div class="d-flex gap-2">
+                <a asp-action="Registrations" class="btn btn-outline-secondary rounded-pill px-4">
+                    Cancel
+                </a>
+                <button type="submit" class="btn btn-primary rounded-pill px-5 fw-bold shadow-sm">
+                    <i class="fas fa-save me-2"></i> Save Changes
+                </button>
+            </div>
+        </div>
+    </div>
+</form>
+
+@section Scripts {
+    <partial name="_ValidationScriptsPartial" />
+}
