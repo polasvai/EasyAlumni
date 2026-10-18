@@ -90,12 +90,11 @@
                         <th>Alumnus</th>
                         <th>Batch</th>
                         <th>Contact</th>
-                        <th>T-Shirt</th>
                         <th>Guests</th>
                         <th>Amount</th>
                         <th>Status</th>
                         <th>Kit Handover</th>
-                        <th class="text-end">Pass</th>
+                        <th class="text-end">Actions</th>
                     </tr>
                 </thead>
                 <tbody>
@@ -127,9 +126,6 @@
                             <td>
                                 <strong>@profile?.ContactNumber</strong>
                                 <small class="text-muted d-block">@profile?.Email</small>
-                            </td>
-                            <td>
-                                <span class="badge bg-info text-dark fs-6">@reg.TShirtSize</span>
                             </td>
                             <td>
                                 <small class="text-muted">
@@ -179,6 +175,10 @@
                                 <a asp-controller="Pass" asp-action="ViewPass" asp-route-id="@reg.RegistrationNo" target="_blank"
                                    class="btn btn-sm btn-outline-primary rounded-pill px-2 me-1" title="Print Pass">
                                     <i class="fas fa-id-badge"></i>
+                                </a>
+                                <a asp-action="EditRegistration" asp-route-id="@reg.Id"
+                                   class="btn btn-sm btn-outline-warning rounded-pill px-2 me-1" title="Edit Member Information">
+                                    <i class="fas fa-edit"></i>
                                 </a>
                                 <form asp-action="DeleteRegistration" asp-route-id="@reg.Id" method="post" class="d-inline"
                                       onsubmit="return confirm('Are you sure you want to delete registration @reg.RegistrationNo for @(profile?.NameEnglish ?? "this attendee")? This will free their phone number and allow them to register again.');">
