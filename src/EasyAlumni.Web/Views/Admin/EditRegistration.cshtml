@@ -330,7 +330,7 @@
                         <label asp-for="TotalAmount" class="form-label fw-semibold small"></label>
                         <div class="input-group">
                             <span class="input-group-text bg-light fw-bold">৳</span>
-                            <input asp-for="TotalAmount" type="number" step="1" class="form-control fw-bold" required />
+                            <input asp-for="TotalAmount" type="number" step="any" class="form-control fw-bold" required />
                         </div>
                         <span asp-validation-for="TotalAmount" class="text-danger small"></span>
                     </div>
@@ -339,7 +339,7 @@
                         <label asp-for="PaidAmount" class="form-label fw-semibold small"></label>
                         <div class="input-group">
                             <span class="input-group-text bg-light fw-bold text-success">৳</span>
-                            <input asp-for="PaidAmount" type="number" step="1" class="form-control fw-bold text-success" required />
+                            <input asp-for="PaidAmount" type="number" step="any" class="form-control fw-bold text-success" required />
                         </div>
                         <span asp-validation-for="PaidAmount" class="text-danger small"></span>
                     </div>
